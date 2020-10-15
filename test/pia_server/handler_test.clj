@@ -1,4 +1,4 @@
-(ns pia-server.core-test
+(ns pia-server.handler-test
   (:require [cheshire.core :as cheshire]
             [clojure.test :refer :all]
             [pia-server.handler :refer :all]

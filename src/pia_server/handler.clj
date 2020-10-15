@@ -1,27 +1,29 @@
 (ns pia-server.handler
   (:require [compojure.api.sweet :refer :all]
             [ring.util.http-response :refer :all]
-            [longterm :as lt]
-            ;[pia-server.postgres_runstore :as pgrs]
+            [longterm :refer :all]
+            [pia-server.db :as db]
             [schema.core :as s]))
 
 (s/defschema Run
-  {:id           s/Str
-   :state        (s/enum :running :suspended :complete)
-   :result       s/Any
-   :response     s/Any})
+  {:id       s/Uuid
+   :state    (s/enum :running :suspended :complete)
+   :result   s/Any
+   :response s/Any})
 
 (s/defschema StartForm
-  {:flow s/Str
+  {:flow s/Symbol
    :args [s/Any]})
 
 (s/defschema Event
-  {:run-id s/Str
-   :event-id s/Str
-   :data s/Any})
+  {:event-id s/Keyword
+   :data     s/Any})
 
-;(lt/set-runstore! (pgrs/postgres-runstore))
+(def db-runstore (db/make-runstore))
+(set-runstore! db-runstore)
 
+(deflow foo [] (respond! "hello...") (suspend! :user) (respond! "world!"))
+(def flows {:foo foo})
 (def app
   (api
     {:swagger
@@ -37,36 +39,25 @@
       (context "/runs" []
         :tags ["runs"]
 
-        (GET "/:id" [id]
-          ;:return {:data Run}
-          :summary "gets a run"
-          (ok ()));(get-run id)))
-
-        (POST "/" []
+        (GET "/:id" []
+          :path-params [id :- s/Uuid]
           :return Run
-          :body [input StartForm]
-          :summary "starts a flow"
-          (ok (apply lt/start-flow!
-                     (symbol (:flow input))
-                     (:args input))))
+          :summary "gets a run"
+          (ok (get-run id)))
 
-        (POST "/:id/continue" [id]
+        (POST "/:flow" []
+          :path-params [flow :- s/Keyword]
+          :return Run
+          :body [args [s/Any]]
+          :summary "starts a Run based on the given flow"
+          (ok (apply start-flow! (get flows flow) args)))
+
+        (POST "/:id/continue" []
+          :path-params [id :- s/Uuid]
           :return Run
           :body [event Event]
-          :summary "continues a flow"
-          (ok (apply lt/process-event!
-                     (:run-id event)
+          :summary "continues a run"
+          (ok (apply process-event!
+                     id
                      (:event-id event)
                      (:data event))))))))
-
-;(GET "/plus/:id" [id]
-;        :return {:result Long}
-;        :query-params [x :- Long, y :- Long]
-;        :summary "adds two numbers together"
-;        (ok {:result (+ id x y)}))
-;
-;      (POST "/echo" []
-;        :return Pizza
-;        :body [pizza Pizza]
-;        :summary "echoes a Pizza"
-;        (ok pizza)))))

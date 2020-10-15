@@ -1,4 +1,4 @@
-(ns pia-server.db.core
+(ns pia-server.db
   (:require [longterm :refer [set-runstore!]]
             [longterm.runstore :refer [IRunStore RunStates] :as rs]
             [next.jdbc :as jdbc]
@@ -28,13 +28,10 @@
                          :port-number        (Integer/parseInt (env :db-port "5432"))
                          :register-mbeans    false})
 
-(def connection-pool (delay (connection/->pool HikariDataSource
-                                               datasource-options)))
-
 (declare run-from-record)
 
 (defmacro with-connection [[conn jdbc-rs] & body]
-  `(let [~conn @(:connection-pool ~jdbc-rs)]
+  `(let [~conn (:connection-pool ~jdbc-rs)]
      ; (with-open [^HikariDataSource ~conn @cp#]
      ~@body))
 
@@ -83,7 +80,8 @@
                   "RETURNING runs.*;")
              updated-at run-id]))))))
 
-(set-runstore! (JDBCRunstore. connection-pool))
+(defonce connection-pool (connection/->pool HikariDataSource datasource-options))
+(defn make-runstore [] (JDBCRunstore. connection-pool))
 
 (defn run-from-record [rec]
   (if rec
@@ -115,7 +113,6 @@
       );"]))
 
 ;; HELPERS for debugging
-(def rs (JDBCRunstore. connection-pool))
 (defn exec! [& args] (jdbc/execute! @connection-pool (vec args)))
 
 (defn uuid [] (java.util.UUID/randomUUID))
