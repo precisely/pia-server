@@ -22,7 +22,7 @@
                  [org.postgresql/postgresql "42.2.10"]
                  [hikari-cp "2.13.0"]
                  [environ "1.2.0"]
-                 [com.github.precisely/longterm "0.1.2"]]
+                 [com.github.precisely/longterm "0.1.3"]]
   :plugins [[lein-environ "1.2.0"]]
   :repositories [["jitpack" {:url      "https://jitpack.io"
                              :username ~(env :jetpack-auth-token)
