@@ -29,13 +29,14 @@
     <orderEntry type="library" name="Leiningen: com.fasterxml.jackson.dataformat/jackson-dataformat-smile:2.9.0" level="project" />
     <orderEntry type="library" name="Leiningen: com.fasterxml.jackson.datatype/jackson-datatype-joda:2.9.8" level="project" />
     <orderEntry type="library" name="Leiningen: com.fasterxml.jackson.datatype/jackson-datatype-jsr310:2.9.7" level="project" />
+    <orderEntry type="library" name="Leiningen: com.fzakaria/slf4j-timbre:0.3.20" level="project" />
     <orderEntry type="library" name="Leiningen: com.github.fge/btf:1.2" level="project" />
     <orderEntry type="library" name="Leiningen: com.github.fge/msg-simple:1.1" level="project" />
     <orderEntry type="library" name="Leiningen: com.github.fge/uri-template:0.9" level="project" />
     <orderEntry type="library" name="Leiningen: com.github.java-json-tools/jackson-coreutils:1.9" level="project" />
     <orderEntry type="library" name="Leiningen: com.github.java-json-tools/json-schema-core:1.2.10" level="project" />
     <orderEntry type="library" name="Leiningen: com.github.java-json-tools/json-schema-validator:2.2.10" level="project" />
-    <orderEntry type="library" name="Leiningen: com.github.precisely/longterm:0.1.2" level="project" />
+    <orderEntry type="library" name="Leiningen: com.github.precisely/longterm:0.1.4" level="project" />
     <orderEntry type="library" name="Leiningen: com.google.code.findbugs/jsr305:3.0.1" level="project" />
     <orderEntry type="library" name="Leiningen: com.google.code.gson/gson:2.7" level="project" />
     <orderEntry type="library" name="Leiningen: com.google.elemental2/elemental2-core:1.0.0-RC1" level="project" />
@@ -50,6 +51,9 @@
     <orderEntry type="library" name="Leiningen: com.google.re2j/re2j:1.3" level="project" />
     <orderEntry type="library" name="Leiningen: com.googlecode.json-simple/json-simple:1.1.1" level="project" />
     <orderEntry type="library" name="Leiningen: com.googlecode.libphonenumber/libphonenumber:8.0.0" level="project" />
+    <orderEntry type="library" name="Leiningen: com.taoensso/encore:2.91.0" level="project" />
+    <orderEntry type="library" name="Leiningen: com.taoensso/timbre:4.10.0" level="project" />
+    <orderEntry type="library" name="Leiningen: com.taoensso/truss:1.5.0" level="project" />
     <orderEntry type="library" name="Leiningen: com.zaxxer/HikariCP:3.4.5" level="project" />
     <orderEntry type="library" name="Leiningen: commons-codec:1.6" level="project" />
     <orderEntry type="library" name="Leiningen: commons-fileupload:1.3.3" level="project" />
@@ -64,6 +68,7 @@
     <orderEntry type="library" name="Leiningen: hikari-cp:2.13.0" level="project" />
     <orderEntry type="library" name="Leiningen: ikitommi/linked:1.3.1-alpha1" level="project" />
     <orderEntry type="library" name="Leiningen: instaparse:1.4.8" level="project" />
+    <orderEntry type="library" name="Leiningen: io.aviso/pretty:0.1.33" level="project" />
     <orderEntry type="library" name="Leiningen: javax.activation/activation:1.1" level="project" />
     <orderEntry type="library" name="Leiningen: javax.mail/mailapi:1.4.3" level="project" />
     <orderEntry type="library" name="Leiningen: javax.servlet/javax.servlet-api:3.1.0" level="project" />
@@ -114,7 +119,7 @@
     <orderEntry type="library" name="Leiningen: org.msgpack/msgpack:0.6.12" level="project" />
     <orderEntry type="library" name="Leiningen: org.ow2.asm/asm:5.1" level="project" />
     <orderEntry type="library" name="Leiningen: org.postgresql/postgresql:42.2.10" level="project" />
-    <orderEntry type="library" name="Leiningen: org.slf4j/slf4j-api:1.7.25" level="project" />
+    <orderEntry type="library" name="Leiningen: org.slf4j/slf4j-api:1.7.30" level="project" />
     <orderEntry type="library" name="Leiningen: org.tobereplaced/lettercase:1.0.0" level="project" />
     <orderEntry type="library" name="Leiningen: potemkin:0.4.5" level="project" />
     <orderEntry type="library" name="Leiningen: prismatic/plumbing:0.5.5" level="project" />

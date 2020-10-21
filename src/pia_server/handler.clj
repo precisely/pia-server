@@ -3,9 +3,7 @@
             [ring.util.http-response :refer :all]
             [longterm :refer :all]
             [pia-server.db :as db]
-            [schema.core :as s]
-            pia-server.select-coercion
-            [compojure.api.coercion.core :as cc]))
+            [schema.core :as s]))
 
 (s/defschema Run
   {:id       s/Uuid
@@ -22,8 +20,8 @@
 
 (deflow foo []
   (respond! "hello...")
-  (suspend! :foo)
-  (respond! "world!"))
+  (let [value (suspend! :foo)]
+    (respond! (str  value " world!"))))
 
 (def flows {:foo foo})
 
