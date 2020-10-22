@@ -96,9 +96,13 @@
         :updated_at (:runs/updated_at rec)))))
 
 (defn create-db! []
-  (jdbc/execute! @connection-pool ["
+  (jdbc/execute! connection-pool ["
       CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\";
-      CREATE TYPE IF NOT EXISTS RUNSTATES AS ENUM ('running', 'suspended', 'complete', 'error');
+      DO $$ BEGIN
+        CREATE TYPE RUNSTATES AS ENUM ('running', 'suspended', 'complete', 'error');
+      EXCEPTION
+        WHEN duplicate_object THEN null;
+      END $$;
       CREATE TABLE IF NOT EXISTS runs (
       id uuid DEFAULT uuid_generate_v4(),
       state RUNSTATES,
@@ -113,9 +117,9 @@
       );"]))
 
 ;; HELPERS for debugging
-(defn exec! [& args] (jdbc/execute! @connection-pool (vec args)))
+(defn exec! [& args] (jdbc/execute! connection-pool (vec args)))
 
 (defn uuid [] (java.util.UUID/randomUUID))
-(defn delete-db []
+(defn delete-db! []
   (exec! "drop table if exists runs; drop type if exists Runstates;"))
 
