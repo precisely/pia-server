@@ -10,24 +10,24 @@
 ;;; other credentials to third-party services are stored.
 
 (require '[clojure.java.io :as io]
-         '[clojure.string :as str])
+  '[clojure.string :as str])
 
 (def env
   (->> (merge
-        (into {} (System/getenv))
-        (into {} (System/getProperties))
-        (let [env-file (io/file ".env")]
-          (if (.exists env-file)
-              (let [props (java.util.Properties.)]
-                (.load props (io/input-stream env-file))
-                props)
-              {})))
-       (map (fn [[k v]] [(-> (str/lower-case k)
-                             (str/replace "_" "-")
-                             (str/replace "." "-")
-                             (keyword))
-                         v]))
-       (into {})))
+         (into {} (System/getenv))
+         (into {} (System/getProperties))
+         (let [env-file (io/file ".env")]
+           (if (.exists env-file)
+             (let [props (java.util.Properties.)]
+               (.load props (io/input-stream env-file))
+               props)
+             {})))
+    (map (fn [[k v]] [(-> (str/lower-case k)
+                        (str/replace "_" "-")
+                        (str/replace "." "-")
+                        (keyword))
+                      v]))
+    (into {})))
 
 
 (defproject pia-server "0.1.1-SNAPSHOT"
@@ -40,17 +40,18 @@
                  [org.postgresql/postgresql "42.2.10"]
                  [hikari-cp "2.13.0"]
                  [envvar "1.1.1"]
-                 [com.github.precisely/longterm "0.1.4"]]
-  :repositories [["jitpack" {:url "https://jitpack.io"
-                             :username ~(:jitpack-auth-token env)
-                             :password "."}]]
-  :plugins [[lein-pprint "1.3.2"]]
+                 [precisely/longterm "0.1.5"]]
+  :repositories {"precisely" {:url        "s3p://precisely-maven-repo/"
+                              :username   ~(env :maven-repo-aws-access-key-id)
+                              :passphrase ~(env :maven-repo-aws-access-key-secret)}}
+  :plugins [[lein-pprint "1.3.2"]
+            [s3-wagon-private "1.3.4"]]
   :main pia-server.main
   :ring {:handler pia-server.handler/app}
   :uberjar-name "pia-server.jar"
-  :profiles {:dev {:dependencies [[javax.servlet/javax.servlet-api "3.1.0"]
-                                  [ring-server "0.5.0"]
-                                  [ring/ring-mock "0.3.2"]]
-                   :plugins      [[lein-ring "0.12.5"]]}
+  :profiles {:dev     {:dependencies [[javax.servlet/javax.servlet-api "3.1.0"]
+                                      [ring-server "0.5.0"]
+                                      [ring/ring-mock "0.3.2"]]
+                       :plugins      [[lein-ring "0.12.5"]]}
              :uberjar {:aot :all}}
   :jvm-opts ["-Dclojure.tools.logging.factory=clojure.tools.logging.impl/slf4j-factory"])
