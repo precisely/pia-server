@@ -1,20 +1,37 @@
-(require '[clojure.edn :as edn] '[clojure.java.io :as io] '[clojure.string :as str])
-(defn load-edn
-  "Load edn from an io/reader source (filename or io/resource)."
-  [source]
-  (with-open [r (io/reader source)]
-    (edn/read (java.io.PushbackReader. r))))
-(def envfile (load-edn (io/file "env.edn")))
-(defn env
-  ([key] (env key nil))
-  ([key default]
-  (let [env-var (str/replace (str/upper-case (.getName key)) "-" "_")]
-    (or (System/getenv env-var)
-      (key envfile)
-      default))))
+;;; XXX: Dirty workaround to allow referencing environment variables in
+;;; project.clj. This approach echoes the envvar library (and, indeed,
+;;; reimplements it). See https://github.com/gcv/envvar. This is necessary
+;;; because Leiningen middleware is resolved too late to use environment
+;;; variables in some places in the project map. Specifically, repository
+;;; resolution happens too early.
+;;;
+;;; Note that Leiningen's built-in repository credentials mechanism is not used
+;;; here because GPG setup for credentials files is inconsistent with how all
+;;; other credentials to third-party services are stored.
+
+(require '[clojure.java.io :as io]
+         '[clojure.string :as str])
+
+(def env
+  (->> (merge
+        (into {} (System/getenv))
+        (into {} (System/getProperties))
+        (let [env-file (io/file ".env")]
+          (if (.exists env-file)
+              (let [props (java.util.Properties.)]
+                (.load props (io/input-stream env-file))
+                props)
+              {})))
+       (map (fn [[k v]] [(-> (str/lower-case k)
+                             (str/replace "_" "-")
+                             (str/replace "." "-")
+                             (keyword))
+                         v]))
+       (into {})))
+
 
 (defproject pia-server "0.1.1-SNAPSHOT"
-  :description "FIXME: write description"
+  :description "Precisely Intelligent Agent"
   :dependencies [[org.clojure/clojure "1.10.0"]
                  [metosin/compojure-api "2.0.0-alpha30"]
                  [seancorfield/next.jdbc "1.1.588"]
@@ -22,22 +39,18 @@
                  [com.fzakaria/slf4j-timbre "0.3.20"]
                  [org.postgresql/postgresql "42.2.10"]
                  [hikari-cp "2.13.0"]
-                 [environ "1.2.0"]
+                 [envvar "1.1.1"]
                  [com.github.precisely/longterm "0.1.4"]]
-  :plugins [[lein-environ "1.2.0"]]
-  :repositories [["jitpack" {:url      "https://jitpack.io"
-                             :username ~(env :jetpack-auth-token)
+  :repositories [["jitpack" {:url "https://jitpack.io"
+                             :username ~(:jitpack-auth-token env)
                              :password "."}]]
-  :main pia-server.handler
+  :plugins [[lein-pprint "1.3.2"]]
+  :main pia-server.main
   :ring {:handler pia-server.handler/app}
-  :uberjar-name "server.jar"
+  :uberjar-name "pia-server.jar"
   :profiles {:dev {:dependencies [[javax.servlet/javax.servlet-api "3.1.0"]
                                   [ring-server "0.5.0"]
                                   [ring/ring-mock "0.3.2"]]
-                   :plugins      [[lein-ring "0.12.5"]]
-                   :env          {:db-username     ~(env :db-username (System/getProperty "user.name"))
-                                  :password        ~(env :db-password "")
-                                  :database-name   ~(env :db-name "pia_runstore")
-                                  :server-name     ~(env :db-server-name "localhost")
-                                  :port-number     ~(env :db-port "5432")}}}
+                   :plugins      [[lein-ring "0.12.5"]]}
+             :uberjar {:aot :all}}
   :jvm-opts ["-Dclojure.tools.logging.factory=clojure.tools.logging.impl/slf4j-factory"])

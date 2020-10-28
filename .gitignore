@@ -1,4 +1,15 @@
+# Ignore OS and editor litter.
+*~
+.DS_Store
+
+# Ignore Direnv configuration, it should be user-specific.
 .envrc
+
+# environment handling: ignore all .env files except .env.sample
+.env*
+!.env.sample
+
+# Java and Clojure things
 /target
 /classes
 /checkouts
@@ -14,7 +25,6 @@ pom.xml.asc
 figwheel_server.log
 .rebel_readline_history
 .calva/
-env.edn
 db/sqlite.db
 
 # Covers JetBrains IDEs: IntelliJ, RubyMine, PhpStorm, AppCode, PyCharm, CLion, Android Studio, WebStorm and Rider

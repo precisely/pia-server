@@ -19,7 +19,7 @@ https://leiningen.org/#install
 git clone git+ssh://git@github.com/precisely/pia-server.git```
 ```
 * configure secrets:
-  - copy env.edn.sample to env.edn, update any auth tokens & secrets
+  - copy `.env.sample` to `.env`, update any auth tokens & secrets
   - env.edn is in .gitignore
 
 ### IntelliJ tips:

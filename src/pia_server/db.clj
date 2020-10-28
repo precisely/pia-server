@@ -2,7 +2,7 @@
   (:require [longterm :refer [set-runstore!]]
             [longterm.runstore :refer [IRunStore RunStates] :as rs]
             [next.jdbc :as jdbc]
-            [environ.core :refer [env]]
+            [envvar.core :refer [env]]
             hikari-cp.core
             [next.jdbc.types :refer [as-other]]
             [next.jdbc.connection :as connection])
@@ -21,11 +21,11 @@
                          :classname          "org.postgresql.Driver"
                          :dbtype             "postgresql"
                          :adapter            "postgresql"
-                         :username           (env :db-username)
-                         :password           (env :db-password)
-                         :database-name      (env :db-name)
-                         :server-name        (env :db-server-name)
-                         :port-number        (Integer/parseInt (env :db-port "5432"))
+                         :username           (get @env :db-username "pia")
+                         :password           (get @env :db-password "")
+                         :database-name      (get @env :db-name "pia-runstore")
+                         :server-name        (get @env :db-server-name "localhost")
+                         :port-number        (Integer/parseInt (get @env :db-port "5432"))
                          :register-mbeans    false})
 
 (declare run-from-record)
