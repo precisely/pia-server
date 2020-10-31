@@ -2,8 +2,8 @@
   (:require [compojure.api.sweet :refer :all]
             [ring.util.http-response :refer :all]
             [longterm :refer :all]
-            [pia-server.db :as db]
             [schema.core :as s]))
+            ;; [pia-server.db :as db]
 
 (s/defschema Run
   {:id       s/Uuid
@@ -14,9 +14,9 @@
 (s/defschema Event
   {:event-id              s/Keyword
    (s/optional-key :data) s/Any})
+;; (def db-runstore (db/make-runstore))
+;; (set-runstore! db-runstore)
 
-(def db-runstore (db/make-runstore))
-(set-runstore! db-runstore)
 
 (deflow foo []
   (respond! "hello...")
