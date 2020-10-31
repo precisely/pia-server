@@ -1,0 +1,1 @@
+web: java $JVM_OPTS -cp target/pia-server.jar clojure.main -m pia-server.main
