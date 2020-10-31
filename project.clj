@@ -33,6 +33,10 @@
 (defproject pia-server "0.1.1-SNAPSHOT"
   :description "Precisely Intelligent Agent"
   :dependencies [[com.fzakaria/slf4j-timbre "0.3.20"]
+                 [ca.uhn.hapi.fhir/hapi-fhir-base "5.1.0"]
+                 [ca.uhn.hapi.fhir/hapi-fhir-structures-r4 "5.1.0"]
+                 [ca.uhn.hapi.fhir/hapi-fhir-validation "5.1.0"]
+                 [ca.uhn.hapi.fhir/hapi-fhir-validation-resources-r4 "5.1.0"]
                  [org.clojure/clojure "1.10.0"]
                  [org.clojure/tools.logging "1.1.0"]
                  [org.postgresql/postgresql "42.2.10"]
