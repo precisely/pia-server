@@ -74,4 +74,9 @@
 
 (def app
   (-> #'base-handler
+      ;; put ring middlware here, e.g.:
+      ;; Buddy for JWT (https://funcool.github.io/buddy-auth/latest/#signed-jwt):
+      ;;(wrap-authentication ...)
+      ;; encors for CORS (https://github.com/unbounce/encors):
+      ;;(wrap-cors cors-policy)
       ))
