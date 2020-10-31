@@ -48,7 +48,7 @@
   :plugins [[lein-pprint "1.3.2"]
             [s3-wagon-private "1.3.4"]]
   :main pia-server.main
-  :ring {:handler pia-server.handler/app}
+  :ring {:handler pia-server.core/app}
   :uberjar-name "pia-server.jar"
   :profiles {:dev     {:dependencies [[javax.servlet/javax.servlet-api "3.1.0"]
                                       [ring-server "0.5.0"]

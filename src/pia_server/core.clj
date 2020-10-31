@@ -1,4 +1,4 @@
-(ns pia-server.handler
+(ns pia-server.core
   (:require [compojure.api.sweet :refer :all]
             [ring.util.http-response :refer :all]
             [longterm :refer :all]
@@ -32,7 +32,7 @@
   (select-keys run [:id :state :result :response]))
 
 
-(def app
+(def base-handler
   (api
     {:swagger
                {:ui   "/"
@@ -70,3 +70,8 @@
                                  id
                                  (:event-id event)
                                  (:data event)))))))))
+
+
+(def app
+  (-> #'base-handler
+      ))

@@ -1,8 +1,7 @@
 (ns pia-server.main
   (:require [ring.adapter.jetty :as jetty]
             [envvar.core :as envvar :refer [env]])
-  (:require [pia-server.handler :as handler])
-  ;; FIXME: Require app from handler.clj, maybe rename to app.clj?
+  (:require [pia-server.core :as pia])
   (:gen-class))
 
 
@@ -26,4 +25,4 @@
 
 (defn -main [& args]
   (let [port (get @env :port 8080)]
-    (start handler/app :port port, :join? true)))
+    (start pia/app :port port, :join? true)))
