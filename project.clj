@@ -32,15 +32,16 @@
 
 (defproject pia-server "0.1.1-SNAPSHOT"
   :description "Precisely Intelligent Agent"
-  :dependencies [[org.clojure/clojure "1.10.0"]
-                 [metosin/compojure-api "2.0.0-alpha30"]
-                 [seancorfield/next.jdbc "1.1.588"]
+  :dependencies [[com.fzakaria/slf4j-timbre "0.3.20"]
+                 [org.clojure/clojure "1.10.0"]
                  [org.clojure/tools.logging "1.1.0"]
-                 [com.fzakaria/slf4j-timbre "0.3.20"]
                  [org.postgresql/postgresql "42.2.10"]
-                 [hikari-cp "2.13.0"]
+                 [metosin/compojure-api "2.0.0-alpha30"]
+                 [precisely/longterm "0.1.4"]
+                 [ring/ring-jetty-adapter "1.8.2"]
+                 [seancorfield/next.jdbc "1.1.588"]
                  [envvar "1.1.1"]
-                 [precisely/longterm "0.1.5"]]
+                 [hikari-cp "2.13.0"]]
   :repositories {"precisely" {:url        "s3p://precisely-maven-repo/"
                               :username   ~(env :maven-repo-aws-access-key-id)
                               :passphrase ~(env :maven-repo-aws-access-key-secret)}}
