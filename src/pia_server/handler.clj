@@ -2,18 +2,21 @@
   (:require [compojure.api.sweet :refer :all]
             [ring.util.http-response :refer :all]
             [longterm :refer :all]
-            [schema.core :as s]))
             ;; [pia-server.db :as db]
+            [schema.core :as scm]))
 
-(s/defschema Run
-  {:id       s/Uuid
-   :state    (s/enum :running :suspended :complete)
-   :result   s/Any
-   :response s/Any})
 
-(s/defschema Event
-  {:event-id              s/Keyword
-   (s/optional-key :data) s/Any})
+(scm/defschema Run
+  {:id       scm/Uuid
+   :state    (scm/enum :running :suspended :complete)
+   :result   scm/Any
+   :response scm/Any})
+
+(scm/defschema Event
+  {:event-id              scm/Keyword
+   (scm/optional-key :data) scm/Any})
+
+
 ;; (def db-runstore (db/make-runstore))
 ;; (set-runstore! db-runstore)
 
@@ -27,6 +30,7 @@
 
 (defn run-result [run]
   (select-keys run [:id :state :result :response]))
+
 
 (def app
   (api
@@ -45,20 +49,20 @@
         :tags ["runs"]
 
         (GET "/:id" []
-          :path-params [id :- s/Uuid]
+          :path-params [id :- scm/Uuid]
           :return Run
           :summary "gets a run"
           (ok (run-result (get-run id))))
 
         (POST "/:flow" []
-          :path-params [flow :- s/Keyword]
+          :path-params [flow :- scm/Keyword]
           :return Run
-          :body [args [s/Any]]
+          :body [args [scm/Any]]
           :summary "starts a Run based on the given flow"
           (ok (run-result (apply start-flow! (get flows flow) args))))
 
         (POST "/:id/continue" []
-          :path-params [id :- s/Uuid]
+          :path-params [id :- scm/Uuid]
           :return Run
           :body [event Event]
           :summary "continues a run"
