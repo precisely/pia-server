@@ -20,6 +20,7 @@ git clone git+ssh://git@github.com/precisely/pia-server.git```
 ```
 * configure secrets:
   - copy `.env.sample` to `.env`, update any auth tokens & secrets
+  - NOTE: the pia-developer user in our AWS dev-precisely account has minimal permissions for retrieving the longterm library from our S3 bucket    
   - env.edn is in .gitignore
 
 ### IntelliJ tips:

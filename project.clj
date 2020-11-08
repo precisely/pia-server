@@ -41,9 +41,10 @@
                  [org.clojure/tools.logging "1.1.0"]
                  [org.postgresql/postgresql "42.2.10"]
                  [metosin/compojure-api "2.0.0-alpha30"]
-                 [precisely/longterm "0.1.4"]
+                 [precisely/longterm "0.2.0-SNAPSHOT"]
                  [ring/ring-jetty-adapter "1.8.2"]
                  [seancorfield/next.jdbc "1.1.588"]
+                 [danlentz/clj-uuid "0.1.9"]
                  [envvar "1.1.1"]
                  [hikari-cp "2.13.0"]]
   :repositories {"precisely" {:url        "s3p://precisely-maven-repo/"
@@ -52,7 +53,11 @@
   :plugins [[lein-pprint "1.3.2"]
             [s3-wagon-private "1.3.4"]]
   :main pia-server.main
-  :ring {:handler pia-server.core/app}
+  :ring {:handler pia-server.core/app
+         :auto-refresh? true
+         :auto-reload? true
+         :refresh-paths ["src"]
+         :reload-paths ["src"]}
   :uberjar-name "pia-server.jar"
   :profiles {:dev     {:dependencies [[javax.servlet/javax.servlet-api "3.1.0"]
                                       [ring-server "0.5.0"]

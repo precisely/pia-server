@@ -1,7 +1,7 @@
 (ns pia-server.handler-test
   (:require [cheshire.core :as cheshire]
             [clojure.test :refer :all]
-            [pia-server.handler :refer :all]
+            [pia-server.core :refer :all]
             [longterm :refer :all]
             [ring.mock.request :as mock]))
 
@@ -17,11 +17,11 @@
 
 (deftest foo-test
   (testing "Can start a flow"
-    (let [run (start-flow! foo)]
+    (let [run (start! foo)]
       (is (run-in-state? run :suspended))
       (is (= (:response run) '("hello...")))
 
       (testing "can continue a flow"
-        (let [run (process-event! (:id run) :foo "cruel")]
+        (let [run (continue! (:id run) :foo "cruel")]
           (is (run-in-state? run :complete))
           (is (= (:response run) '("cruel world!"))))))))
