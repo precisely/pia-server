@@ -19,9 +19,9 @@
   (testing "Can start a flow"
     (let [run (start! foo)]
       (is (run-in-state? run :suspended))
-      (is (= (:response run) '("hello...")))
+      (is (= (:response run) '["hello"]))
 
       (testing "can continue a flow"
         (let [run (continue! (:id run) :foo "cruel")]
           (is (run-in-state? run :complete))
-          (is (= (:response run) '("cruel world!"))))))))
+          (is (= (:response run) '["cruel world!"])))))))
