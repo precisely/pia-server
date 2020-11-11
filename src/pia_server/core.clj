@@ -7,15 +7,15 @@
 
 
 (scm/defschema Run
-  {:id       scm/Uuid
-   :state    (scm/enum :running :suspended :complete)
-   :result   scm/Any
+  {:id            scm/Uuid
+   :state         (scm/enum :running :suspended :complete)
+   :result        scm/Any
    :full-response [scm/Any]
-   :response [scm/Any]
-   :next-id  scm/Uuid})
+   :response      [scm/Any]
+   :next-id       scm/Uuid})
 
 (scm/defschema Event
-  {:permit              scm/Keyword
+  {:permit                  scm/Keyword
    (scm/optional-key :data) scm/Any})
 
 (def db-runstore (db/make-runstore))
@@ -23,9 +23,9 @@
 (db/create-db!)
 
 (deflow foo []
-  (*> "hello...")
+  (*> "hello")
   (let [value (<* :permit :foo)]
-    (*> (str  value " world!"))))
+    (*> (str value " world!"))))
 
 (def flows {:foo foo})
 
@@ -36,12 +36,12 @@
 (def base-handler
   (api
     {:swagger
-               {:ui   "/"
-                :spec "/swagger.json"
+               {:ui      "/"
+                :spec    "/swagger.json"
                 :options {:ui {:doc-expansion :full}}
-                :data {:info {:title       "pia-server"
-                              :description "Precisely Intelligent Agent Server API"}
-                       :tags [{:name "api", :description "some apis"}]}}
+                :data    {:info {:title       "pia-server"
+                                 :description "Precisely Intelligent Agent Server API"}
+                          :tags [{:name "api", :description "some apis"}]}}
      :coercion :schema}
 
     (context "/api" []
@@ -62,10 +62,10 @@
           :return Run
           :body [event Event]
           :summary "continues a run"
-          (ok (run-result (apply continue!
-                                 id
-                                 (:permit event)
-                                 (:data event)))))
+          (ok (run-result (continue!
+                            id
+                            (:permit event)
+                            (:data event)))))
 
         (GET "/:id" []
           :path-params [id :- scm/Uuid]
@@ -76,9 +76,9 @@
 
 (def app
   (-> #'base-handler
-      ;; put ring middlware here, e.g.:
-      ;; Buddy for JWT (https://funcool.github.io/buddy-auth/latest/#signed-jwt):
-      ;;(wrap-authentication ...)
-      ;; encors for CORS (https://github.com/unbounce/encors):
-      ;;(wrap-cors cors-policy)
-      ))
+    ;; put ring middlware here, e.g.:
+    ;; Buddy for JWT (https://funcool.github.io/buddy-auth/latest/#signed-jwt):
+    ;;(wrap-authentication ...)
+    ;; encors for CORS (https://github.com/unbounce/encors):
+    ;;(wrap-cors cors-policy)
+    ))

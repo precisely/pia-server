@@ -30,7 +30,7 @@
     (into {})))
 
 
-(defproject pia-server "0.1.1-SNAPSHOT"
+(defproject pia-server "0.1.2-SNAPSHOT"
   :description "Precisely Intelligent Agent"
   :dependencies [[com.fzakaria/slf4j-timbre "0.3.20"]
                  [ca.uhn.hapi.fhir/hapi-fhir-base "5.1.0"]
@@ -41,7 +41,7 @@
                  [org.clojure/tools.logging "1.1.0"]
                  [org.postgresql/postgresql "42.2.10"]
                  [metosin/compojure-api "2.0.0-alpha30"]
-                 [precisely/longterm "0.2.0-SNAPSHOT"]
+                 [precisely/longterm "0.2.1"]
                  [ring/ring-jetty-adapter "1.8.2"]
                  [seancorfield/next.jdbc "1.1.588"]
                  [danlentz/clj-uuid "0.1.9"]
@@ -53,6 +53,7 @@
   :plugins [[lein-pprint "1.3.2"]
             [s3-wagon-private "1.3.4"]]
   :main pia-server.main
+  :source-paths ["src"]
   :ring {:handler pia-server.core/app
          :auto-refresh? true
          :auto-reload? true

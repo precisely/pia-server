@@ -43,14 +43,18 @@
 (defn to-pg-enum [k]
   {:pre [(or (nil? k) (keyword? k))]}
   (if k
-    (as-other (.getName k))))    ; as-other is a dynamically defined fn, so IDE may produce a warning here: ignore!
+    (as-other (.getName k)))) ; as-other is a dynamically defined fn, so IDE may produce a warning here: ignore!
 
 (defrecord JDBCRunstore [connection-pool]
   IRunStore
   (rs-get [jrs run-id]
     (run-from-record
       (with-connection [conn jrs]
-        (jdbc/execute-one! conn ["SELECT * FROM runs WHERE id = ?;" run-id]))))
+        (jdbc/execute!
+          conn [(str
+                  "SELECT r1.* FROM runs as r1, runs as r2 "
+                  "WHERE r1.id = ? OR (r1.id = r2.next_id and r2.id = ?);"
+                  run-id run-id)]))))
 
   (rs-create! [jrs state]
     {:pre [(is-run-state? state)]}
@@ -62,30 +66,31 @@
       (let [updated-at (LocalDateTime/now)
             run        (assoc run :updated-at updated-at)
             suspend    (:suspend run)]
-        (jdbc/execute-one!
-          conn
-          [(str "UPDATE runs "
-             "SET start_form = ?, stack = ?, state = ?, result = ?, response = ?, "
-             "suspend_permit = ?, suspend_expires = ?, suspend_default = ?, "
-             "return_mode = ?, parent_run_id = ?, next_id = ?, "
-             "error = ?, "
-             "updated_at = ? "
-             "WHERE id = ?; ")
-           (pr-str (:start-form run))
-           (pr-str (:stack run))
-           (to-pg-enum (:state run))
-           (pr-str (:result run))
-           (pr-str (:response run))
-           (pr-str (:permit suspend))
-           (:expires suspend)
-           (pr-str (:default suspend))
-           (to-pg-enum (:return-mode run))
-           (:parent-run-id run)
-           (:next-id run)
-           (pr-str (:error run))
-           updated-at
-           (:id run)])
-        run)))
+        (run-from-record
+          (jdbc/execute-one!
+            conn
+            [(str "UPDATE runs "
+               "SET start_form = ?, stack = ?, state = ?, result = ?, response = ?, "
+               "suspend_permit = ?, suspend_expires = ?, suspend_default = ?, "
+               "return_mode = ?, parent_run_id = ?, next_id = ?, "
+               "error = ?, "
+               "updated_at = ? "
+               "WHERE id = ? "
+               "RETURNING runs.*;")
+             (pr-str (:start-form run))
+             (pr-str (:stack run))
+             (to-pg-enum (:state run))
+             (pr-str (:result run))
+             (pr-str (:response run))
+             (pr-str (:permit suspend))
+             (:expires suspend)
+             (pr-str (:default suspend))
+             (to-pg-enum (:return-mode run))
+             (:parent-run-id run)
+             (:next-id run)
+             (pr-str (:error run))
+             updated-at
+             (:id run)])))))
 
   (rs-acquire! [jrs run-id permit]
     (println "Attempting to acquire run " run-id "(permit " permit ")")
