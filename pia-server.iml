@@ -151,5 +151,6 @@
     <orderEntry type="library" name="Leiningen: watchtower:0.1.1" level="project" />
     <orderEntry type="library" name="Leiningen: xpp3/xpp3_xpath:1.1.4c" level="project" />
     <orderEntry type="library" name="Leiningen: xpp3:1.1.4c" level="project" />
+    <orderEntry type="module" module-name="longterm" />
   </component>
 </module>

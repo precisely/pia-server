@@ -1,16 +1,14 @@
-(ns pia-server.main
+(ns main
   (:require [ring.adapter.jetty :as jetty]
             [envvar.core :as envvar :refer [env]])
   (:require [pia-server.core :as pia])
   (:gen-class))
-
 
 ;;; TODO: Consider using the Component framework. Things which need to be
 ;;; managed:
 ;;;
 ;;; - application server
 ;;; - database connection pool
-
 
 (defonce ^{:dynamic true} *server* (atom nil))
 

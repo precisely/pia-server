@@ -7,12 +7,14 @@
 
 
 (scm/defschema Run
-  {:id            scm/Uuid
-   :state         (scm/enum :running :suspended :complete)
-   :result        scm/Any
-   :full-response [scm/Any]
-   :response      [scm/Any]
-   :next-id       scm/Uuid})
+  {:id           scm/Uuid
+   :state        (scm/enum :running :suspended :complete)
+   :result       scm/Any
+   :response     [scm/Any]
+   :run-response [scm/Any]
+   :return-mode  (scm/maybe (scm/enum :block :redirect))
+   :next-id      (scm/maybe scm/Uuid)
+   :next         (scm/maybe (scm/recursive #'Run))})
 
 (scm/defschema Event
   {:permit                  scm/Keyword
@@ -25,13 +27,14 @@
 (deflow foo []
   (*> "hello")
   (let [value (<* :permit :foo)]
-    (*> (str value " world!"))))
+    (*> (str value " world!"))
+    :result))
 
 (def flows {:foo foo})
 
 (defn run-result [run]
-  (select-keys run [:id :state :result :response :next-id :full-response]))
-
+  (select-keys run
+    [:id :response :next-id :next :result :state :return-mode :run-response]))
 
 (def base-handler
   (api
