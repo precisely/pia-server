@@ -10,7 +10,10 @@
             [next.jdbc.connection :as connection])
   (:import (com.zaxxer.hikari HikariDataSource)
            (java.time LocalDateTime)
-           (java.util UUID)))
+           (java.util UUID)
+           (longterm.runstore Run)))
+
+(declare query-run-with-next)
 
 (def datasource-options {:auto-commit        true
                          :read-only          false
@@ -43,49 +46,50 @@
 (defn to-pg-enum [k]
   {:pre [(or (nil? k) (keyword? k))]}
   (if k
-    (as-other (.getName k))))    ; as-other is a dynamically defined fn, so IDE may produce a warning here: ignore!
+    (as-other (.getName k)))) ; as-other is a dynamically defined fn, so IDE may produce a warning here: ignore!
 
 (defrecord JDBCRunstore [connection-pool]
   IRunStore
   (rs-get [jrs run-id]
-    (run-from-record
-      (with-connection [conn jrs]
-        (jdbc/execute-one! conn ["SELECT * FROM runs WHERE id = ?;" run-id]))))
+    (query-run-with-next jrs run-id))
 
   (rs-create! [jrs state]
     {:pre [(is-run-state? state)]}
     (with-connection [conn jrs]
-      (run-from-record (jdbc/execute-one! conn ["INSERT INTO runs (state) VALUES (?) RETURNING runs.*;"
-                                                (to-pg-enum state)]))))
+      (run-from-record
+        (jdbc/execute-one!
+          conn ["INSERT INTO runs (state) VALUES (?) RETURNING runs.*;"
+                (to-pg-enum state)]))))
   (rs-update! [jrs run]
     (with-connection [conn jrs]
       (let [updated-at (LocalDateTime/now)
             run        (assoc run :updated-at updated-at)
             suspend    (:suspend run)]
-        (jdbc/execute-one!
-          conn
-          [(str "UPDATE runs "
-             "SET start_form = ?, stack = ?, state = ?, result = ?, response = ?, "
-             "suspend_permit = ?, suspend_expires = ?, suspend_default = ?, "
-             "return_mode = ?, parent_run_id = ?, next_id = ?, "
-             "error = ?, "
-             "updated_at = ? "
-             "WHERE id = ?; ")
-           (pr-str (:start-form run))
-           (pr-str (:stack run))
-           (to-pg-enum (:state run))
-           (pr-str (:result run))
-           (pr-str (:response run))
-           (pr-str (:permit suspend))
-           (:expires suspend)
-           (pr-str (:default suspend))
-           (to-pg-enum (:return-mode run))
-           (:parent-run-id run)
-           (:next-id run)
-           (pr-str (:error run))
-           updated-at
-           (:id run)])
-        run)))
+        (run-from-record
+          (jdbc/execute-one!
+            conn
+            [(str "UPDATE runs "
+               "SET start_form = ?, stack = ?, state = ?, result = ?, response = ?, "
+               "suspend_permit = ?, suspend_expires = ?, suspend_default = ?, "
+               "return_mode = ?, parent_run_id = ?, next_id = ?, "
+               "error = ?, "
+               "updated_at = ? "
+               "WHERE id = ? "
+               "RETURNING runs.*;")
+             (pr-str (:start-form run))
+             (pr-str (:stack run))
+             (to-pg-enum (:state run))
+             (pr-str (:result run))
+             (pr-str (:response run))
+             (pr-str (:permit suspend))
+             (:expires suspend)
+             (pr-str (:default suspend))
+             (to-pg-enum (:return-mode run))
+             (:parent-run-id run)
+             (:next-id run)
+             (pr-str (:error run))
+             updated-at
+             (:id run)])))))
 
   (rs-acquire! [jrs run-id permit]
     (println "Attempting to acquire run " run-id "(permit " permit ")")
@@ -98,6 +102,26 @@
                "SET state = 'running', updated_at = ?  WHERE id = ? and suspend_permit = ? AND state = 'suspended'"
                "RETURNING runs.*;")
              updated-at, run-id, (str permit)]))))))
+
+(defn query-run-with-next [jrs run-id]
+  (let [runs (map run-from-record
+               (with-connection [conn jrs]
+                 (jdbc/execute!
+                   conn [(str
+                           "SELECT root.* "
+                           "FROM runs root "
+                           "LEFT JOIN runs next ON next.id = root.next_id "
+                           "WHERE root.id = ? "
+                           "ORDER BY root.id = ? DESC;")
+                         run-id])))]
+    (case (count runs)
+      0 nil
+      1 (first runs)
+      2 (let [run (first runs)]
+          (assert (-> run :id (= run-id)))
+          (assert (-> (second runs) :id (not= run-id)))
+          (assoc run :next (second run)))
+      (throw (Exception. "query-run-with-next sanity check failed")))))
 
 (defonce connection-pool (connection/->pool HikariDataSource datasource-options))
 (defn make-runstore [] (JDBCRunstore. connection-pool))
@@ -118,8 +142,9 @@
           (-> % :suspend suspend-signal?)
           (in? rs/ReturnModes (-> % :return-mode))
           (-> % :parent-run-id (or-nil? uuid?))
-          (-> % :full-response vector?)
-          (-> % :error (or-nil? (instance? Exception %)))
+          (-> % :response vector?)
+          (-> % :error (or-nil? #(instance? Exception %)))
+          (-> % :next (or-nil? #(rs/run-in-state? % :any)))
           (-> % :next-id (or-nil? uuid?))]}
   (if db-rec
     (let [run (longterm.runstore/map->Run
@@ -135,15 +160,15 @@
                                   (read-field :runs/suspend-default db-rec))
                  :return-mode   (read-field :runs/return-mode db-rec)
                  :parent-run-id (:runs/next-id db-rec)
-                 :full-response (or (read-field :runs/full-response db-rec) [])
+                 :run-response  (or (read-field :runs/run-response db-rec) [])
                  :error         (read-field :runs/error db-rec)
+                 :next          (:next db-rec)
                  :next-id       (or (:runs/next-id db-rec) (:runs/id db-rec))})]
       (assoc run
         :created_at (:runs/created_at db-rec)
         :updated_at (:runs/updated_at db-rec)))))
 
 (defn create-db! []
-  (println "Creating database")
   (jdbc/execute! connection-pool ["
       CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\";
       DO $$ BEGIN

@@ -30,9 +30,10 @@
     (into {})))
 
 
-(defproject pia-server "0.1.1-SNAPSHOT"
+(defproject pia-server "0.1.2-SNAPSHOT"
   :description "Precisely Intelligent Agent"
-  :dependencies [[com.fzakaria/slf4j-timbre "0.3.20"]
+  :dependencies [[precisely/longterm "0.2.1"]
+                 [com.fzakaria/slf4j-timbre "0.3.20"]
                  [ca.uhn.hapi.fhir/hapi-fhir-base "5.1.0"]
                  [ca.uhn.hapi.fhir/hapi-fhir-structures-r4 "5.1.0"]
                  [ca.uhn.hapi.fhir/hapi-fhir-validation "5.1.0"]
@@ -41,7 +42,6 @@
                  [org.clojure/tools.logging "1.1.0"]
                  [org.postgresql/postgresql "42.2.10"]
                  [metosin/compojure-api "2.0.0-alpha30"]
-                 [precisely/longterm "0.2.0-SNAPSHOT"]
                  [ring/ring-jetty-adapter "1.8.2"]
                  [seancorfield/next.jdbc "1.1.588"]
                  [danlentz/clj-uuid "0.1.9"]
@@ -52,7 +52,8 @@
                               :passphrase ~(env :maven-repo-aws-access-key-secret)}}
   :plugins [[lein-pprint "1.3.2"]
             [s3-wagon-private "1.3.4"]]
-  :main pia-server.main
+  :main main
+  :source-paths ["src"]
   :ring {:handler pia-server.core/app
          :auto-refresh? true
          :auto-reload? true
@@ -62,6 +63,7 @@
   :profiles {:dev     {:dependencies [[javax.servlet/javax.servlet-api "3.1.0"]
                                       [ring-server "0.5.0"]
                                       [ring/ring-mock "0.3.2"]]
-                       :plugins      [[lein-ring "0.12.5"]]}
+                       :plugins      [[lein-ring "0.12.5"]
+                                      [org.clojars.timvisher/lein-checkout "0.4.2"]]}
              :uberjar {:aot :all}}
   :jvm-opts ["-Dclojure.tools.logging.factory=clojure.tools.logging.impl/slf4j-factory"])
