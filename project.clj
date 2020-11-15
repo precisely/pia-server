@@ -29,10 +29,11 @@
                       v]))
     (into {})))
 
-
 (defproject pia-server "0.1.2-SNAPSHOT"
   :description "Precisely Intelligent Agent"
-  :dependencies [[precisely/longterm "0.2.1"]
+  :dependencies [[precisely/longterm "0.2.2"]
+                 [clojure.java-time "0.3.2"]
+                 [org.clojure/tools.logging "1.1.0"]
                  [com.fzakaria/slf4j-timbre "0.3.20"]
                  [ca.uhn.hapi.fhir/hapi-fhir-base "5.1.0"]
                  [ca.uhn.hapi.fhir/hapi-fhir-structures-r4 "5.1.0"]
@@ -46,6 +47,7 @@
                  [seancorfield/next.jdbc "1.1.588"]
                  [danlentz/clj-uuid "0.1.9"]
                  [envvar "1.1.1"]
+                 [org.clojure/core.async "1.3.610"]
                  [hikari-cp "2.13.0"]]
   :repositories {"precisely" {:url        "s3p://precisely-maven-repo/"
                               :username   ~(env :maven-repo-aws-access-key-id)
@@ -54,6 +56,7 @@
             [s3-wagon-private "1.3.4"]]
   :main main
   :source-paths ["src"]
+  :resource-paths ["src/resources"]
   :ring {:handler pia-server.core/app
          :auto-refresh? true
          :auto-reload? true

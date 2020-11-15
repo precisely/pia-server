@@ -4,12 +4,14 @@
             [longterm.signals :refer [suspend-signal?]]
             [longterm.util :refer [in?]]
             [next.jdbc :as jdbc]
+            [java-time :as time]
             [envvar.core :refer [env]]
             hikari-cp.core
             [next.jdbc.types :refer [as-other]]
-            [next.jdbc.connection :as connection])
+            [next.jdbc.connection :as connection]
+            [clojure.tools.logging :as log])
   (:import (com.zaxxer.hikari HikariDataSource)
-           (java.time LocalDateTime)
+           (java.time LocalDateTime ZoneId)
            (java.util UUID)
            (longterm.runstore Run)))
 
@@ -55,12 +57,14 @@
 
   (rs-create! [jrs state]
     {:pre [(is-run-state? state)]}
+    (log/debug "Creating run in state" state)
     (with-connection [conn jrs]
       (run-from-record
         (jdbc/execute-one!
           conn ["INSERT INTO runs (state) VALUES (?) RETURNING runs.*;"
                 (to-pg-enum state)]))))
   (rs-update! [jrs run]
+    (log/debug "Updating run " run)
     (with-connection [conn jrs]
       (let [updated-at (LocalDateTime/now)
             run        (assoc run :updated-at updated-at)
@@ -92,7 +96,7 @@
              (:id run)])))))
 
   (rs-acquire! [jrs run-id permit]
-    (println "Attempting to acquire run " run-id "(permit " permit ")")
+    (log/debug "Acquiring run " run-id)
     (with-connection [conn jrs]
       (let [updated-at (LocalDateTime/now)]
         (run-from-record
@@ -132,6 +136,13 @@
 (defn or-nil? [o p]
   (or (nil? o) (p o)))
 
+(defn date-to-local-date-time [date]
+  (if date
+    (-> date
+      .toInstant
+      (.atZone (ZoneId/systemDefault))
+      .toLocalDateTime)))
+
 (defn run-from-record
   "Returns a Clojure Run record from a database record"
   [db-rec]
@@ -146,27 +157,35 @@
           (-> % :error (or-nil? #(instance? Exception %)))
           (-> % :next (or-nil? #(rs/run-in-state? % :any)))
           (-> % :next-id (or-nil? uuid?))]}
-  (if db-rec
+  (when db-rec
     (let [run (longterm.runstore/map->Run
                 {:id            (:runs/id db-rec)
-                 :start-form    (read-field :runs/start-form db-rec)
+                 :start-form    (read-field :runs/start_form db-rec)
                  :stack         (read-field :runs/stack db-rec)
                  :state         (keyword (str (:runs/state db-rec)))
                  :result        (read-field :runs/result db-rec)
                  :response      (or (read-field :runs/response db-rec) [])
                  :suspend       (longterm.signals/make-suspend-signal
-                                  (read-field :runs/suspend-permit db-rec)
-                                  (:runs/suspend-expires db-rec)
-                                  (read-field :runs/suspend-default db-rec))
-                 :return-mode   (read-field :runs/return-mode db-rec)
+                                  (read-field :runs/suspend_permit db-rec)
+                                  (date-to-local-date-time (:runs/suspend_expires db-rec))
+                                  (read-field :runs/suspend_default db-rec))
+                 :return-mode   (read-field :runs/return_mode db-rec)
                  :parent-run-id (:runs/next-id db-rec)
-                 :run-response  (or (read-field :runs/run-response db-rec) [])
+                 :run-response  (or (read-field :runs/run_response db-rec) [])
                  :error         (read-field :runs/error db-rec)
                  :next          (:next db-rec)
-                 :next-id       (or (:runs/next-id db-rec) (:runs/id db-rec))})]
+                 :next-id       (or (:runs/next_id db-rec) (:runs/id db-rec))})]
       (assoc run
         :created_at (:runs/created_at db-rec)
         :updated_at (:runs/updated_at db-rec)))))
+
+(defn get-expired-runs
+  ([jrs] (get-expired-runs jrs (time/local-date-time)))
+  ([jrs now]
+   (with-connection [conn jrs]
+     (map run-from-record
+       (jdbc/execute! conn
+         ["SELECT * FROM runs WHERE suspend_expires < ?;" now])))))
 
 (defn create-db! []
   (jdbc/execute! connection-pool ["
@@ -199,8 +218,9 @@
       created_at TIMESTAMP  NOT NULL  DEFAULT current_timestamp,
       updated_at TIMESTAMP  NOT NULL  DEFAULT current_timestamp,
       PRIMARY KEY (id)
-      );"])
-  (println "Database created"))
+      );
+      CREATE INDEX IF NOT EXISTS runs_suspend_expires ON runs (suspend_expires);"])
+  (log/info "Database created"))
 
 ;; HELPERS for debugging
 (defn exec! [& args] (jdbc/execute! connection-pool (vec args)))
@@ -209,5 +229,5 @@
 (defn delete-db! []
   (if (-> datasource-options :server-name (= "localhost"))
     (exec! "drop table if exists runs; drop type if exists Runstates;")
-    (println "Refusing to dropdatabase when datasource-options :server-name is not localhost")))
+    (log/error "Refusing to drop database when datasource-options :server-name is not localhost")))
 

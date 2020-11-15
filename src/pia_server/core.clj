@@ -3,6 +3,7 @@
             [ring.util.http-response :refer :all]
             [longterm :refer :all]
             [pia-server.db :as db]
+            [pia-server.expiry-monitor :as expiry-monitor]
             [schema.core :as scm]))
 
 
@@ -23,10 +24,11 @@
 (def db-runstore (db/make-runstore))
 (set-runstore! db-runstore)
 (db/create-db!)
+(expiry-monitor/start db-runstore)
 
 (deflow foo []
   (*> "hello")
-  (let [value (<* :permit :foo)]
+  (let [value (<* :permit :foo :expires (-> 2 minutes from-now) :default "default-suspend-value")]
     (*> (str value " world!"))
     :result))
 
@@ -75,7 +77,6 @@
           :return Run
           :summary "gets a run"
           (ok (run-result (get-run id))))))))
-
 
 (def app
   (-> #'base-handler
