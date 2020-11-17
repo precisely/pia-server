@@ -31,7 +31,7 @@
 
 (defproject pia-server "0.1.2-SNAPSHOT"
   :description "Precisely Intelligent Agent"
-  :dependencies [[precisely/longterm "0.2.4"]
+  :dependencies [[precisely/longterm "0.2.5"]
                  [clojure.java-time "0.3.2"]
                  [org.clojure/tools.logging "1.1.0"]
                  [com.fzakaria/slf4j-timbre "0.3.20"]
