@@ -60,6 +60,7 @@
   :source-paths ["src"]
   :resource-paths ["src/resources"]
   :ring {:handler pia-server.core/app
+         :port ~(read-string (env :port))
          :auto-refresh? true
          :auto-reload? true
          :refresh-paths ["src"]
