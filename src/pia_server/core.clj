@@ -79,7 +79,11 @@
           :path-params [id :- scm/Uuid]
           :return Run
           :summary "gets a run"
-          (ok (run-result (get-run id))))))))
+          (ok (run-result (get-run id))))))
+
+    ;; fallback
+    (ANY "*" []
+      (not-found))))
 
 ;; XXX: Buddy wrap-authentication middleware doesn't work as described in
 ;; https://funcool.github.io/buddy-auth/latest/#authentication. After this
