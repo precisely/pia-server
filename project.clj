@@ -31,9 +31,10 @@
 
 (defproject pia-server "0.1.2-SNAPSHOT"
   :description "Precisely Intelligent Agent"
-  :dependencies [[precisely/longterm "0.2.4"]
+  :dependencies [[precisely/longterm "0.2.5"]
                  [clojure.java-time "0.3.2"]
                  [org.clojure/tools.logging "1.1.0"]
+                 [buddy/buddy-auth "2.2.0"]
                  [com.fzakaria/slf4j-timbre "0.3.20"]
                  [ca.uhn.hapi.fhir/hapi-fhir-base "5.1.0"]
                  [ca.uhn.hapi.fhir/hapi-fhir-structures-r4 "5.1.0"]
@@ -44,6 +45,7 @@
                  [org.postgresql/postgresql "42.2.10"]
                  [metosin/compojure-api "2.0.0-alpha30"]
                  [ring/ring-jetty-adapter "1.8.2"]
+                 [ring-logger "1.0.1"]
                  [seancorfield/next.jdbc "1.1.588"]
                  [danlentz/clj-uuid "0.1.9"]
                  [envvar "1.1.1"]
