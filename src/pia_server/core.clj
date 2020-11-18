@@ -94,10 +94,16 @@
   (fn [request]
     (if-let [auth-hdr (get-in request [:headers "authorization"])]
         (let [bearer (subs auth-hdr (.length "Bearer "))]
-          (handler (assoc request
-                          :identity
-                          (jwt/unsign bearer (@env :jwt-secret)))))
-        (handler request))))
+          (try
+            (handler (assoc request
+                            :identity
+                            (jwt/unsign bearer (@env :jwt-secret))))
+            (catch Exception e
+              (if (= {:type :validation :cause :signature}
+                     (ex-data e))
+                  (unauthorized)
+                  (internal-server-error)))))
+        (unauthorized))))
 
 (def app
   (-> #'base-handler
