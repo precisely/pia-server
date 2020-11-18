@@ -4,7 +4,8 @@
             [longterm :refer :all]
             [pia-server.db :as db]
             [pia-server.expiry-monitor :as expiry-monitor]
-            [schema.core :as scm]))
+            [schema.core :as scm]
+            [pia-server.flows.cfsdemo :refer :all]))
 
 
 (scm/defschema Run
@@ -32,7 +33,8 @@
     (*> (str value " world!"))
     :result))
 
-(def flows {:foo foo})
+(def flows {:foo foo
+            :home home})
 
 (defn run-result [run]
   (select-keys run

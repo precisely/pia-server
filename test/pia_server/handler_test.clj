@@ -3,7 +3,8 @@
             [clojure.test :refer :all]
             [pia-server.core :refer :all]
             [longterm :refer :all]
-            [ring.mock.request :as mock]))
+            [ring.mock.request :as mock]
+            [pia-server.flows.cfsdemo :refer :all]))
 
 (defn parse-body [body]
   (cheshire/parse-string (slurp body) true))
@@ -25,3 +26,10 @@
         (let [run (continue! (:id run) :foo "cruel")]
           (is (run-in-state? run :complete))
           (is (= (:response run) '["cruel world!"])))))))
+
+
+(deftest home-test
+  (testing "Attempting running the Main"
+    (let [run (start! home)]
+      (printf (str (:response run) " yes"))
+      (is (= (:response run) '["Welcome!"])))))
