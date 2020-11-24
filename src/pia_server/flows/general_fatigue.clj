@@ -3,6 +3,9 @@
             [pia-server.flows.components :refer :all]
             ))
 
+;; A module to do an assessment of the patient's general fatigue
+;; Those that drop out are bucketed as no-severe-fatigue
+
 (defn general-nslider [q]
   (*> q, (num-slider 1 "Strongly disagree" 7 "Strongly agree" "In the last 7 days" 1)
   ))

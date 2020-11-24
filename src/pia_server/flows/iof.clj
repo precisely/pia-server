@@ -3,6 +3,9 @@
             [pia-server.flows.components :refer :all]
             ))
 
+;; Assesses the impairment of function and the length of time experiencing the fatigue
+;; Two dropout buckets exist here, fatigue and fatigue-iof
+
 (defn iof-nslider [q]
   (*> q, (num-slider 0 "No difficulty" 10 "Very difficult" "In the last 7 days" 1)
       ))
