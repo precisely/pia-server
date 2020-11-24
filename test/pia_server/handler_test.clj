@@ -31,5 +31,12 @@
 (deftest home-test
   (testing "Attempting running the Main"
     (let [run (start! home)]
-      (printf (str (:response run) " yes"))
-      (is (= (:response run) '["Welcome!"])))))
+      (printf (str (:response run) " yes\n"))
+      (is (run-in-state? run :suspended))
+      (testing "Answering motivation question"
+        (printf (str (:id run) "\n"))
+        (let [run (continue! (:id run))]
+          (printf (str (:response run) " motivation"))
+          (is (run-in-state? run :suspended))
+          ))
+      )))

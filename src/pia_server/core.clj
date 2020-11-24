@@ -34,7 +34,8 @@
     :result))
 
 (def flows {:foo foo
-            :home home})
+            :home home
+            })
 
 (defn run-result [run]
   (select-keys run
