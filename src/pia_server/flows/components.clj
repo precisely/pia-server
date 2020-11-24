@@ -10,3 +10,7 @@
             :increment increment)
   )
 
+(defn choices [choices text]
+  (hash-map :type :multiple-choice
+            :choices choices
+            :text text))
