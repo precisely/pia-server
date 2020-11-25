@@ -3,6 +3,7 @@
             [pia-server.flows.components :refer :all]
             [pia-server.flows.general-fatigue :refer :all]
             [pia-server.flows.iof :refer :all]
+            [pia-server.flows.six-months :refer :all]
             ))
 
 (deflow foo-remote []
@@ -11,7 +12,7 @@
           (*> (str value " world!"))
           :result))
 
-(deflow fatigue-iom-6m []
+(deflow fatigue-iof-6m []
         (*> "This is the flow where people failing PEM go"))
 
 
@@ -27,8 +28,27 @@
         (*> "You have reached the end of this demo")
         (*> (str "Your final results were:\n" final-results)))
 
+
+(deflow timeout [at-time]
+        (<* :expires at-time))
+;(deflow repeating-checkin
+;        "Keeps running checkin-flow until until-date with a delay of delay.
+;        checkin-flow should return nil if the checkin should continue, otherwise, it returns a value
+;        which will be returned by repeating-checkin"
+;        [delay until-date checkin-flow]
+;        (loop []
+;          (when (< (now) until-date) ;; haven't reached until-date
+;            (<! (start! (timeout (java-time/plus (now) delay))))
+;            (ifit [result (fcall checkin-flow)]
+;                  result
+;                  (recur)))))
+
 ;;Vector that contains the ordered fatigue modules
-(def fatigue-flows [general iof])
+(def fatigue-flows [general])
+
+
+(deflow map-home [flow]
+        (fcall flow))
 
 
 (deflow home []

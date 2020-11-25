@@ -27,7 +27,6 @@
           (is (run-in-state? run :complete))
           (is (= (:response run) '["cruel world!"])))))))
 
-
 (deftest home-test
   (testing "Attempting running the Main"
     (let [run (start! home)]
