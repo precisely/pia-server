@@ -29,7 +29,9 @@
 
 (deftest home-test
   (testing "Attempting running the Main"
-    (let [run (start! home)]
+    (printf (str "before starting run"))
+    (let [run (start! home fatigue-flows)]
+      (printf (str "this is just before the response collection"))
       (printf (str (:response run) " yes\n"))
       (is (run-in-state? run :suspended))
       (testing "Answering motivation question"

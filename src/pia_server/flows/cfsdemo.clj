@@ -44,20 +44,42 @@
 ;                  (recur)))))
 
 ;;Vector that contains the ordered fatigue modules
-(def fatigue-flows [general])
+(def fatigue-flows [general iof six-months])
 
 
 (deflow map-home [flow]
         (fcall flow))
 
+(def citrus-list ["lemon" "orange" "grapefruit"])
 
-(deflow home []
+(defn display-citrus [citruses]
+  (loop [[citrus & citruses] fatigue-flows
+         results []]
+    (println citrus)
+    (if citrus (recur citruses nil))))
+
+(display-citrus citrus-list)
+
+
+(deflow home [given-flows]
         (welcome)
-        (loop [modules fatigue-flows
+        (loop [[flow & flows] given-flows
+               ]
+          (println flow)
+          (let [new-results (conj [] (fcall flow))]
+            (if (rest flows)
+                (recur flows))
+          )
+        ))
+
+
+(deflow home-backup []
+        (welcome)
+        (loop [flows fatigue-flows
                total-results []]
-          (let [results (conj total-results (fcall (first modules)))]
-            (if (or (rest modules) (not= "end" (last results)))
-              (recur (rest modules) results)
+          (let [results (conj total-results (fcall (first flows)))]
+            (if (or (rest flows) (not= "end" (last results)))
+              (recur (rest flows) results)
               (fcall ender total-results)
               )
           ))
