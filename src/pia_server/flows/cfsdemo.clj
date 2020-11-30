@@ -56,31 +56,21 @@
   (loop [[citrus & citruses] fatigue-flows
          results []]
     (println citrus)
-    (if citrus (recur citruses nil))))
+    (if citrus (recur citruses [citrus]))))
 
 (display-citrus citrus-list)
 
 
 (deflow home [given-flows]
         (welcome)
-        (loop [[flow & flows] given-flows
+        (loop [
+               results []
+               [flow & flows] given-flows
                ]
           (println flow)
-          (let [new-results (conj [] (fcall flow))]
+          (let [new-results (conj results (fcall flow))]
             (if (rest flows)
-                (recur flows))
+                (recur flows new-results))
           )
         ))
 
-
-(deflow home-backup []
-        (welcome)
-        (loop [flows fatigue-flows
-               total-results []]
-          (let [results (conj total-results (fcall (first flows)))]
-            (if (or (rest flows) (not= "end" (last results)))
-              (recur (rest flows) results)
-              (fcall ender total-results)
-              )
-          ))
-        )
