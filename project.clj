@@ -31,7 +31,7 @@
 
 (defproject pia-server "0.1.2-SNAPSHOT"
   :description "Precisely Intelligent Agent"
-  :dependencies [[precisely/longterm "0.2.5"]
+  :dependencies [[precisely/longterm "0.2.6"]
                  [clojure.java-time "0.3.2"]
                  [org.clojure/tools.logging "1.1.0"]
                  [buddy/buddy-auth "2.2.0"]
