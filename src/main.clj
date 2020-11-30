@@ -22,5 +22,5 @@
     (reset! *server* nil)))
 
 (defn -main [& args]
-  (let [port (get @env :port 8080)]
-    (start pia/app :port port, :join? true)))
+  (let [port (read-string (get @env :port 8080))]
+    (start #'pia/app :port port, :join? true)))

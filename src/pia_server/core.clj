@@ -1,6 +1,9 @@
 (ns pia-server.core
   (:require [compojure.api.sweet :refer :all]
+            [buddy.sign.jwt :as jwt]
+            [envvar.core :as envvar :refer [env]]
             [ring.util.http-response :refer :all]
+            [ring.logger :as logger]
             [longterm :refer :all]
             [pia-server.db :as db]
             [pia-server.expiry-monitor :as expiry-monitor]
@@ -79,13 +82,36 @@
           :path-params [id :- scm/Uuid]
           :return Run
           :summary "gets a run"
-          (ok (run-result (get-run id))))))))
+          (ok (run-result (get-run id))))))
+
+    ;; fallback
+    (ANY "*" []
+      (not-found))))
+
+;; XXX: Buddy wrap-authentication middleware doesn't work as described in
+;; https://funcool.github.io/buddy-auth/latest/#authentication. After this
+;; middleware, (:identity request) will contain the decoded and verified JWT,
+;; something like {:email alice@example.com, :sub 1, :scp user, :aud nil, :iat
+;; 1605615895, :exp 1605616195, :jti 03b88e50-45bb-45f3-b340-d4efda27a2de}.
+(defn wrap-jwt [handler]
+  (fn [request]
+    (if-let [auth-hdr (get-in request [:headers "authorization"])]
+        (let [bearer (subs auth-hdr (.length "Bearer "))]
+          (try
+            (handler (assoc request
+                            :identity
+                            (jwt/unsign bearer (@env :jwt-secret))))
+            (catch Exception e
+              (if (= {:type :validation :cause :signature}
+                     (ex-data e))
+                  (unauthorized)
+                  (internal-server-error)))))
+        (unauthorized))))
 
 (def app
   (-> #'base-handler
-    ;; put ring middlware here, e.g.:
-    ;; Buddy for JWT (https://funcool.github.io/buddy-auth/latest/#signed-jwt):
-    ;;(wrap-authentication ...)
+      logger/wrap-with-logger
+      wrap-jwt
     ;; encors for CORS (https://github.com/unbounce/encors):
     ;;(wrap-cors cors-policy)
     ))
