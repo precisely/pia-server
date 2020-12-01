@@ -4,77 +4,57 @@
             ))
 
 ;; Assesses the patient's post-exertional malaise
-;; Dropout bucket is fatigue-iof-6m
+;; Dropout bucket is fatigue-iof-6m-pem
 ;; There are two UX strategies we could use here
-;; 1) The questions in these flows end if any receive freq and severity of 2 or more
+;; 1) The questions in these flows end if any receive freq and severity of 2 or more (this is what is present here)
 ;; 2) Ask all question and compute score thresholds after, which provides more symptom tracking data that could be useful
-;; later (This is what we'll do for now)
+;; later
 
-(defn pem-freqs [q]
+(defn sleep-freqs [q]
   (*> q, (num-slider 0 "None of the time" 4 "All of the time" "Frequency in the last 6 months" 1)
       ))
 
-(defn pem-sevs [q]
+(defn sleep-sevs [q]
   (*> q, (num-slider 0 "None of the time" 4 "All of the time" "Frequency in the last 6 months" 1)
       ))
 
-(def pem-questions [
-                 "A dead, heavy feeling after starting exercise"
-                 "Next day soreness or fatigue after non-strenuous, everyday exercise"
-                 "Mentally tired after the slightest effort"
-                 "Minimum exercise makes you physically tired"
-                 "Physically drained or sick after mild activity"])
 
-(def severity-prompts [
-                       "How severe was this feeling?"
-                       "And can you rate how severe this was?"
-                       "Please rate how severe this mental tiredness is"
-                       "Can you rate how severe this physical tiredness was?"
-                       "How severe is that feeling?"
-                       ])
-
-(deflow no-pem []
-        )
+(def sleep-questions {
+                    '"Feeling unrefreshed after you wake up in the morning" "How severe is this feeling?",
+                    '"Need to nap daily" "Can you provide how severe this urge is?",
+                    '"Problems falling asleep" "Please rate how severe these problems are",
+                    '"Problems staying asleep" "And now how severe is this",
+                    '"Waking up early in the morning (e.g. 3 am)" "Can you rate how severe this is?",
+                    '"Sleep during day and stay awake during night" "What is the severity of this problem?"
+                    }
+  )
 
 
-(deflow pem []
-  (*> "Let's now look at how often and how much you feel tired after activities. This is called post-exertional malaise (PEM)",
-      "In the next statements, rate the frequency and severity you felt in the last 6 months.")
-  (loop [
-         [question & questions] pem-survey
-         [sev-prompt & sev-prompts] severity-prompts
-         ]
-    (let [
-          _ (pem-freqs question)
-          freq (<*)
-          _ (pem-sevs sev-prompt)
-          sev (<*)
-          ]
-      (if (and (>= freq 2) (>= sev 2))
 
-      ))
-  (let [
-        _ (pem-freqs "A dead, heavy feeling after starting exercise")
-        dead-freq (<*)
-        _ (pem-sevs "How severe was this feeling?")
-        dead-sev (<*)
-        _ (pem-freqs "Next day soreness or fatigue after non-strenuous, everyday exercise")
-        soreness-freq (<*)
-        _ (pem-sevs "And can you rate how severe this was?")
-        soreness-sev (<*)
-        _ (pem-freqs "How often are you mentally tired after the slightest effort?")
-        mental-freq (<*)
-        _ (pem-sevs "Please rate how severe this mental tiredness is")
-        mental-sev (<*)
-        _ (pem-freqs "How frequently does a minimum amount of exercise make you physically tired?")
-        physical-freq (<*)
-        _ (pem-sevs ("Can you rate how severe this physical tiredness is?"))
-        physical-sev (<*)
-        _ (pem-freqs ("About how often are you physically drained or sick after mild activity?"))
-        drained-freq (<*)
-        _ (pem-sevs ("How severe is that feeling?"))
-        drained-sev
-        ]
-    (*> "From your responses, its best if we continue collecting some more information from you."))
-  (*> "Dead, heavy feeling after starting exercise"))
+(deflow no-sleep []
+        (*> "Thanks for taking the time to answer these questions until this point",
+            "Your sleep issues appear to be within normal ranges right now, but you should still keep track of your symptoms",
+            "To help you with that, you can come back here to answer some more questions when you see a notification",
+            "Let's make sure you recover your energy!"))
 
+
+(deflow sleep []
+        (*> "This part of the test will focus on your sleep symptoms, which are very important.",
+            "In the next statements, rate the frequency and severity you felt the problems in the last 6 months.")
+        (loop [
+               [question & questions] sleep-questions
+               ]
+          (let [
+                _ (sleep-freqs (key question))
+                freq (<*)
+                _ (sleep-sevs (val question))
+                sev (<*)
+                ]
+            (if (and (>= freq 2) (>= sev 2))
+              (*> "Based on these responses, your sleep problems indicate a possibly serious issue",
+                  "You would benefit greatly from completing the next questions, and overall you are almost finished with the assessment")
+              (if (rest questions)
+                (recur (first questions) (rest questions))
+                (no-sleep)
+                )))
+              ))
