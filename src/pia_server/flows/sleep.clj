@@ -18,9 +18,41 @@
   (*> q, (num-slider 0 "None of the time" 4 "All of the time" "Frequency in the last 6 months" 1)
       ))
 
-(defn pem-questions []
+(def pem-questions [
+                 "A dead, heavy feeling after starting exercise"
+                 "Next day soreness or fatigue after non-strenuous, everyday exercise"
+                 "Mentally tired after the slightest effort"
+                 "Minimum exercise makes you physically tired"
+                 "Physically drained or sick after mild activity"])
+
+(def severity-prompts [
+                       "How severe was this feeling?"
+                       "And can you rate how severe this was?"
+                       "Please rate how severe this mental tiredness is"
+                       "Can you rate how severe this physical tiredness was?"
+                       "How severe is that feeling?"
+                       ])
+
+(deflow no-pem []
+        )
+
+
+(deflow pem []
   (*> "Let's now look at how often and how much you feel tired after activities. This is called post-exertional malaise (PEM)",
       "In the next statements, rate the frequency and severity you felt in the last 6 months.")
+  (loop [
+         [question & questions] pem-survey
+         [sev-prompt & sev-prompts] severity-prompts
+         ]
+    (let [
+          _ (pem-freqs question)
+          freq (<*)
+          _ (pem-sevs sev-prompt)
+          sev (<*)
+          ]
+      (if (and (>= freq 2) (>= sev 2))
+
+      ))
   (let [
         _ (pem-freqs "A dead, heavy feeling after starting exercise")
         dead-freq (<*)
