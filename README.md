@@ -41,7 +41,15 @@ git clone git+ssh://git@github.com/precisely/pia-server.git```
 ```
 ### Run the application locally
 
-`lein ring server`
+```bash
+lein ring server
+```
+
+### Run the application in the REPL
+
+```clojure
+(start #'pia/app)
+```
 
 ### Run the tests
 
