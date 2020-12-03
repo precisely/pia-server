@@ -20,11 +20,11 @@
 
 
 (def pem-questions {
-                    '"A dead, heavy feeling after starting exercise" "How severe was this feeling?",
+                    '"A dead, heavy feeling after starting exercise"                       "How severe was this feeling?",
                     '"Next day soreness or fatigue after non-strenuous, everyday exercise" "And can you rate how severe this was?",
-                    '"Mentally tired after the slightest effort" "Please rate how severe this mental tiredness is",
-                    '"Minimum exercise makes you physically tired" "Can you rate how severe this physical tiredness was?",
-                    '"Physically drained or sick after mild activity" "How severe is that feeling?"
+                    '"Mentally tired after the slightest effort"                           "Please rate how severe this mental tiredness is",
+                    '"Minimum exercise makes you physically tired"                         "Can you rate how severe this physical tiredness was?",
+                    '"Physically drained or sick after mild activity"                      "How severe is that feeling?"
                     }
   )
 
