@@ -20,13 +20,13 @@
 
 
 (def sleep-questions {
-                    '"Feeling unrefreshed after you wake up in the morning" "How severe is this feeling?",
-                    '"Need to nap daily" "Can you provide how severe this urge is?",
-                    '"Problems falling asleep" "Please rate how severe these problems are",
-                    '"Problems staying asleep" "And now how severe is this",
-                    '"Waking up early in the morning (e.g. 3 am)" "Can you rate how severe this is?",
-                    '"Sleep during day and stay awake during night" "What is the severity of this problem?"
-                    }
+                      '"Feeling unrefreshed after you wake up in the morning" "How severe is this feeling?",
+                      '"Need to nap daily"                                    "Can you provide how severe this urge is?",
+                      '"Problems falling asleep"                              "Please rate how severe these problems are",
+                      '"Problems staying asleep"                              "And now how severe is this",
+                      '"Waking up early in the morning (e.g. 3 am)"           "Can you rate how severe this is?",
+                      '"Sleep during day and stay awake during night"         "What is the severity of this problem?"
+                      }
   )
 
 
@@ -38,23 +38,24 @@
             "Let's make sure you recover your energy!"))
 
 
-(deflow sleep []
-        (*> "This part of the test will focus on your sleep symptoms, which are very important.",
-            "In the next statements, rate the frequency and severity you felt the problems in the last 6 months.")
-        (loop [
-               [question & questions] sleep-questions
-               ]
-          (let [
-                _ (sleep-freqs (key question))
-                freq (<*)
-                _ (sleep-sevs (val question))
-                sev (<*)
+[(deflow sleep []
+         (*> "This part of the test will focus on your sleep symptoms, which are very important.",
+             "In the next statements, rate the frequency and severity you felt the problems in the last 6 months.")
+         (loop [
+                [question & questions] sleep-questions
                 ]
-            (if (and (>= freq 2) (>= sev 2))
-              (*> "Based on these responses, your sleep problems indicate a possibly serious issue",
-                  "You would benefit greatly from completing the next questions, and overall you are almost finished with the assessment")
-              (if (rest questions)
-                (recur (first questions) (rest questions))
-                (no-sleep)
-                )))
-              ))
+           (let [
+                 _ (sleep-freqs (key question))
+                 freq (<*)
+                 _ (sleep-sevs (val question))
+                 sev (<*)
+                 ]
+             (if (and (>= freq 2) (>= sev 2))
+               (*> "Based on these responses, your sleep problems indicate a possibly serious issue",
+                   "Also, when examining your answers from previous sections, your overall risk for developing chronic fatigue is high",
+                   "There are two more short sections to complete now, and we urge you to finish this assessment so we can make as informed of a referral as possible.")
+               (if (rest questions)
+                 (recur (first questions) (rest questions))
+                 (no-sleep)
+                 )))
+           ))]

@@ -50,16 +50,6 @@
 (deflow map-home [flow]
         (fcall flow))
 
-(def citrus-list ["lemon" "orange" "grapefruit"])
-
-(defn display-citrus [citruses]
-  (loop [[citrus & citruses] fatigue-flows
-         results []]
-    (println citrus)
-    (if citrus (recur citruses [citrus]))))
-
-(display-citrus citrus-list)
-
 
 (deflow home [given-flows]
         (welcome)
