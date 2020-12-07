@@ -29,8 +29,6 @@
                       v]))
     (into {})))
 
-(println "Access key" (env :port) (env :maven-repo-aws-access-key-id) (env :maven-repo-aws-access-key-secret))
-
 (defproject pia-server "0.1.2-SNAPSHOT"
   :description "Precisely Intelligent Agent"
   :dependencies [[org.clojure/clojure "1.10.0"]
