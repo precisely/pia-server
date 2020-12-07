@@ -1,5 +1,5 @@
 (ns pia-server.flows.sleep
-  (:require [longterm :refer :all]
+  (:require [rapids :refer :all]
             [pia-server.flows.components :refer :all]
             ))
 

@@ -1,5 +1,5 @@
 (ns pia-server.flows.cfsdemo
-  (:require [longterm :refer :all]
+  (:require [rapids :refer :all]
             [pia-server.flows.components :refer :all]
             [pia-server.flows.general-fatigue :refer :all]
             [pia-server.flows.iof :refer :all]
