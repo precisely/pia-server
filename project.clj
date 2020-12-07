@@ -33,26 +33,39 @@
 
 (defproject pia-server "0.1.2-SNAPSHOT"
   :description "Precisely Intelligent Agent"
-  :dependencies [[precisely/longterm "0.2.6"]
+  :dependencies [[org.clojure/clojure "1.10.0"]
+
+                 [envvar "1.1.1"]
+
+                 ;; application-specific
+                 [precisely/rapids "0.3.0"]
                  [clojure.java-time "0.3.2"]
-                 [org.clojure/tools.logging "1.1.0"]
+                 [org.clojure/core.async "1.3.610"]
+
+                 ;; web server stuff
+                 [metosin/compojure-api "2.0.0-alpha30"]
+                 [metosin/jsonista "0.2.7"]
+                 [ring/ring-jetty-adapter "1.8.2"]
+                 [ring.middleware.conditional "0.2.0"]
                  [buddy/buddy-auth "2.2.0"]
+
+                 ;; logger
+                 [com.taoensso/timbre "5.1.0"]
                  [com.fzakaria/slf4j-timbre "0.3.20"]
+                 [ring-logger "1.0.1"]
+
+                 ;; database
+                 [org.postgresql/postgresql "42.2.10"]
+                 [seancorfield/next.jdbc "1.1.613"]
+                 [honeysql "1.0.444"]
+                 [danlentz/clj-uuid "0.1.9"]
+                 [hikari-cp "2.13.0"]
+
+                 ;; HAPI
                  [ca.uhn.hapi.fhir/hapi-fhir-base "5.1.0"]
                  [ca.uhn.hapi.fhir/hapi-fhir-structures-r4 "5.1.0"]
                  [ca.uhn.hapi.fhir/hapi-fhir-validation "5.1.0"]
-                 [ca.uhn.hapi.fhir/hapi-fhir-validation-resources-r4 "5.1.0"]
-                 [org.clojure/clojure "1.10.0"]
-                 [org.clojure/tools.logging "1.1.0"]
-                 [org.postgresql/postgresql "42.2.10"]
-                 [metosin/compojure-api "2.0.0-alpha30"]
-                 [ring/ring-jetty-adapter "1.8.2"]
-                 [ring-logger "1.0.1"]
-                 [seancorfield/next.jdbc "1.1.588"]
-                 [danlentz/clj-uuid "0.1.9"]
-                 [envvar "1.1.1"]
-                 [org.clojure/core.async "1.3.610"]
-                 [hikari-cp "2.13.0"]]
+                 [ca.uhn.hapi.fhir/hapi-fhir-validation-resources-r4 "5.1.0"]]
   :repositories {"precisely" {:url        "s3p://precisely-maven-repo/"
                               :username   ~(env :maven-repo-aws-access-key-id)
                               :passphrase ~(env :maven-repo-aws-access-key-secret)}}

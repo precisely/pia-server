@@ -2,9 +2,8 @@
   (:require [cheshire.core :as cheshire]
             [clojure.test :refer :all]
             [pia-server.core :refer :all]
-            [longterm :refer :all]
-            [ring.mock.request :as mock]
-            [pia-server.flows.cfsdemo :refer :all]))
+            [rapids :refer :all]
+            [ring.mock.request :as mock]))
 
 (defn parse-body [body]
   (cheshire/parse-string (slurp body) true))
@@ -26,18 +25,3 @@
         (let [run (continue! (:id run) :foo "cruel")]
           (is (run-in-state? run :complete))
           (is (= (:response run) '["cruel world!"])))))))
-
-(deftest home-test
-  (testing "Attempting running the Main"
-    (printf (str "before starting run"))
-    (let [run (start! home fatigue-flows)]
-      (printf (str "this is just before the response collection"))
-      (printf (str (:response run) " yes\n"))
-      (is (run-in-state? run :suspended))
-      (testing "Answering motivation question"
-        (printf (str (:id run) "\n"))
-        (let [run (continue! (:id run))]
-          (printf (str (:response run) " motivation"))
-          (is (run-in-state? run :suspended))
-          ))
-      )))

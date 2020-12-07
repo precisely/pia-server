@@ -23,6 +23,19 @@ git clone git+ssh://git@github.com/precisely/pia-server.git```
   - NOTE: the pia-developer user in our AWS dev-precisely account has minimal permissions for retrieving the longterm library from our S3 bucket    
   - env.edn is in .gitignore
 
+### Database setup
+
+#### Install Postgres
+
+```shell
+brew install postgres
+```
+#### Create dbs
+```shell
+createdb pia_runstore # for local development
+createdb test_pia_runstore # for testing
+```
+
 ### IntelliJ tips:
 
 * Install Cursive
@@ -41,7 +54,15 @@ git clone git+ssh://git@github.com/precisely/pia-server.git```
 ```
 ### Run the application locally
 
-`lein ring server`
+```bash
+lein ring server
+```
+
+### Run the application in the REPL
+
+```clojure
+(start #'pia/app)
+```
 
 ### Run the tests
 
