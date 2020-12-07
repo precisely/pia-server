@@ -1,7 +1,10 @@
 (ns main
   (:require [ring.adapter.jetty :as jetty]
-            [envvar.core :as envvar :refer [env]])
-  (:require [pia-server.core :as pia])
+            [envvar.core :refer [env]]
+            [pia-server.core :as pia]
+            [taoensso.timbre :as log]
+            [pia-server.db :as db]
+            [pia-server.expiry-monitor :as expiry-monitor])
   (:gen-class))
 
 ;;; TODO: Consider using the Component framework. Things which need to be
@@ -13,7 +16,11 @@
 (defonce ^{:dynamic true} *server* (atom nil))
 
 (defn start [app & {:keys [port join?]
-                    :or {port 8080, join? false}}]
+                    :or   {port 8080, join? false}}]
+  (log/info "Starting pia-server")
+  (db/start-connection-pool!)
+  (db/create-db!)
+  ;(expiry-monitor/start 1000)
   (reset! *server* (jetty/run-jetty app {:port port, :join? join?})))
 
 (defn stop []

@@ -1,23 +1,29 @@
 (ns pia-server.db
-  (:require [longterm :refer [set-runstore!]]
+  (:refer-clojure :exclude [select update])
+  (:require [clojure.core :as clj]
+            [taoensso.timbre :as log]
+            [clojure.string :as str]
+            [longterm :refer [set-runstore!]]
             [longterm.runstore :refer [IRunStore] :as rs]
+            [longterm.run :as r]
             [longterm.signals :refer [suspend-signal?]]
             [longterm.util :refer [in?]]
-            [next.jdbc :as jdbc]
-            [java-time :as time]
             [envvar.core :refer [env]]
-            hikari-cp.core
+            [next.jdbc :as jdbc]
             [next.jdbc.types :refer [as-other]]
             [next.jdbc.connection :as connection]
-            [clojure.tools.logging :as log])
+            hikari-cp.core
+            [honeysql.core :as sql]
+            [honeysql.helpers :refer :all]
+            [honeysql.format :as fmt]
+            [longterm :as lt]
+            [clojure.spec.alpha :as s])
   (:import (com.zaxxer.hikari HikariDataSource)
-           (java.time LocalDateTime ZoneId)
-           (java.util UUID)
-           (longterm.runstore Run)))
+           (java.util UUID)))
 
-(declare query-run-with-next)
+(declare query-run-with-next to-db-record from-db-record)
 
-(def datasource-options {:auto-commit        true
+(def datasource-options {:auto-commit        false
                          :read-only          false
                          :connection-timeout 30000
                          :validation-timeout 5000
@@ -31,93 +37,119 @@
                          :adapter            "postgresql"
                          :username           (get @env :db-username (System/getProperty "user.name"))
                          :password           (get @env :db-password "")
-                         :database-name      (get @env :db-name "pia-runstore")
+                         :dbname             (get @env :db-name "pia_runstore")
                          :server-name        (get @env :db-server-name "localhost")
                          :port-number        (Integer/parseInt (get @env :db-port "5432"))
                          :register-mbeans    false})
 
-(declare run-from-record)
+(declare from-db-record make-runstore)
 
-(defmacro with-connection [[conn jdbc-rs] & body]
-  `(let [~conn (:connection-pool ~jdbc-rs)]
-     ; (with-open [^HikariDataSource ~conn @cp#]
-     ~@body))
+(def ^:dynamic *connection-pool*)
+(defn start-connection-pool! []
+  (if (bound? #'*connection-pool*)
+    *connection-pool*
+    (alter-var-root #'*connection-pool*
+      (fn [_] (connection/->pool HikariDataSource datasource-options)))))
 
-(defn is-run-state? [state] (some #(= % state) rs/RunStates))
+(defmacro with-transaction
+  "jrs will be bound to a JDBCRunstore object"
+  [[jrs] & body]
+  `(with-open [connection# (jdbc/get-connection *connection-pool*)]
+     (let [~jrs (make-runstore connection#)]
+       (rs/with-transaction [~jrs]
+         ~@body))))
 
-(defn to-pg-enum [k]
-  {:pre [(or (nil? k) (keyword? k))]}
-  (if k
-    (as-other (.getName k)))) ; as-other is a dynamically defined fn, so IDE may produce a warning here: ignore!
+(defn is-run-state? [state] (some #(= % state) r/RunStates))
 
-(defrecord JDBCRunstore [connection-pool]
+(defn exec! [jrs stmt]
+  (jdbc/execute! (:connection jrs) stmt))
+
+(defn exec-one! [jrs stmt]
+  (jdbc/execute-one! (:connection jrs) stmt))
+
+(defhelper returning [m returns]
+  (assoc m :returning returns))
+(defmethod fmt/format-clause :returning [[op v] sqlmap]
+  (str "RETURNING "
+    (if (seqable? v)
+      (str/join ", " (map fmt/to-sql v))
+      (fmt/to-sql v))))
+
+(defrecord JDBCRunstore [connection]
   IRunStore
   (rs-get [jrs run-id]
     (query-run-with-next jrs run-id))
 
-  (rs-create! [jrs state]
-    {:pre [(is-run-state? state)]}
-    (log/debug "Creating run in state" state)
-    (with-connection [conn jrs]
-      (run-from-record
-        (jdbc/execute-one!
-          conn ["INSERT INTO runs (state) VALUES (?) RETURNING runs.*;"
-                (to-pg-enum state)]))))
-  (rs-update! [jrs run]
-    (log/debug "Updating run " run)
-    (with-connection [conn jrs]
-      (let [updated-at (LocalDateTime/now)
-            run        (assoc run :updated-at updated-at)
-            suspend    (:suspend run)]
-        (run-from-record
-          (jdbc/execute-one!
-            conn
-            [(str "UPDATE runs "
-               "SET start_form = ?, stack = ?, state = ?, result = ?, response = ?, "
-               "suspend_permit = ?, suspend_expires = ?, suspend_default = ?, "
-               "return_mode = ?, parent_run_id = ?, next_id = ?, "
-               "error = ?, "
-               "updated_at = ? "
-               "WHERE id = ? "
-               "RETURNING runs.*;")
-             (pr-str (:start-form run))
-             (pr-str (:stack run))
-             (to-pg-enum (:state run))
-             (pr-str (:result run))
-             (pr-str (:response run))
-             (pr-str (:permit suspend))
-             (:expires suspend)
-             (pr-str (:default suspend))
-             (to-pg-enum (:return-mode run))
-             (:parent-run-id run)
-             (:next-id run)
-             (pr-str (:error run))
-             updated-at
-             (:id run)])))))
+  (rs-create! [jrs record]
+    ; {:pre [(is-run-state? state)]}
+    (log/debug "Creating run in state" record)
+    (let [stmt (-> (insert-into :runs)
+                 (values [(to-db-record record)])
+                 (returning :runs.*)
+                 sql/format)]
+      (from-db-record
+        (exec-one! jrs stmt))))
+  ;["INSERT INTO runs (state) VALUES (?) RETURNING runs.*;"
+  ;                   (to-pg-enum state)])))
 
-  (rs-acquire! [jrs run-id permit]
-    (log/debug "Acquiring run " run-id)
-    (with-connection [conn jrs]
-      (let [updated-at (LocalDateTime/now)]
-        (run-from-record
-          (jdbc/execute-one!
-            conn
-            [(str "UPDATE runs "
-               "SET state = 'running', updated_at = ?  WHERE id = ? and suspend_permit = ? AND state = 'suspended'"
-               "RETURNING runs.*;")
-             updated-at, run-id, (str permit)]))))))
+  (rs-update! [jrs record expires]
+    (log/debug "Updating run " record)
+    (let [updated-at (lt/now)
+          record     (to-db-record (assoc record :updated_at updated-at :suspend_expires expires))]
+      (from-db-record
+        (exec-one! jrs
+          (-> {}
+            (update :runs)
+            (sset (dissoc record :id))
+            (where [:= :id (:id record)])
+            (returning :runs.*)
+            sql/format)))))
 
+  (rs-lock! [jrs run-id]
+    (log/debug "Locking run " run-id)
+    (let [stmt (->
+                 (select :*)
+                 (from :runs)
+                 (lock :mode :update)
+                 (where [:= :id run-id])
+                 sql/format)]
+      (println stmt)
+      (from-db-record
+        (exec-one! jrs stmt))))
+
+  (rs-tx-begin! [jrs]
+    (log/debug "Begin transaction")
+    (exec-one! jrs ["BEGIN;"]))
+
+  (rs-tx-commit! [jrs]
+    (log/debug "Commit transaction")
+    (exec-one! jrs ["COMMIT;"]))
+
+  (rs-tx-rollback! [jrs]
+    (log/debug "Rollback transaction")
+    (exec-one! jrs ["ROLLBACK;"])))
+
+(defn make-runstore [connection] (JDBCRunstore. connection))
 (defn query-run-with-next [jrs run-id]
-  (let [runs (map run-from-record
-               (with-connection [conn jrs]
-                 (jdbc/execute!
-                   conn [(str
-                           "SELECT root.* "
-                           "FROM runs root "
-                           "LEFT JOIN runs next ON next.id = root.next_id "
-                           "WHERE root.id = ? "
-                           "ORDER BY root.id = ? DESC;")
-                         run-id])))]
+  (let [runs (map from-db-record
+
+               (exec! jrs
+                 ;; there may not be support for ORDER BY expressions in HoneySQL
+                 ;; https://github.com/seancorfield/honeysql/issues/285
+                 #_(-> (select :*)
+                     (from [:runs :root])
+                     (left-join [:runs :next] [:= :next.id :root.next_id])
+                     (where [:= :root.id run-id])
+                     (order-by [[:= :root.id run-id] :desc])
+                     sql/format)
+
+                 [(str
+                    "SELECT root.* "
+                    "FROM runs root "
+                    "LEFT JOIN runs next ON next.id = root.next_id "
+                    "WHERE root.id = ? "
+                    "ORDER BY root.id = ? DESC;")
+                  run-id]))]
     (case (count runs)
       0 nil
       1 (first runs)
@@ -127,107 +159,93 @@
           (assoc run :next (second run)))
       (throw (Exception. "query-run-with-next sanity check failed")))))
 
-(defonce connection-pool (connection/->pool HikariDataSource datasource-options))
-(defn make-runstore [] (JDBCRunstore. connection-pool))
-
-(defn read-field [rec field]
-  (if-let [val (field rec)] (read-string val)))
-
 (defn or-nil? [o p]
   (or (nil? o) (p o)))
 
-(defn date-to-local-date-time [date]
-  (if date
-    (-> date
-      .toInstant
-      (.atZone (ZoneId/systemDefault))
-      .toLocalDateTime)))
+(defn from-db-record
+  "Removes the namespace from keys in the record returned by jdbc-next"
+  [record]
+  (println ">>>>>>>>>>>>> from-db-record" record)
+  (into {} (map #(vector (keyword (name (first %))), (second %)) record)))
 
-(defn run-from-record
-  "Returns a Clojure Run record from a database record"
-  [db-rec]
-  {:post [(-> % :id uuid?)
-          (-> % :start-form (or-nil? list?))
-          (-> % :state keyword?)
-          (-> % :response vector?)
-          (-> % :suspend suspend-signal?)
-          (in? rs/ReturnModes (-> % :return-mode))
-          (-> % :parent-run-id (or-nil? uuid?))
-          (-> % :response vector?)
-          (-> % :error (or-nil? #(instance? Exception %)))
-          (-> % :next (or-nil? #(rs/run-in-state? % :any)))
-          (-> % :next-id (or-nil? uuid?))]}
-  (when db-rec
-    (let [run (longterm.runstore/map->Run
-                {:id            (:runs/id db-rec)
-                 :start-form    (read-field :runs/start_form db-rec)
-                 :stack         (read-field :runs/stack db-rec)
-                 :state         (keyword (str (:runs/state db-rec)))
-                 :result        (read-field :runs/result db-rec)
-                 :response      (or (read-field :runs/response db-rec) [])
-                 :suspend       (longterm.signals/make-suspend-signal
-                                  (read-field :runs/suspend_permit db-rec)
-                                  (date-to-local-date-time (:runs/suspend_expires db-rec))
-                                  (read-field :runs/suspend_default db-rec))
-                 :return-mode   (read-field :runs/return_mode db-rec)
-                 :parent-run-id (:runs/next-id db-rec)
-                 :run-response  (or (read-field :runs/run_response db-rec) [])
-                 :error         (read-field :runs/error db-rec)
-                 :next          (:next db-rec)
-                 :next-id       (or (:runs/next_id db-rec) (:runs/id db-rec))})]
-      (assoc run
-        :created_at (:runs/created_at db-rec)
-        :updated_at (:runs/updated_at db-rec)))))
+(defn to-db-record [record]
+  "Properly encodes enum column values"
+  (reduce #(clj/update %1 %2 as-other) record [:state :return_mode]))
 
-(defn get-expired-runs
-  ([jrs] (get-expired-runs jrs (time/local-date-time)))
+(defn get-expired-run-ids
+  ([jrs] (get-expired-run-ids jrs (lt/now)))
   ([jrs now]
-   (with-connection [conn jrs]
-     (map run-from-record
-       (jdbc/execute! conn
-         ["SELECT * FROM runs WHERE suspend_expires < ?;" now])))))
+   {:post [(s/assert (s/coll-of uuid?) %)]}
+   (map :runs/id
+     (exec! jrs
+       (-> (select :id)
+         (from :runs)
+         (where [:< :suspend_expires now])
+         sql/format)))))
 
 (defn create-db! []
-  (jdbc/execute! connection-pool ["
+  (jdbc/execute! *connection-pool* ["
       CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\";
+
       DO $$ BEGIN
-        CREATE TYPE RUN_STATES AS ENUM ('running', 'suspended', 'complete', 'error');
+        CREATE TYPE RUN_STATES AS ENUM ('created', 'suspended', 'complete', 'error');
       EXCEPTION
         WHEN duplicate_object THEN null;
       END $$;
+
       DO $$ BEGIN
-      CREATE TYPE RETURN_MODES AS ENUM ('block', 'redirect');
+        CREATE TYPE RETURN_MODES AS ENUM ('block', 'redirect');
       EXCEPTION
-      WHEN duplicate_object THEN null;
+        WHEN duplicate_object THEN null;
       END $$;
+
       CREATE TABLE IF NOT EXISTS runs (
-      id UUID DEFAULT uuid_generate_v4(),
-      start_form TEXT,
-      state RUN_STATES,
-      stack TEXT DEFAULT '()',
-      result TEXT,
-      response TEXT,
-      suspend_permit TEXT,
-      suspend_expires TIMESTAMP,
-      suspend_default TEXT,
-      return_mode RETURN_MODES,
-      parent_run_id UUID,
-      full_response TEXT,
-      next_id UUID,
-      error TEXT,
-      created_at TIMESTAMP  NOT NULL  DEFAULT current_timestamp,
-      updated_at TIMESTAMP  NOT NULL  DEFAULT current_timestamp,
-      PRIMARY KEY (id)
+        id UUID DEFAULT uuid_generate_v4(),
+        PRIMARY KEY (id),
+
+        -- data columns
+        error BYTEA,
+        next_id UUID,
+        parent_run_id UUID,
+        response BYTEA,
+        result BYTEA,
+        return_mode RETURN_MODES,
+        run_response BYTEA,
+        stack BYTEA,
+        start_form TEXT,
+        state RUN_STATES,
+        suspend BYTEA,
+        suspend_expires TIMESTAMP,
+
+        -- timestamps
+        created_at TIMESTAMP  NOT NULL  DEFAULT current_timestamp,
+        updated_at TIMESTAMP  NOT NULL  DEFAULT current_timestamp
       );
       CREATE INDEX IF NOT EXISTS runs_suspend_expires ON runs (suspend_expires);"])
-  (log/info "Database created"))
+  #_(log/info "Database created"))
 
 ;; HELPERS for debugging
-(defn exec! [& args] (jdbc/execute! connection-pool (vec args)))
-
 (defn uuid [] (UUID/randomUUID))
 (defn delete-db! []
-  (if (-> datasource-options :server-name (= "localhost"))
-    (exec! "drop table if exists runs; drop type if exists Runstates;")
-    (log/error "Refusing to drop database when datasource-options :server-name is not localhost")))
+  (if-not (-> datasource-options :server-name (= "localhost"))
+    (log/error "Refusing to drop database when datasource-options :server-name is not localhost"))
+  (jdbc/execute! *connection-pool* ["drop table runs;"])
+  (jdbc/execute! *connection-pool* ["drop type run_states;"])
+  (jdbc/execute! *connection-pool* ["drop type return_modes;"]))
 
+
+
+;;
+;;
+;;
+(defn simple-test []
+  (let [run     (r/make-test-run)
+        run-rec (dissoc (r/run-to-record run) :result :error :state :stack :suspend :response :return_mode)
+        stmt    (-> (insert-into :runs)
+                  (values run-rec)
+                  (returning [:runs.*])
+                  sql/format)]
+    (prn stmt)
+    (with-open [conn (jdbc/get-connection *connection-pool*)]
+      (from-db-record
+        (jdbc/execute-one! conn stmt)))))
