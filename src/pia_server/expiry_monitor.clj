@@ -5,7 +5,7 @@
 ;;
 (ns pia-server.expiry-monitor
   (:require
-    [longterm :as lt]
+    [rapids :as lt]
     [taoensso.timbre :as log]
     [pia-server.db :refer [get-expired-run-ids]]
     [clojure.core.async :refer [go-loop <! timeout chan]]

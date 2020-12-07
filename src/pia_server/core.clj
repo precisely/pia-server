@@ -5,7 +5,7 @@
             [envvar.core :refer [env]]
             [ring.util.http-response :refer :all]
             [ring.middleware.conditional :refer [if-url-starts-with]]
-            [longterm :refer :all]
+            [rapids :refer :all]
             [pia-server.db :as db]
             [pia-server.expiry-monitor :as expiry-monitor]
             [schema.core :as scm]

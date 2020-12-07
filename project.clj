@@ -36,7 +36,7 @@
                  [envvar "1.1.1"]
 
                  ;; application-specific
-                 [precisely/longterm "0.3.0"]
+                 [precisely/rapids "0.3.0"]
                  [clojure.java-time "0.3.2"]
                  [org.clojure/core.async "1.3.610"]
 

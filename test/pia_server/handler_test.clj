@@ -2,7 +2,7 @@
   (:require [cheshire.core :as cheshire]
             [clojure.test :refer :all]
             [pia-server.core :refer :all]
-            [longterm :refer :all]
+            [rapids :refer :all]
             [ring.mock.request :as mock]))
 
 (defn parse-body [body]

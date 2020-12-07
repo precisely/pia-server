@@ -3,11 +3,11 @@
   (:require [clojure.core :as clj]
             [taoensso.timbre :as log]
             [clojure.string :as str]
-            [longterm :refer [set-runstore!]]
-            [longterm.runstore :refer [IRunStore] :as rs]
-            [longterm.run :as r]
-            [longterm.signals :refer [suspend-signal?]]
-            [longterm.util :refer [in?]]
+            [rapids :refer [set-runstore!]]
+            [rapids.runstore :refer [IRunStore] :as rs]
+            [rapids.run :as r]
+            [rapids.signals :refer [suspend-signal?]]
+            [rapids.util :refer [in?]]
             [envvar.core :refer [env]]
             [next.jdbc :as jdbc]
             [next.jdbc.types :refer [as-other]]
@@ -16,7 +16,7 @@
             [honeysql.core :as sql]
             [honeysql.helpers :refer :all]
             [honeysql.format :as fmt]
-            [longterm :as lt]
+            [rapids :as lt]
             [clojure.spec.alpha :as s])
   (:import (com.zaxxer.hikari HikariDataSource)
            (java.util UUID)))

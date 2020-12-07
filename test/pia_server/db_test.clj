@@ -3,13 +3,13 @@
   (:require [pia-server.db :refer :all]
             [clojure.test :refer :all]
             [clojure.core :as clj]
-            [longterm.run :as r]
+            [rapids.run :as r]
             [next.jdbc :as jdbc]
             [next.jdbc.connection :as connection]
             hikari-cp.core
             [honeysql.core :as sql]
             [honeysql.helpers :refer :all]
-            [longterm.runstore :as rs]
+            [rapids.runstore :as rs]
             [pia-server.db :as db])
   (:import (com.zaxxer.hikari HikariDataSource)
            (java.util.logging Logger Level)))
@@ -53,7 +53,7 @@
 (defmacro with-test-db [& body]
   `(binding [*connection-pool* test-connection-pool]
      (let [connection# (jdbc/get-connection test-connection-pool)]
-       (longterm/with-runstore [(make-runstore connection#)]
+       (rapids/with-runstore [(make-runstore connection#)]
          (db/create-db!)
          ~@body
          (db/delete-db!)))))
