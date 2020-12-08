@@ -89,8 +89,6 @@
                  sql/format)]
       (from-db-record
         (exec-one! jrs stmt))))
-  ;["INSERT INTO runs (state) VALUES (?) RETURNING runs.*;"
-  ;                   (to-pg-enum state)])))
 
   (rs-update! [jrs record expires]
     (log/debug "Updating run " record)
