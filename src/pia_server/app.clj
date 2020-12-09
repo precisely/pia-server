@@ -15,8 +15,8 @@
 
 (scm/defschema JSON (scm/maybe
                       (scm/cond-pre scm/Num scm/Str scm/Bool
-                                    [(scm/recursive #'JSON)]
-                                    {scm/Str (scm/recursive #'JSON)})))
+                        [(scm/recursive #'JSON)]
+                        {scm/Str (scm/recursive #'JSON)})))
 
 (scm/defschema Run
   {:id                               scm/Uuid
@@ -34,18 +34,18 @@
               (scm/optional-key :data)   JSON}))
 
 (deflow foo []
-        (*> "hello")
-        (let [value (<* :permit :foo :expires (-> 30 minutes from-now) :default "default-suspend-value")]
-          (*> (str value " world!"))
-          "some result"))
+  (*> "hello")
+  (let [value (<* :permit :foo :expires (-> 30 minutes from-now) :default "default-suspend-value")]
+    (*> (str value " world!"))
+    "some result"))
 
-(def flows {:foo foo
-            :welcome welcome})
+(def flows {:foo     #'foo
+            :welcome #'welcome})
 
 (defn run-result [run]
   (reduce-kv #(assoc %1 (keyword (str/replace (name %2) "-" "_")) %3) {}
-             (select-keys run
-                          [:id :response :next-id :next :result :state :return-mode :run_response :parent-run-id])))
+    (select-keys run
+      [:id :response :next-id :next :result :state :return-mode :run_response :parent-run-id])))
 
 (def base-handler
   (api
@@ -71,7 +71,7 @@
           :body [args [scm/Any] []]
           :summary "starts a Run based on the given flow"
           (ok (run-result (db/with-transaction [_]
-                                               (apply start! (get flows flow) args)))))
+                            (apply start! (var-get (get flows flow)) args)))))
 
         (POST "/:id/continue" []
           :path-params [id :- scm/Uuid]
@@ -80,9 +80,9 @@
           :summary "continues a run"
           (ok (let [result (run-result
                              (db/with-transaction [_]
-                                                  (continue!
-                                                    id
-                                                    event)))]
+                               (continue!
+                                 id
+                                 event)))]
                 (println result)
                 result)))
 
@@ -112,7 +112,7 @@
                      (jwt/unsign bearer (@env :jwt-secret))))
           (catch Exception e
             (if (= {:type :validation :cause :signature}
-                   (ex-data e))
+                  (ex-data e))
               (if (@env :disable-jwt-auth)
                 (handler request)
                 (unauthorized))
@@ -123,8 +123,8 @@
 
 (def app
   (-> #'base-handler
-      (if-url-starts-with "/api" logger/wrap-with-logger)
-      wrap-jwt
-      ;; encors for CORS (https://github.com/unbounce/encors):
-      ;;(wrap-cors cors-policy)
-      ))
+    (if-url-starts-with "/api" logger/wrap-with-logger)
+    wrap-jwt
+    ;; encors for CORS (https://github.com/unbounce/encors):
+    ;;(wrap-cors cors-policy)
+    ))
