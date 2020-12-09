@@ -1,7 +1,7 @@
 (ns main
     (:require [ring.adapter.jetty :as jetty]
       [envvar.core :refer [env]]
-      [pia-server.core :as pia]
+      [pia-server.app :as pia]
       [taoensso.timbre :as log]
       [pia-server.db :as db]
       [pia-server.expiry-monitor :as expiry-monitor])
