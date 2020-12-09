@@ -229,6 +229,7 @@
 (defn delete-db! []
   (if-not (-> datasource-options :server-name (= "localhost"))
     (log/error "Refusing to drop database when datasource-options :server-name is not localhost"))
+  (println "THIS IS THE CONNECTION POOL " *connection-pool*)
   (jdbc/execute! *connection-pool* ["drop table runs;"])
   (jdbc/execute! *connection-pool* ["drop type run_states;"])
   (jdbc/execute! *connection-pool* ["drop type return_modes;"]))

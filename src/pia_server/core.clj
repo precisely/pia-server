@@ -10,7 +10,8 @@
             [pia-server.expiry-monitor :as expiry-monitor]
             [schema.core :as scm]
             [clojure.string :as str]
-            [ring.logger :as logger]))
+            [ring.logger :as logger]
+            [pia-server.flows.cfsdemo :refer :all]))
 
 (scm/defschema JSON (scm/maybe
                       (scm/cond-pre scm/Num scm/Str scm/Bool
@@ -38,7 +39,8 @@
           (*> (str value " world!"))
           "some result"))
 
-(def flows {:foo foo})
+(def flows {:foo foo
+            :welcome welcome})
 
 (defn run-result [run]
   (prn "run-result" run)

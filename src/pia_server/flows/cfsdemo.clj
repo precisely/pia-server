@@ -21,7 +21,8 @@
         (*> "The purpose here is to track your symptoms and determine if you are developing long-term covid problems.")
         (*> "Specifically, the problems being tracked here can lead to Chronic Fatigue Syndrome (CFS)")
         (*> "You can assess your own risk for CFS by simply answering the next questions about how you feel.")
-        (*> "It usually takes less than 10 minutes, or only seconds if you are showing no signs of CFS"))
+        (*> "It usually takes less than 10 minutes, or only seconds if you are showing no signs of CFS")
+        (*> {:type "choices" :text "Hey, make a choice" :choices [{:id "yes", :text "Yes"} {:id "no", :text "No"}]}))
 
 
 (deflow ender [final-results]
