@@ -16,7 +16,7 @@
 (scm/defschema JSON (scm/maybe
                       (scm/cond-pre scm/Num scm/Str scm/Bool
                         [(scm/recursive #'JSON)]
-                        {scm/Str (scm/recursive #'JSON)})))
+                        {(scm/cond-pre scm/Str scm/Keyword) (scm/recursive #'JSON)})))
 
 (scm/defschema Run
   {:id                               scm/Uuid
