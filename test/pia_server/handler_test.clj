@@ -1,7 +1,7 @@
 (ns pia-server.handler-test
   (:require [cheshire.core :as cheshire]
             [clojure.test :refer :all]
-            [pia-server.core :refer :all]
+            [pia-server.app :refer :all]
             [rapids :refer :all]
             [ring.mock.request :as mock]))
 

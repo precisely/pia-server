@@ -1,4 +1,4 @@
-(ns pia-server.core
+(ns pia-server.app
   (:require [compojure.api.sweet :refer :all]
             [clojure.set :refer [rename-keys]]
             [buddy.sign.jwt :as jwt]
@@ -10,7 +10,8 @@
             [pia-server.expiry-monitor :as expiry-monitor]
             [schema.core :as scm]
             [clojure.string :as str]
-            [ring.logger :as logger]))
+            [ring.logger :as logger]
+            [pia-server.flows.cfsdemo :refer [welcome]]))
 
 (scm/defschema JSON (scm/maybe
                       (scm/cond-pre scm/Num scm/Str scm/Bool
@@ -21,8 +22,8 @@
   {:id                               scm/Uuid
    :state                            (scm/enum :running :suspended :complete)
    (scm/optional-key :result)        JSON
-   :response                         JSON
-   (scm/optional-key :run_response)  JSON
+   :response                         [JSON]
+   (scm/optional-key :run_response)  [JSON]
    (scm/optional-key :return_mode)   (scm/maybe (scm/enum :block :redirect))
    :next_id                          (scm/maybe scm/Uuid)
    (scm/optional-key :parent_run_id) (scm/maybe scm/Uuid)
@@ -38,10 +39,10 @@
           (*> (str value " world!"))
           "some result"))
 
-(def flows {:foo foo})
+(def flows {:foo foo
+            :welcome welcome})
 
 (defn run-result [run]
-  (prn "run-result" run)
   (reduce-kv #(assoc %1 (keyword (str/replace (name %2) "-" "_")) %3) {}
              (select-keys run
                           [:id :response :next-id :next :result :state :return-mode :run_response :parent-run-id])))
