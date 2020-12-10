@@ -17,11 +17,11 @@
 
 (defn start [app & {:keys [port join?]
                     :or   {port 8080, join? false}}]
-      (log/info "Starting pia-server")
-      (db/start-connection-pool!)
-      (db/create-db!)
-      (expiry-monitor/start 1000)
-      (reset! *server* (jetty/run-jetty app {:port port, :join? join?})))
+  (log/info "Starting pia-server")
+  (db/start-connection-pool!)
+  (db/create-db!)
+  (expiry-monitor/start 1000)
+  (reset! *server* (jetty/run-jetty app {:port port, :join? join?})))
 
 (defn stop []
       (when-not (nil? @*server*)
