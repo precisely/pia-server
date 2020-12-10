@@ -1,0 +1,17 @@
+<component name="ProjectCodeStyleConfiguration">
+  <code_scheme name="Project" version="173">
+    <ClojureCodeStyleSettings>{
+  :clojure.core/defn 1000
+  :clojure.core.match/match :only-indent
+  :clojure.test/is :only-indent
+  :cursive.formatting/default-only-indent true
+  :foo.bar/defp :only-indent
+  :foo.bar/mymacro :only-indent
+  :longterm.core/deflow :only-indent
+  :longterm.runner/with-run! :only-indent
+  :longterm.util/aif :only-indent
+  :potemkin/import-vars :only-indent
+  :taoensso.nippy/extend-thaw :only-indent
+}</ClojureCodeStyleSettings>
+  </code_scheme>
+</component>
