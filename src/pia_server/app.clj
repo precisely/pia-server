@@ -11,7 +11,8 @@
             [schema.core :as scm]
             [clojure.string :as str]
             [ring.logger :as logger]
-            [pia-server.flows.cfsdemo :refer [welcome]]))
+            [pia-server.flows.cfsdemo :refer [welcome]]
+            [taoensso.timbre :as log]))
 
 (scm/defschema JSON (scm/maybe
                       (scm/cond-pre scm/Num scm/Str scm/Bool
@@ -70,8 +71,10 @@
           :return Run
           :body [args [scm/Any] []]
           :summary "starts a Run based on the given flow"
-          (ok (run-result (db/with-transaction [_]
-                            (apply start! (var-get (get flows flow)) args)))))
+          (ok (let [result (run-result (db/with-transaction [_]
+                            (apply start! (var-get (get flows flow)) args)))]
+                (log/debug (str "/api/runs/" flow " =>") result)
+                result)))
 
         (POST "/:id/continue" []
           :path-params [id :- scm/Uuid]
@@ -83,14 +86,19 @@
                                (continue!
                                  id
                                  event)))]
-                (println result)
+                (log/debug (str "/" id "/continue =>") result)
                 result)))
 
         (GET "/:id" []
           :path-params [id :- scm/Uuid]
           :return Run
           :summary "gets a run"
-          (ok (run-result (get-run id))))))
+          ;; TODO: clean up the nest of macros involved here
+          ;;       we don't need a transaction, but with-transaction wraps
+          ;;       with-runstore, which binds the JDBC runstore
+          (ok (let [result (run-result (db/with-transaction [_] (get-run id)))]
+                (log/debug (str "/api/runs/" id " =>") result)
+                result)))))
 
     ;; fallback
     (GET "/__source_changed" [] (ok "false"))
