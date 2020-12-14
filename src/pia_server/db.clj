@@ -78,7 +78,7 @@
 (defrecord JDBCRunstore [connection]
   IRunStore
   (rs-get [jrs run-id]
-    (query-run-with-next jrs run-id))
+    (from-db-record (query-run-with-next jrs run-id)))
 
   (rs-create! [jrs record]
     ; {:pre [(is-run-state? state)]}
@@ -89,8 +89,6 @@
                    sql/format)]
       (from-db-record
         (exec-one! jrs stmt))))
-  ;["INSERT INTO runs (state) VALUES (?) RETURNING runs.*;"
-  ;                   (to-pg-enum state)])))
 
   (rs-update! [jrs record expires]
     (log/debug "Updating run " record)
@@ -149,7 +147,7 @@
                             "LEFT JOIN runs next ON next.id = root.next_id "
                             "WHERE root.id = ? "
                             "ORDER BY root.id = ? DESC;")
-                          run-id]))]
+                          run-id run-id]))]
     (case (count runs)
       0 nil
       1 (first runs)
@@ -165,7 +163,6 @@
 (defn from-db-record
   "Removes the namespace from keys in the record returned by jdbc-next"
   [record]
-  (println ">>>>>>>>>>>>> from-db-record" record)
   (into {} (map #(vector (keyword (name (first %))), (second %)) record)))
 
 (defn to-db-record [record]

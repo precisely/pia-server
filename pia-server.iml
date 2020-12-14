@@ -160,7 +160,6 @@
     <orderEntry type="library" name="Leiningen: org.tukaani/xz:1.8" level="project" />
     <orderEntry type="library" name="Leiningen: org.unbescape/unbescape:1.1.5.RELEASE" level="project" />
     <orderEntry type="library" name="Leiningen: potemkin:0.4.5" level="project" />
-    <orderEntry type="library" name="Leiningen: precisely/rapids:0.3.0" level="project" />
     <orderEntry type="library" name="Leiningen: primitive-math:0.1.6" level="project" />
     <orderEntry type="library" name="Leiningen: prismatic/plumbing:0.5.5" level="project" />
     <orderEntry type="library" name="Leiningen: prismatic/schema:1.1.10" level="project" />
@@ -181,5 +180,6 @@
     <orderEntry type="library" name="Leiningen: watchtower:0.1.1" level="project" />
     <orderEntry type="library" name="Leiningen: xpp3/xpp3_xpath:1.1.4c" level="project" />
     <orderEntry type="library" name="Leiningen: xpp3:1.1.4c" level="project" />
+    <orderEntry type="module" module-name="rapids" />
   </component>
 </module>
