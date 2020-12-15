@@ -15,6 +15,11 @@
 (deflow fatigue-iof-6m []
   (*> "This is the flow where people failing PEM go"))
 
+(defn welcome-rating [q]
+      (*> q, (rating "welcomeRate" "Is everything okay?" 0 "No" 10 "Yes")))
+
+(defn welcome-radiogroup [q]
+      (*> q, (radiogroup "ready" "Ready to start?" 2 ["Yes", "No"])))
 
 (deflow welcome []
   (*> "Welcome to the Precisely app!")
@@ -22,9 +27,10 @@
   (*> "Specifically, the problems being tracked here can lead to Chronic Fatigue Syndrome (CFS)")
   (*> "You can assess your own risk for CFS by simply answering the next questions about how you feel.")
   (*> "It usually takes less than 10 minutes, or only seconds if you are showing no signs of CFS")
-  (*> {:type "choices" :text "Hey, make a choice" :choices [{:id "yes", :text "Yes"}, {:id "no", :text "No"}]})
-  (*> "You said" (<*)))
-
+  (welcome-radiogroup "Now if you're ready, let's begin")
+  (*> "You said" (<*))
+  (welcome-rating "How do you feel?")
+  (*> "You felt" (<*)))
 
 (deflow ender [final-results]
   (*> "You have reached the end of this demo")
