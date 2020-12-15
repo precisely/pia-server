@@ -116,15 +116,15 @@
         (exec-one! jrs stmt))))
 
   (rs-tx-begin! [jrs]
-    (log/debug "Begin transaction")
+    (log/trace "Begin transaction")
     (exec-one! jrs ["BEGIN;"]))
 
   (rs-tx-commit! [jrs]
-    (log/debug "Commit transaction")
+    (log/trace "Commit transaction")
     (exec-one! jrs ["COMMIT;"]))
 
   (rs-tx-rollback! [jrs]
-    (log/debug "Rollback transaction")
+    (log/trace "Rollback transaction")
     (exec-one! jrs ["ROLLBACK;"])))
 
 (defn make-runstore [connection] (JDBCRunstore. connection))
