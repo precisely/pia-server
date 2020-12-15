@@ -11,18 +11,31 @@
     [clojure.core.async :refer [go-loop <! timeout chan]]
     [pia-server.db :as db]))
 
+(def ^:dynamic *interval* nil)
 (defn start
   ([] (start 30))
   ([interval-seconds]
-   (let [interval-seconds (or interval-seconds 30)]
-     (log/info "Expiry monitor: starting")
-     (go-loop []
-       (db/with-transaction [jrs]
-         (doseq [run-id (get-expired-run-ids jrs)]
-           (try
-             (log/debug "Expiry monitor: expiring run" run-id)
-             (lt/expire-run! run-id)
-             (catch Exception e
-               (log/error "Expiry monitor: run " run-id ": " e)))))
-       (<! (timeout (* interval-seconds 1000)))
-       (recur)))))
+   (if *interval*
+     (do
+       (log/warn "Changing expiry monitor interval from" *interval* "to" interval-seconds)
+       (set! *interval* interval-seconds))
+     (let [interval-seconds (or interval-seconds 30)]
+       (alter-var-root #'*interval* (constantly interval-seconds))
+       (log/info "Expiry monitor: starting")
+       (db/start-connection-pool!)
+       (go-loop []
+         (db/with-transaction [jrs]
+           (doseq [run-id (get-expired-run-ids jrs)]
+             (try
+               (log/debug "Expiry monitor: expiring run" run-id)
+               (lt/expire-run! run-id)
+               (catch Exception e
+                 (log/error "Expiry monitor: run " run-id ": " e)))))
+         (if *interval*
+           (do (<! (timeout (* *interval* 1000)))
+               (recur))
+           (log/debug "Expiry monitor: stopped")))))))
+
+(defn stop []
+  (log/debug "Expiry monitor: requesting stop")
+  (alter-var-root #'*interval* (constantly nil)))
