@@ -41,10 +41,12 @@
                  [org.clojure/core.async "1.3.610"]
 
                  ;; web server stuff
-                 [metosin/compojure-api "2.0.0-alpha30"]
-                 [metosin/jsonista "0.2.7"]
+                 [javax.servlet/javax.servlet-api "4.0.1"]
+                 [ring-server "0.5.0"]
                  [ring/ring-jetty-adapter "1.8.2"]
                  [ring.middleware.conditional "0.2.0"]
+                 [metosin/compojure-api "2.0.0-alpha31"]
+                 [metosin/jsonista "0.2.7"]
                  [buddy/buddy-auth "2.2.0"]
 
                  ;; logger
@@ -53,18 +55,19 @@
                  [ring-logger "1.0.1"]
 
                  ;; database
-                 [org.postgresql/postgresql "42.2.10"]
+                 [org.postgresql/postgresql "42.2.18"]
                  [seancorfield/next.jdbc "1.1.613"]
                  [honeysql "1.0.444"]
+                 [nilenso/honeysql-postgres "0.2.6"]
                  [danlentz/clj-uuid "0.1.9"]
                  [hikari-cp "2.13.0"]
 
                  ;; HAPI
-                 [ca.uhn.hapi.fhir/hapi-fhir-base "5.1.0"]
-                 [ca.uhn.hapi.fhir/hapi-fhir-structures-r4 "5.1.0"]
-                 [ca.uhn.hapi.fhir/hapi-fhir-validation "5.1.0"]
-                 [ca.uhn.hapi.fhir/hapi-fhir-validation-resources-r4 "5.1.0"]]
-  :repositories {"precisely" {:url        "s3p://precisely-maven-repo/"
+                 [ca.uhn.hapi.fhir/hapi-fhir-base "5.2.0"]
+                 [ca.uhn.hapi.fhir/hapi-fhir-structures-r4 "5.2.0"]
+                 [ca.uhn.hapi.fhir/hapi-fhir-validation "5.2.0"]
+                 [ca.uhn.hapi.fhir/hapi-fhir-validation-resources-r4 "5.2.0"]]
+  :repositories {"precisely" {:url        "s3p://precisely-maven-repo//"
                               :username   ~(env :maven-repo-aws-access-key-id)
                               :passphrase ~(env :maven-repo-aws-access-key-secret)}}
   :plugins [[lein-pprint "1.3.2"]
@@ -72,16 +75,14 @@
   :main main
   :source-paths ["src"]
   :resource-paths ["src/resources"]
-  :ring {:handler pia-server.core/app
-         :port ~(read-string (env :port))
+  :ring {:handler       pia-server.core/app
+         :port          ~(read-string (env :port))
          :auto-refresh? true
-         :auto-reload? true
+         :auto-reload?  true
          :refresh-paths ["src"]
-         :reload-paths ["src"]}
+         :reload-paths  ["src"]}
   :uberjar-name "pia-server.jar"
-  :profiles {:dev     {:dependencies [[javax.servlet/javax.servlet-api "3.1.0"]
-                                      [ring-server "0.5.0"]
-                                      [ring/ring-mock "0.3.2"]]
+  :profiles {:dev     {:dependencies [[ring/ring-mock "0.4.0"]]
                        :plugins      [[lein-ring "0.12.5"]
                                       [org.clojars.timvisher/lein-checkout "0.4.2"]]}
              :uberjar {:aot :all}}
