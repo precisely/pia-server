@@ -26,13 +26,3 @@
         (let [run (continue! (:id run) :foo "cruel")]
           (is (run-in-state? run :complete))
           (is (= (:response run) '["cruel world!"])))))))
-
-
-(deftest welcome-test
-  (testing "Can start the welcome flow"
-    (println "Starting now")
-    (let [run (start! welcome)]
-      (println "Run started")
-      (is (run-in-state? run :suspended))
-      (println "This is the welcome-test :response " (:response run))
-      )))

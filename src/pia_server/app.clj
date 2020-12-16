@@ -15,7 +15,7 @@
             [taoensso.timbre :as log]))
 
 (scm/defschema JSON (scm/maybe
-                      (scm/cond-pre scm/Num scm/Str scm/Bool
+                      (scm/cond-pre scm/Num scm/Str scm/Bool scm/Keyword
                         [(scm/recursive #'JSON)]
                         {(scm/cond-pre scm/Str scm/Keyword) (scm/recursive #'JSON)})))
 
