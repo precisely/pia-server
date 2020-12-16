@@ -1,4 +1,5 @@
-(ns pia-server.flows.components)
+(ns pia-server.flows.components
+  (:require [rapids :refer :all]))
 
 
 ;(defn num-slider [min min-tag max max-tag text increment]
@@ -21,21 +22,30 @@
 ;; Rating type in surveyjs
 (defn rating [name text min min-tag max max-tag]
       (hash-map :type "rating"
-                :name name
-                :title text
-                :isRequired true
-                :rateMin min
-                :rateMax max
-                :minRateDescription min-tag
-                :maxRateDescription max-tag
+        :name name
+        :title text
+        :isRequired true
+        :rateMin min
+        :rateMax max
+        :minRateDescription min-tag
+        :maxRateDescription max-tag
         ))
 
 ;; RadioGroup question https://surveyjs.io/Examples/Library?id=questiontype-radiogroup&platform=jQuery&theme=modern
 (defn radiogroup [name text colCount choices]
       (hash-map :type "radiogroup"
-                :name name
-                :title text
-                :isRequired true
-                :colCount colCount
-                :choices choices
+        :name name
+        :title text
+        :isRequired true
+        :colCount colCount
+        :choices choices
         ))
+
+;; TODO: permit generator, uuid -> str Java.util/uuid random uuid
+(defn ^:suspending form [name permit & questions]
+      (*> {:type "form"
+        :name name
+        :questions questions
+        :permit permit})
+      (println "This is the form output " )
+      (<* :permit permit))

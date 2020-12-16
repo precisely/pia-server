@@ -17,6 +17,7 @@
     "Let's make sure you recover your energy!")
   )
 
+
 (deflow iof []
   (*> "Next, you can measure your impairment of function (IOF) from fatigue")
   (*> "To do this, rate how difficult each of the following activities were for you in the last 7 days")

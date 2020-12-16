@@ -41,7 +41,8 @@
     "some result"))
 
 (def flows {:foo     #'foo
-            :welcome #'welcome})
+            :welcome #'welcome
+            })
 
 (defn run-result [run]
   (reduce-kv #(assoc %1 (keyword (str/replace (name %2) "-" "_")) %3) {}

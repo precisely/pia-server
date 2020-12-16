@@ -27,48 +27,49 @@
   (*> "Specifically, the problems being tracked here can lead to Chronic Fatigue Syndrome (CFS)")
   (*> "You can assess your own risk for CFS by simply answering the next questions about how you feel.")
   (*> "It usually takes less than 10 minutes, or only seconds if you are showing no signs of CFS")
-  (welcome-radiogroup "Now if you're ready, let's begin")
-  (*> "You said" (<*))
-  (welcome-rating "How do you feel?")
-  (*> "You felt" (<*)))
+  (let [welcome-answers (form :welcome "welcome"
+                          (radiogroup "ready" "Ready to start?" 2 ["Yes", "No"])
+                          (rating "welcomeRate" "Is everything okay?" 0 "No" 10 "Yes")
+                          )]
+    (println "The form data is " welcome-answers))
+  )
 
-(deflow ender [final-results]
-  (*> "You have reached the end of this demo")
-  (*> (str "Your final results were:\n" final-results)))
-
-
-(deflow timeout [at-time]
-  (<* :expires at-time))
-;(deflow repeating-checkin
-;        "Keeps running checkin-flow until until-date with a delay of delay.
-;        checkin-flow should return nil if the checkin should continue, otherwise, it returns a value
-;        which will be returned by repeating-checkin"
-;        [delay until-date checkin-flow]
-;        (loop []
-;          (when (< (now) until-date) ;; haven't reached until-date
-;            (<! (start! (timeout (java-time/plus (now) delay))))
-;            (ifit [result (fcall checkin-flow)]
-;                  result
-;                  (recur)))))
-
-;;Vector that contains the ordered fatigue modules
-(def fatigue-flows [general iof six-months])
+  (deflow ender [final-results]
+    (*> "You have reached the end of this demo")
+    (*> (str "Your final results were:\n" final-results)))
 
 
-(deflow map-home [flow]
-  (fcall flow))
+  (deflow timeout [at-time]
+    (<* :expires at-time))
+  ;(deflow repeating-checkin
+  ;        "Keeps running checkin-flow until until-date with a delay of delay.
+  ;        checkin-flow should return nil if the checkin should continue, otherwise, it returns a value
+  ;        which will be returned by repeating-checkin"
+  ;        [delay until-date checkin-flow]
+  ;        (loop []
+  ;          (when (< (now) until-date) ;; haven't reached until-date
+  ;            (<! (start! (timeout (java-time/plus (now) delay))))
+  ;            (ifit [result (fcall checkin-flow)]
+  ;                  result
+  ;                  (recur)))))
+
+  ;;Vector that contains the ordered fatigue modules
+  (def fatigue-flows [general iof six-months])
 
 
-(deflow home [given-flows]
-  (welcome)
-  (loop [
-         results []
-         [flow & flows] given-flows
-         ]
-    (println flow)
-    (let [new-results (conj results (fcall flow))]
-      (if (rest flows)
-        (recur flows new-results))
-      )
-    ))
+  (deflow map-home [flow]
+    (fcall flow))
 
+
+  (deflow home [given-flows]
+    (welcome)
+    (loop [
+           results []
+           [flow & flows] given-flows
+           ]
+      (println flow)
+      (let [new-results (conj results (fcall flow))]
+        (if (rest flows)
+          (recur flows new-results))
+        )
+      ))

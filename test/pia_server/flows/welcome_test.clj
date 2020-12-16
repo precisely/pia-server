@@ -1,8 +1,8 @@
-(ns pia-server.handler-test
+(ns pia-server.flows.cfsdemo-test
   (:require [cheshire.core :as cheshire]
             [clojure.test :refer :all]
             [pia-server.app :refer :all]
-            []
+            [pia-server.flows.cfsdemo :refer [welcome]]
             [rapids :refer :all]
             [ring.mock.request :as mock]))
 
