@@ -140,7 +140,7 @@
                    (left-join [:runs :next] [:= :next.id :root.next_id])
                    (where [:= :root.id run-id])
                    (order-by [(sql/call := :root.id run-id) :desc])
-                   sql/format)]
+                   sql/format)))]
     (case (count runs)
       0 nil
       1 (first runs)
