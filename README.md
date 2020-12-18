@@ -61,7 +61,7 @@ lein ring server
 ### Run the application in the REPL
 
 ```clojure
-(start #'pia/app)
+(start)
 ```
 
 ### Run the tests
