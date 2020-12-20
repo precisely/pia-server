@@ -67,7 +67,7 @@
                  [ca.uhn.hapi.fhir/hapi-fhir-structures-r4 "5.2.0"]
                  [ca.uhn.hapi.fhir/hapi-fhir-validation "5.2.0"]
                  [ca.uhn.hapi.fhir/hapi-fhir-validation-resources-r4 "5.2.0"]]
-  :repositories {"precisely" {:url        "s3p://precisely-maven-repo//"
+  :repositories {"precisely" {:url        "s3p://precisely-maven-repo/"
                               :username   ~(env :maven-repo-aws-access-key-id)
                               :passphrase ~(env :maven-repo-aws-access-key-secret)}}
   :plugins [[lein-pprint "1.3.2"]
