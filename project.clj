@@ -12,7 +12,7 @@
 (require '[clojure.java.io :as io]
   '[clojure.string :as str])
 
-(def env
+(def env-map
   (->> (merge
          (into {} (System/getenv))
          (into {} (System/getProperties))
@@ -28,6 +28,10 @@
                         (keyword))
                       v]))
     (into {})))
+
+(defn env
+  ([k] (env k nil))
+  ([k default] (or (env-map k) default (throw (ex-info (str "Environment key not defined: " k) {:variable k})))))
 
 (defproject pia-server "0.1.3-SNAPSHOT"
   :description "Precisely Intelligent Agent"
@@ -72,7 +76,7 @@
   :source-paths ["src"]
   :resource-paths ["src/resources"]
   :ring {:handler       pia-server.core/app
-         :port          ~(read-string (env :port))
+         :port          ~(read-string (env :port "8080"))
          :auto-refresh? true
          :auto-reload?  true
          :refresh-paths ["src"]
