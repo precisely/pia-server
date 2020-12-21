@@ -6,12 +6,14 @@
   (testing "Creates a button choice by default"
     (is (= (make-choices :yes "Yes!" :no "No!")
           {:type :choices, :style :buttons,
-           :choices {:yes "Yes!", :no "No!"}})))
+           :choices [{:id :yes, :text "Yes!"},
+                     {:id :no, :text "No!"}]})))
 
   (testing "allows :list style"
     (is (= (make-choices :list :yes "Yes!" :no "No!")
           {:type :choices, :style :list,
-           :choices {:yes "Yes!", :no "No!"}})))
+           :choices [{:id :yes, :text "Yes!"},
+                     {:id :no, :text "No!"}]})))
 
   (testing "Checks for invalid style"
     (is (thrown? AssertionError (make-choices :foo :yes "Yes!" :no "No!")))))
