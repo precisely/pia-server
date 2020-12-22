@@ -39,11 +39,11 @@ jobs:
     - name: Install dependencies
       run: lein deps
 
-    - name: Prepare Database
-      run: lein run -m scripts/create-db
+#    - name: Prepare Database
+#      run: lein run -m scripts/create-db
 
-#    - name: Setup tmate session
-#      uses: mxschmitt/action-tmate@v3
+    - name: Setup tmate session
+      uses: mxschmitt/action-tmate@v3
 
     - name: Run tests
       run: lein test
