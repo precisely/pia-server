@@ -45,6 +45,8 @@
                  [org.clojure/core.async "1.3.610"]
                  [camel-snake-kebab "0.4.2"]
                  [potemkin "0.4.5"]
+                 [org.clojure/data.json "1.0.0"]
+                 [luposlip/json-schema "0.2.9"]
 
                  ;; web server stuff
                  [javax.servlet/javax.servlet-api "4.0.1"]
@@ -74,7 +76,7 @@
             [s3-wagon-private "1.3.4"]]
   :main main
   :source-paths ["src"]
-  :resource-paths ["src/resources"]
+  :resource-paths ["resources"]
   :ring {:handler       pia-server.core/app
          :port          ~(read-string (env :port "8080"))
          :auto-refresh? true
