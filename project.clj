@@ -61,11 +61,13 @@
                  [nilenso/honeysql-postgres "0.2.6"]
                  [danlentz/clj-uuid "0.1.9"]
                  [hikari-cp "2.13.0"]
+                 [org.hibernate/hibernate-core  "5.4.26.Final"]
 
                  ;; HAPI
                  [ca.uhn.hapi.fhir/hapi-fhir-base "5.2.0"]
                  [ca.uhn.hapi.fhir/hapi-fhir-structures-r4 "5.2.0"]
                  [ca.uhn.hapi.fhir/hapi-fhir-validation "5.2.0"]
+                 [ca.uhn.hapi.fhir/hapi-fhir-jpaserver-base "5.2.0"]
                  [ca.uhn.hapi.fhir/hapi-fhir-validation-resources-r4 "5.2.0"]]
   :repositories {"precisely" {:url        "s3p://precisely-maven-repo/"
                               :username   ~(env :maven-repo-aws-access-key-id)
@@ -74,7 +76,7 @@
             [s3-wagon-private "1.3.4"]]
   :main main
   :source-paths ["src"]
-  :resource-paths ["src/resources"]
+  :resource-paths ["resources"]
   :ring {:handler       pia-server.core/app
          :port          ~(read-string (env :port))
          :auto-refresh? true
