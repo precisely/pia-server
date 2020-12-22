@@ -36,8 +36,10 @@ db/sqlite.db
 .idea/**/usage.statistics.xml
 .idea/**/dictionaries
 .idea/**/shelf
+.idea/misc.xml
 
 # Generated files
+pia-server.iml
 .idea/**/contentModel.xml
 
 # Sensitive or high-churn files

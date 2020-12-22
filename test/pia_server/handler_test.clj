@@ -2,11 +2,12 @@
   (:require [cheshire.core :as cheshire]
             [clojure.test :refer :all]
             [pia-server.app :refer :all]
+            []
             [rapids :refer :all]
             [ring.mock.request :as mock]))
 
 (defn parse-body [body]
-  (cheshire/parse-string (slurp body) true))
+      (cheshire/parse-string (slurp body) true))
 
 ;(deftest a-test
 ;  (testing "Test GET request to /hello?name={a-name} returns expected response"

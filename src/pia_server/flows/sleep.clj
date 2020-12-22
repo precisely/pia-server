@@ -1,6 +1,6 @@
 (ns pia-server.flows.sleep
   (:require [rapids :refer :all]
-            [pia-server.flows.components :refer :all]
+            [pia-server.flows.form :refer :all]
             ))
 
 ;; Assesses the patient's post-exertional malaise

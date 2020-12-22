@@ -14,25 +14,25 @@
             [pia-server.flows.cfsdemo :refer [welcome]]
             [taoensso.timbre :as log]))
 
-(scm/defschema JSON (scm/maybe
-                      (scm/cond-pre scm/Num scm/Str scm/Bool
-                        [(scm/recursive #'JSON)]
-                        {(scm/cond-pre scm/Str scm/Keyword) (scm/recursive #'JSON)})))
+(scm/defschema JSONK (scm/maybe
+                      (scm/cond-pre scm/Num scm/Str scm/Bool scm/Keyword
+                        [(scm/recursive #'JSONK)]
+                        {(scm/cond-pre scm/Str scm/Keyword) (scm/recursive #'JSONK)})))
 
 (scm/defschema Run
   {:id                               scm/Uuid
    :state                            (scm/enum :running :suspended :complete)
-   (scm/optional-key :result)        JSON
-   :response                         [JSON]
-   (scm/optional-key :run_response)  [JSON]
+   (scm/optional-key :result)        JSONK
+   :response                         [JSONK]
+   (scm/optional-key :run_response)  [JSONK]
    (scm/optional-key :return_mode)   (scm/maybe (scm/enum :block :redirect))
    :next_id                          (scm/maybe scm/Uuid)
    (scm/optional-key :parent_run_id) (scm/maybe scm/Uuid)
    (scm/optional-key :next)          (scm/maybe (scm/recursive #'Run))})
 
 (scm/defschema Event
-  (scm/maybe {(scm/optional-key :permit) JSON
-              (scm/optional-key :data)   JSON}))
+  (scm/maybe {(scm/optional-key :permit) JSONK
+              (scm/optional-key :data)   JSONK}))
 
 (deflow foo []
   (*> "hello")
@@ -41,7 +41,8 @@
     "some result"))
 
 (def flows {:foo     #'foo
-            :welcome #'welcome})
+            :welcome #'welcome
+            })
 
 (defn run-result [run]
   (reduce-kv #(assoc %1 (keyword (str/replace (name %2) "-" "_")) %3) {}
@@ -72,7 +73,7 @@
           :body [args [scm/Any] []]
           :summary "starts a Run based on the given flow"
           (ok (let [result (run-result (db/with-transaction [_]
-                            (apply start! (var-get (get flows flow)) args)))]
+                                         (apply start! (var-get (get flows flow)) args)))]
                 (log/debug (str "/api/runs/" flow " =>") result)
                 result)))
 

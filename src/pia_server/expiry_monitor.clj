@@ -18,7 +18,7 @@
    (if *interval*
      (do
        (log/warn "Changing expiry monitor interval from" *interval* "to" interval-seconds)
-       (set! *interval* interval-seconds))
+       (alter-var-root *interval* interval-seconds))
      (let [interval-seconds (or interval-seconds 30)]
        (alter-var-root #'*interval* (constantly interval-seconds))
        (log/info "Expiry monitor: starting")
