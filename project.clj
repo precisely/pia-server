@@ -40,7 +40,7 @@
                  [envvar "1.1.1"]
 
                  ;; application support
-                 [precisely/rapids "0.3.3"]
+                 [precisely/rapids "0.3.4"]
                  [clojure.java-time "0.3.2"]
                  [org.clojure/core.async "1.3.610"]
                  [camel-snake-kebab "0.4.2"]
