@@ -18,5 +18,11 @@
        (json-schema/validate r4-schema (json/write-str valid-pt))
        (catch clojure.lang.ExceptionInfo ex (ex-data ex)))
      (try
+       (json-schema/validate r4-schema valid-pt)
+       (catch clojure.lang.ExceptionInfo ex (ex-data ex)))
+     (try
        (json-schema/validate r4-schema (json/write-str invalid-pt))
+       (catch clojure.lang.ExceptionInfo ex (-> (ex-data ex) :errors first)))
+     (try
+       (json-schema/validate r4-schema invalid-pt)
        (catch clojure.lang.ExceptionInfo ex (-> (ex-data ex) :errors first)))]))
