@@ -8,18 +8,42 @@ on:
 
 jobs:
   build:
+
+    runs-on: ubuntu-latest
+
     env:
       MAVEN_REPO_AWS_ACCESS_KEY_ID: ${{ secrets.MAVEN_REPO_AWS_ACCESS_KEY_ID }}
       MAVEN_REPO_AWS_ACCESS_KEY_SECRET: ${{ secrets.MAVEN_REPO_AWS_ACCESS_KEY_SECRET }}
       AWS_REGION: us-east-1
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+      DB_PORT: 5432
 
-    runs-on: ubuntu-latest
+    services:
+      postgres:
+        # Docker Hub image
+        image: postgres
+        # Provide the password for postgres
+        env:
+          POSTGRES_PASSWORD: postgres
+        # Set health checks to wait until postgres has started
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
     - uses: actions/checkout@v2
+
     - name: Install dependencies
       run: lein deps
 
-    - name: Setup tmate session
-      uses: mxschmitt/action-tmate@v3
+    - name: Prepare Database
+      run: lein run -m scripts/create-db
+
+#    - name: Setup tmate session
+#      uses: mxschmitt/action-tmate@v3
+
     - name: Run tests
       run: lein test
