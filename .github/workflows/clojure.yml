@@ -11,12 +11,14 @@ jobs:
     env:
       MAVEN_REPO_AWS_ACCESS_KEY_ID: ${{ secrets.MAVEN_REPO_AWS_ACCESS_KEY_ID }}
       MAVEN_REPO_AWS_ACCESS_KEY_SECRET: ${{ secrets.MAVEN_REPO_AWS_ACCESS_KEY_SECRET }}
+      AWS_REGION: us-east-1
 
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
     - name: Install dependencies
       run: lein deps
+
     - name: Setup tmate session
       uses: mxschmitt/action-tmate@v3
     - name: Run tests
