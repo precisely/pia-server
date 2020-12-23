@@ -84,6 +84,7 @@
   :uberjar-name "pia-server.jar"
   :profiles {:dev     {:dependencies [[ring/ring-mock "0.4.0"]]
                        :plugins      [[lein-ring "0.12.5"]
+                                      [lein-cloverage "1.1.2"]
                                       [org.clojars.timvisher/lein-checkout "0.4.2"]]}
              :uberjar {:aot :all}}
   :jvm-opts ["-Dclojure.tools.logging.factory=clojure.tools.logging.impl/slf4j-factory"])
