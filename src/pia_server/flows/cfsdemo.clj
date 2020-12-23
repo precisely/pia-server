@@ -7,7 +7,7 @@
 
 (deflow foo-remote []
   (*> "hello")
-  (let [value (<* :permit :foo :expires (-> 2 minutes from-now) :default "default-suspend-value")]
+  (let [value (<* :permit "the-permit" :expires (-> 2 minutes from-now) :default "default-suspend-value")]
     (*> (str value " world!"))
     :result))
 

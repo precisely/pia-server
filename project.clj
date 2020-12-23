@@ -12,7 +12,7 @@
 (require '[clojure.java.io :as io]
   '[clojure.string :as str])
 
-(def env
+(def env-map
   (->> (merge
          (into {} (System/getenv))
          (into {} (System/getProperties))
@@ -29,6 +29,10 @@
                       v]))
     (into {})))
 
+(defn env
+  ([k] (env k nil))
+  ([k default] (or (env-map k) default (throw (ex-info (str "Environment key not defined: " k) {:variable k})))))
+
 (defproject pia-server "0.1.3-SNAPSHOT"
   :description "Precisely Intelligent Agent"
   :dependencies [[org.clojure/clojure "1.10.0"]
@@ -36,7 +40,7 @@
                  [envvar "1.1.1"]
 
                  ;; application support
-                 [precisely/rapids "0.3.3"]
+                 [precisely/rapids "0.3.4"]
                  [clojure.java-time "0.3.2"]
                  [org.clojure/core.async "1.3.610"]
                  [camel-snake-kebab "0.4.2"]
@@ -72,7 +76,7 @@
   :source-paths ["src"]
   :resource-paths ["src/resources"]
   :ring {:handler       pia-server.core/app
-         :port          ~(read-string (env :port))
+         :port          ~(read-string (env :port "8080"))
          :auto-refresh? true
          :auto-reload?  true
          :refresh-paths ["src"]

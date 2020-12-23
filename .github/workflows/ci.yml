@@ -1,0 +1,53 @@
+name: Clojure CI
+
+on:
+  push:
+    branches: [ master, dev ]
+  pull_request:
+    branches: [ master, dev ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    env:
+      MAVEN_REPO_AWS_ACCESS_KEY_ID: ${{ secrets.MAVEN_REPO_AWS_ACCESS_KEY_ID }}
+      MAVEN_REPO_AWS_ACCESS_KEY_SECRET: ${{ secrets.MAVEN_REPO_AWS_ACCESS_KEY_SECRET }}
+      AWS_REGION: us-east-1
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+      DB_PORT: 5432
+      DB_NAME: pia_runstore
+
+    services:
+      postgres:
+        image: postgres:10.8
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+          POSTGRES_PORT: 5432
+        ports:
+        - 5432:5432
+        # needed because the postgres container does not provide a healthcheck
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Install dependencies
+      run: lein deps
+
+# Useful for debugging problems - CI will pause and provide an ssh connection
+#    - name: Setup tmate session
+#      uses: mxschmitt/action-tmate@v3
+
+    - name: Create Database
+      run: PGPASSWORD=postgres createdb -U postgres -p 5432 -h localhost $DB_NAME && PGPASSWORD=postgres createdb -U postgres -p 5432 -h localhost test_$DB_NAME
+
+    - name: Create Tables
+      run: lein run -m scripts/create-db
+
+    - name: Run tests
+      run: lein test

@@ -11,9 +11,7 @@
             [honeysql.helpers :refer :all]
             [rapids.runstore :as rs]
             [pia-server.db :as db])
-  (:import (com.zaxxer.hikari HikariDataSource)
-           (java.util.logging Logger Level)))
-
+  (:import (com.zaxxer.hikari HikariDataSource)))
 ;(def log-level-map
 ;  {:off     Level/OFF,
 ;   :severe  Level/SEVERE,
@@ -59,7 +57,7 @@
          (db/delete-db!)))))
 
 (deftest ^:db write-run
-  (testing "can create a run to the database"
+  (testing "can create a run in the database"
     (with-test-db
       (let [[run, rec] (r/make-test-run :id :error)
             db-rec (with-transaction [jrs]
@@ -68,7 +66,7 @@
         (is (= (dissoc run :id) (dissoc db-run :id)))
 
         (testing "new created run should have an id"
-          (is (-> run :id nil?))
+          (is (-> run :id nil? not))
           (is (-> db-run :id nil? not))))))
 
   (testing "can continue a run"

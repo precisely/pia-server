@@ -3,7 +3,8 @@
     <ClojureCodeStyleSettings>{
   :clojure.core.match/match :only-indent
   :clojure.test/is :only-indent
-  :cursive.formatting/default-only-indent true
+  :cursive.formatting/align-binding-forms true
+  :cursive.formatting/align-conditionals false
   :foo.bar/defp :only-indent
   :foo.bar/mymacro :only-indent
   :longterm.core/deflow :only-indent
