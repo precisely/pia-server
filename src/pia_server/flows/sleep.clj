@@ -1,6 +1,6 @@
 (ns pia-server.flows.sleep
   (:require [rapids :refer :all]
-            [pia-server.flows.form :refer :all]
+            [pia-server.chat.survey :refer :all]
             ))
 
 ;; Assesses the patient's post-exertional malaise
@@ -10,13 +10,13 @@
 ;; 2) Ask all question and compute score thresholds after, which provides more symptom tracking data that could be useful
 ;; later
 
+
+
 (defn sleep-freqs [q]
-  (*> q, (num-slider 0 "None of the time" 4 "All of the time" "Frequency in the last 6 months" 1)
-      ))
+  (*> q, (rating "sleepFreq" "Frequency in the last 6 months" 0 4 :min-text "None of the time" :max-text "All of the time" )))
 
 (defn sleep-sevs [q]
-  (*> q, (num-slider 0 "None of the time" 4 "All of the time" "Frequency in the last 6 months" 1)
-      ))
+  (*> q, (rating "sleepSev" "Severity in the last 6 months" 0 4 :min-text "No issue" :max-text "Very severe" )))
 
 
 (def sleep-questions {
@@ -38,24 +38,24 @@
             "Let's make sure you recover your energy!"))
 
 
-[(deflow sleep []
-         (*> "This part of the test will focus on your sleep symptoms, which are very important.",
-             "In the next statements, rate the frequency and severity you felt the problems in the last 6 months.")
-         (loop [
-                [question & questions] sleep-questions
-                ]
-           (let [
-                 _ (sleep-freqs (key question))
-                 freq (<*)
-                 _ (sleep-sevs (val question))
-                 sev (<*)
-                 ]
-             (if (and (>= freq 2) (>= sev 2))
-               (*> "Based on these responses, your sleep problems indicate a possibly serious issue",
-                   "Also, when examining your answers from previous sections, your overall risk for developing chronic fatigue is high",
-                   "There are two more short sections to complete now, and we urge you to finish this assessment so we can make as informed of a referral as possible.")
-               (if (rest questions)
-                 (recur (first questions) (rest questions))
-                 (no-sleep)
-                 )))
-           ))]
+;(deflow sleep []
+;         (*> "This part of the test will focus on your sleep symptoms, which are very important.",
+;             "In the next statements, rate the frequency and severity you felt the problems in the last 6 months.")
+;         (loop [
+;                [question & questions] sleep-questions
+;                ]
+;           (let [
+;                 _ (sleep-freqs (key question))
+;                 freq (<*)
+;                 _ (sleep-sevs (val question))
+;                 sev (<*)
+;                 ]
+;             (if (and (>= freq 2) (>= sev 2))
+;               (*> "Based on these responses, your sleep problems indicate a possibly serious issue",
+;                   "Also, when examining your answers from previous sections, your overall risk for developing chronic fatigue is high",
+;                   "There are two more short sections to complete now, and we urge you to finish this assessment so we can make as informed of a referral as possible.")
+;               (if (rest questions)
+;                 (recur [first questions] (rest questions))
+;                 (no-sleep)
+;                 )))
+;           ))
