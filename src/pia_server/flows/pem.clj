@@ -1,6 +1,6 @@
 (ns pia-server.flows.pem
   (:require [rapids :refer :all]
-            [pia-server.flows.form :refer :all]
+            [pia-server.chat.survey :refer :all]
             ))
 
 ;; Assesses the patient's post-exertional malaise
@@ -10,13 +10,12 @@
 ;; 2) Ask all question and compute score thresholds after, which provides more symptom tracking data that could be useful
 ;; later
 
+
 (defn pem-freqs [q]
-  (*> q, (num-slider 0 "None of the time" 4 "All of the time" "Frequency in the last 6 months" 1)
-      ))
+  (*> q, (rating "pemFreq" "Frequency in the last 6 months" 0 4 :min-text "None of the time" :max-text "All of the time")))
 
 (defn pem-sevs [q]
-  (*> q, (num-slider 0 "None of the time" 4 "All of the time" "Frequency in the last 6 months" 1)
-      ))
+  (*> q, (rating "pemSev" "Severity in the last 6 months" 0 4 :min-text "No issue" :max-text "Very severe")))
 
 
 (def pem-questions {
@@ -37,23 +36,23 @@
             "Let's make sure you recover your energy!"))
 
 
-(deflow pem []
-        (*> "Let's now look at how often and how much you feel tired after activities. This is called post-exertional malaise (PEM)",
-            "In the next statements, rate the frequency and severity you felt in the last 6 months.")
-        (loop [
-               [question & questions] pem-questions
-               ]
-          (let [
-                _ (pem-freqs (key question))
-                freq (<*)
-                _ (pem-sevs (val question))
-                sev (<*)
-                ]
-            (if (and (>= freq 2) (>= sev 2))
-              (*> "After your answers so far, your post-exertional malaise shows serious signs of long-term issues",
-                  "You would benefit greatly from completing the next questions, and overall you are almost finished with the assessment")
-              (if (rest questions)
-                (recur (first questions) (rest questions))
-                (no-pem)
-                )))
-              ))
+;(deflow pem []
+;        (*> "Let's now look at how often and how much you feel tired after activities. This is called post-exertional malaise (PEM)",
+;            "In the next statements, rate the frequency and severity you felt in the last 6 months.")
+;        (loop [
+;               [question & questions] pem-questions
+;               ]
+;          (let [
+;                _ (pem-freqs (key question))
+;                freq (<*)
+;                _ (pem-sevs (val question))
+;                sev (<*)
+;                ]
+;            (if (and (>= freq 2) (>= sev 2))
+;              (*> "After your answers so far, your post-exertional malaise shows serious signs of long-term issues",
+;                  "You would benefit greatly from completing the next questions, and overall you are almost finished with the assessment")
+;              (if (rest questions)
+;                (recur (first questions) (rest questions))
+;                (no-pem)
+;                )))
+;              ))

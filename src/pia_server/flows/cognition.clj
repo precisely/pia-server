@@ -1,6 +1,6 @@
 (ns pia-server.flows.cognition
   (:require [rapids :refer :all]
-            [pia-server.flows.form :refer :all]
+            [pia-server.chat.survey :refer :all]
             ))
 
 ;; Assesses the patient's cognitive impairment
@@ -13,13 +13,10 @@
 ;; later
 
 (defn cognition-freqs [q]
-  (*> q, (num-slider 0 "None of the time" 4 "All of the time" "Frequency in the last 6 months" 1)
-      ))
+  (*> q, (rating "cognitionFreq" "Frequency in the last 6 months" 0 4 :min-text "None of the time" :max-text "All of the time")))
 
 (defn cognition-sevs [q]
-  (*> q, (num-slider 0 "None of the time" 4 "All of the time" "Frequency in the last 6 months" 1)
-      ))
-
+  (*> q, (rating "cognitionSev" "Severity in the last 6 months" 0 4 :min-text "No issue" :max-text "Very severe")))
 
 (def cognition-questions {
                           '"Problems remembering things"                                          "How severe is this?",
@@ -38,34 +35,31 @@
                           }
   )
 
-
-
 (deflow no-cognition []
         (*> "Thanks for taking the time to answer these questions until this point",
             "Your cognitive issues appear to be within normal ranges right now, but you should still keep track of your symptoms",
             "To help you with that, you can come back here to answer some more questions when you see a notification",
             "Let's make sure you recover your energy!"))
 
-
-(deflow cognition []
-        (*> "Let's now take a look at your cognitive impairment symptoms",
-            "We'll use the same type of answers as before - please rate the frequency and severity you felt the problems in the last 6 months")
-        (loop [
-               [question & questions] cognition-questions
-               ]
-          (let [
-                _ (cognition-freqs (key question))
-                freq (<*)
-                _ (cognition-sevs (val question))
-                sev (<*)
-                ]
-            (if (and (>= freq 2) (>= sev 2))
-              (*> "Based on these responses, your cognitive fatigue also indicates the need for a referral",
-                  "Now let's move on to the last (short) part. Almost done!"
-                  )
-              (if (rest questions)
-                (recur (first questions) (rest questions))
-                (*> "Your cognitive impairment is in normal ranges, however you are still at a high risk of developing chronic fatigue",
-                    "Now let's move on to the last (short) part. Almost done!")
-                )))
-              ))
+;(deflow cognition []
+;        (*> "Let's now take a look at your cognitive impairment symptoms",
+;            "We'll use the same type of answers as before - please rate the frequency and severity you felt the problems in the last 6 months")
+;        (loop [
+;               [question & questions] cognition-questions
+;               ]
+;          (let [
+;                _ (cognition-freqs (key question))
+;                freq (<*)
+;                _ (cognition-sevs (val question))
+;                sev (<*)
+;                ]
+;            (if (and (>= freq 2) (>= sev 2))
+;              (*> "Based on these responses, your cognitive fatigue also indicates the need for a referral",
+;                  "Now let's move on to the last (short) part. Almost done!"
+;                  )
+;              (if (rest questions)
+;                (recur (first questions) (rest questions))
+;                (*> "Your cognitive impairment is in normal ranges, however you are still at a high risk of developing chronic fatigue",
+;                    "Now let's move on to the last (short) part. Almost done!")
+;                )))
+;              ))
