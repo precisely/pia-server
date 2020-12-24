@@ -1,14 +1,11 @@
-name: Clojure CI
+name: pia-server coverage
 
 on:
-  push:
-    branches: [ master, dev ]
   pull_request:
     branches: [ master, dev ]
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
 
     env:
@@ -47,9 +44,6 @@ jobs:
       run: |
         PGPASSWORD=postgres createdb -U postgres -p 5432 -h localhost $DB_NAME && PGPASSWORD=postgres createdb -U postgres -p 5432 -h localhost test_$DB_NAME
         lein run -m scripts/create-db
-
-    - name: Run tests
-      run: lein test
 
     - name: Run Coverage
       run: lein cloverage --lcov
