@@ -49,7 +49,7 @@
   (if (bound? #'*connection-pool*)
     *connection-pool*
     (alter-var-root #'*connection-pool*
-      (fn [_] (connection/->pool HikariDataSource datasource-options)))))
+                    (fn [_] (connection/->pool HikariDataSource datasource-options)))))
 
 (defmacro with-transaction
   "jrs will be bound to a JDBCRunstore object"
@@ -57,7 +57,7 @@
   `(with-open [connection# (jdbc/get-connection *connection-pool*)]
      (let [~jrs (make-runstore connection#)]
        (rs/with-transaction [~jrs]
-         ~@body))))
+                            ~@body))))
 
 (defn is-run-state? [state] (some #(= % state) r/RunStates))
 
@@ -71,9 +71,9 @@
   (assoc m :returning returns))
 (defmethod fmt/format-clause :returning [[op v] sqlmap]
   (str "RETURNING "
-    (if (seqable? v)
-      (str/join ", " (map fmt/to-sql v))
-      (fmt/to-sql v))))
+       (if (seqable? v)
+         (str/join ", " (map fmt/to-sql v))
+         (fmt/to-sql v))))
 
 (defrecord JDBCRunstore [connection]
   IRunStore
@@ -84,24 +84,24 @@
     ; {:pre [(is-run-state? state)]}
     (log/debug "Creating run in state" record)
     (let [stmt (-> (insert-into :runs)
-                 (values [(to-db-record record)])
-                 (returning :runs.*)
-                 sql/format)]
+                   (values [(to-db-record record)])
+                   (returning :runs.*)
+                   sql/format)]
       (from-db-record
         (exec-one! jrs stmt))))
 
   (rs-update! [jrs record expires]
     (log/debug "Updating run " record)
     (let [updated-at (lt/now)
-          record (to-db-record (assoc record :updated_at updated-at :suspend_expires expires))]
+          record     (to-db-record (assoc record :updated_at updated-at :suspend_expires expires))]
       (from-db-record
         (exec-one! jrs
-          (-> {}
-            (update :runs)
-            (sset (dissoc record :id))
-            (where [:= :id (:id record)])
-            (returning :runs.*)
-            sql/format)))))
+                   (-> {}
+                       (update :runs)
+                       (sset (dissoc record :id))
+                       (where [:= :id (:id record)])
+                       (returning :runs.*)
+                       sql/format)))))
 
   (rs-lock! [jrs run-id]
     (log/debug "Locking run " run-id)
@@ -131,16 +131,16 @@
 (defn query-run-with-next [jrs run-id]
   (let [runs (map from-db-record
 
-               (exec! jrs
-                 ;; need to use sql/call for ORDER-BY with expression for now:
-                 ;; https://github.com/seancorfield/honeysql/issues/285
-                 ;; also, ignore the linter errors in the following:
-                 (-> (select :*)
-                   (from [:runs :root])
-                   (left-join [:runs :next] [:= :next.id :root.next_id])
-                   (where [:= :root.id run-id])
-                   (order-by [(sql/call := :root.id run-id) :desc])
-                   sql/format)))]
+                  (exec! jrs
+                         ;; need to use sql/call for ORDER-BY with expression for now:
+                         ;; https://github.com/seancorfield/honeysql/issues/285
+                         ;; also, ignore the linter errors in the following:
+                         (-> (select :*)
+                             (from [:runs :root])
+                             (left-join [:runs :next] [:= :next.id :root.next_id])
+                             (where [:= :root.id run-id])
+                             (order-by [(sql/call := :root.id run-id) :desc])
+                             sql/format)))]
     (case (count runs)
       0 nil
       1 (first runs)
@@ -167,11 +167,11 @@
   ([jrs now]
    {:post [(s/assert (s/coll-of uuid?) %)]}
    (map :runs/id
-     (exec! jrs
-       (-> (select :id)
-         (from :runs)
-         (where [:< :suspend_expires now])
-         sql/format)))))
+        (exec! jrs
+               (-> (select :id)
+                   (from :runs)
+                   (where [:< :suspend_expires now])
+                   sql/format)))))
 
 (defn create-db! []
   (jdbc/execute! *connection-pool* ["
@@ -231,12 +231,12 @@
 ;;
 ;;
 (defn simple-test []
-  (let [run (r/make-test-run)
+  (let [run     (r/make-test-run)
         run-rec (dissoc (r/run-to-record run) :result :error :state :stack :suspend :response :return_mode)
-        stmt (-> (insert-into :runs)
-               (values run-rec)
-               (returning [:runs.*])
-               sql/format)]
+        stmt    (-> (insert-into :runs)
+                    (values run-rec)
+                    (returning [:runs.*])
+                    sql/format)]
     (prn stmt)
     (with-open [conn (jdbc/get-connection *connection-pool*)]
       (from-db-record

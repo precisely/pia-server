@@ -1,7 +1,6 @@
 (ns pia-server.flows.orthostatic
   (:require [rapids :refer :all]
-            [pia-server.chat :refer :all]
-            ))
+            [pia-server.chat :refer :all]))
 
 ;; Assesses the patient's post-exertional malaise
 ;; Dropout bucket is defined by the previous coginitive flows logic. There is no bucket specific for orthostatic intolerance right now

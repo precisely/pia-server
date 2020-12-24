@@ -15,9 +15,9 @@
             [taoensso.timbre :as log]))
 
 (scm/defschema JSONK (scm/maybe
-                      (scm/cond-pre scm/Num scm/Str scm/Bool scm/Keyword
-                        [(scm/recursive #'JSONK)]
-                        {(scm/cond-pre scm/Str scm/Keyword) (scm/recursive #'JSONK)})))
+                       (scm/cond-pre scm/Num scm/Str scm/Bool scm/Keyword
+                                     [(scm/recursive #'JSONK)]
+                                     {(scm/cond-pre scm/Str scm/Keyword) (scm/recursive #'JSONK)})))
 
 (scm/defschema Run
   {:id                               scm/Uuid
@@ -46,8 +46,8 @@
 
 (defn run-result [run]
   (reduce-kv #(assoc %1 (keyword (str/replace (name %2) "-" "_")) %3) {}
-    (select-keys run
-      [:id :response :next-id :next :result :state :return-mode :run_response :parent-run-id])))
+             (select-keys run
+                          [:id :response :next-id :next :result :state :return-mode :run_response :parent-run-id])))
 
 (def base-handler
   (api
@@ -121,7 +121,7 @@
                      (jwt/unsign bearer (@env :jwt-secret))))
           (catch Exception e
             (if (= {:type :validation :cause :signature}
-                  (ex-data e))
+                   (ex-data e))
               (if (@env :disable-jwt-auth)
                 (handler request)
                 (unauthorized))
@@ -132,8 +132,8 @@
 
 (def app
   (-> #'base-handler
-    (if-url-starts-with "/api" logger/wrap-with-logger)
-    wrap-jwt
-    ;; encors for CORS (https://github.com/unbounce/encors):
-    ;;(wrap-cors cors-policy)
-    ))
+      (if-url-starts-with "/api" logger/wrap-with-logger)
+      wrap-jwt
+      ;; encors for CORS (https://github.com/unbounce/encors):
+      ;;(wrap-cors cors-policy)
+      ))

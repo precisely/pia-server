@@ -16,10 +16,10 @@
 
 (defn welcome-rating [q]
   (*> q, (survey {}
-           (rating "welcomeRate" 0 10
-             :title "Is everything okay?"
-             :min-text "No"
-             :max-text "Yes"))))
+                 (rating "welcomeRate" 0 10
+                         :title "Is everything okay?"
+                         :min-text "No"
+                         :max-text "Yes"))))
 
 (deflow welcome []
   (*> "Welcome to the Precisely app!")
@@ -28,11 +28,11 @@
   (*> "You can assess your own risk for CFS by simply answering the next questions about how you feel.")
   (*> "It usually takes less than 10 minutes, or only seconds if you are showing no signs of CFS")
   (let [welcome-answers (survey {}
-                          (radiogroup :ready "Ready to start?" ["Yes", "No"])
-                          (rating :feeling "How are you feeling today?" 0 10
-                            :min-text "Terrible"
-                            :max-text "Great"))
-        feeling (:feeling welcome-answers)]
+                                (radiogroup :ready "Ready to start?" ["Yes", "No"])
+                                (rating :feeling "How are you feeling today?" 0 10
+                                        :min-text "Terrible"
+                                        :max-text "Great"))
+        feeling         (:feeling welcome-answers)]
     (*> "The result is " (str welcome-answers))
     (cond
       (> feeling 5) (*> "Glad to hear you're feeling well")
