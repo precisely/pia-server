@@ -65,7 +65,7 @@
   (let [options (or options {})
         permit (str (UUID/randomUUID))]
     (*> (merge options
-          {:type     :form
+          {:type     :survey
            :elements {:questions controls}
            :permit   permit}))
     (<* :permit permit)))
