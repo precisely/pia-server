@@ -18,6 +18,7 @@
             [honeysql.format :as fmt]
             [rapids :as lt]
             [clojure.spec.alpha :as s]
+            [migratus.core :as migratus]
             [pia-server.util :as util])
   (:import (com.zaxxer.hikari HikariDataSource)
            (java.util UUID)))
@@ -175,46 +176,13 @@
                    (where [:< :suspend_expires now])
                    sql/format)))))
 
-(defn create-db! []
-  (jdbc/execute! *connection-pool* ["
-      CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\";
-
-      DO $$ BEGIN
-        CREATE TYPE RUN_STATES AS ENUM ('created', 'suspended', 'complete', 'error');
-      EXCEPTION
-        WHEN duplicate_object THEN null;
-      END $$;
-
-      DO $$ BEGIN
-        CREATE TYPE RETURN_MODES AS ENUM ('block', 'redirect');
-      EXCEPTION
-        WHEN duplicate_object THEN null;
-      END $$;
-
-      CREATE TABLE IF NOT EXISTS runs (
-        id UUID DEFAULT uuid_generate_v4(),
-        PRIMARY KEY (id),
-
-        -- data columns
-        error BYTEA,
-        next_id UUID,
-        parent_run_id UUID,
-        response BYTEA,
-        result BYTEA,
-        return_mode RETURN_MODES,
-        run_response BYTEA,
-        stack BYTEA,
-        start_form TEXT,
-        state RUN_STATES,
-        suspend BYTEA,
-        suspend_expires TIMESTAMP,
-
-        -- timestamps
-        created_at TIMESTAMP  NOT NULL  DEFAULT current_timestamp,
-        updated_at TIMESTAMP  NOT NULL  DEFAULT current_timestamp
-      );
-      CREATE INDEX IF NOT EXISTS runs_suspend_expires ON runs (suspend_expires);"])
-  #_(log/info "Database created"))
+(defn migrate! []
+  (let [conf {:store :database
+              :migration-dir "migrations/runstore"
+              :migration-table-name "runstore_schema_migrations"
+              :db {:connection (jdbc/get-connection *connection-pool*)}}]
+    (migratus/migrate conf))
+  #_(log/info "Runstore database migrated"))
 
 ;; HELPERS for debugging
 (defn uuid [] (UUID/randomUUID))
@@ -223,6 +191,9 @@
         (catch Exception e#
           (log/error "While " '~body ":" e#))))
 (defn delete-db! []
+  ;; FIXME:
+  ;; 1. The :datasource-options test will no longer work with JDBC configuration.
+  ;; 2. This is not the appropriate way to set up databases for tests! Transactions should be used!
   (if-not (-> datasource-options :server-name (= "localhost"))
     (log/error "Refusing to drop database when datasource-options :server-name is not localhost"))
   (log-errors (jdbc/execute! *connection-pool* ["drop table runs;"]))

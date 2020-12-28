@@ -22,7 +22,7 @@
           :or   {port 8080, join? false, expiry-seconds 10}}]
   (log/info (str "Starting pia-server at http://localhost:" port))
   (db/start-connection-pool!)
-  (db/create-db!)
+  (db/migrate!)
   (log/info (str "Starting expiry monitor with timeout of " expiry-seconds " seconds"))
   (expiry-monitor/start expiry-seconds)
   (reset! *server* (jetty/run-jetty app {:port port, :join? join?}))))

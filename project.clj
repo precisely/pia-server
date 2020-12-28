@@ -68,6 +68,7 @@
                  [honeysql "1.0.444"]
                  [nilenso/honeysql-postgres "0.2.6"]
                  [danlentz/clj-uuid "0.1.9"]
+                 [migratus "1.3.3"]
                  [hikari-cp "2.13.0"]]
   :repositories {"precisely" {:url        "s3p://precisely-maven-repo/"
                               :username   ~(env :maven-repo-aws-access-key-id)

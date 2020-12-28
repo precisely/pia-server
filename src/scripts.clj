@@ -4,4 +4,4 @@
 
 (defn create-db []
   (db/start-connection-pool!)
-  (db/create-db!))
+  (db/migrate!))
