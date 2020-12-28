@@ -42,12 +42,17 @@
       (alter-var-root #'*connection-pool*
                       (fn [_] (connection/->pool HikariDataSource datasource-options)))))
 
-(defn migration-conf []
+(def migration-conf
   {:store :database
    :migration-dir "migrations/hl7"
-   :migration-table-name "schema_migrations_hl7"
-   :db {:connection (jdbc/get-connection *connection-pool*)}})
+   :migration-table-name "schema_migrations_hl7"})
 
 (defn migrate! []
-  (migratus/migrate (migration-conf))
+  (with-open [c (jdbc/get-connection *connection-pool*)]
+    (migratus/migrate (assoc migration-conf :db {:connection c})))
   (log/info "HL7 database migrated"))
+
+(defn execute-one! [stmt params]
+  (with-open [c (jdbc/get-connection *connection-pool*)
+              ps (jdbc/prepare c [stmt params])]
+    (jdbc/execute-one! ps)))

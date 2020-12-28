@@ -54,14 +54,14 @@
       (alter-var-root #'*connection-pool*
                       (fn [_] (connection/->pool HikariDataSource datasource-options)))))
 
-(defn migration-conf []
+(def migration-conf
   {:store :database
    :migration-dir "migrations/runstore"
-   :migration-table-name "schema_migrations_runstore"
-   :db {:connection (jdbc/get-connection *connection-pool*)}})
+   :migration-table-name "schema_migrations_runstore"})
 
 (defn migrate! []
-  (migratus/migrate (migration-conf))
+  (with-open [c (jdbc/get-connection *connection-pool*)]
+    (migratus/migrate (assoc migration-conf :db {:connection c})))
   (log/info "Runstore database migrated"))
 
 (declare query-run-with-next to-db-record from-db-record)
