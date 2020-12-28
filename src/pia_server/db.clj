@@ -8,7 +8,7 @@
             [rapids.run :as r]
             [rapids.signals :refer [suspend-signal?]]
             [rapids.util :refer [in?]]
-            [envvar.core :refer [env]]
+            [envvar.core :refer [env keywordize]]
             [next.jdbc :as jdbc]
             [next.jdbc.types :refer [as-other]]
             [next.jdbc.connection :as connection]
@@ -17,7 +17,8 @@
             [honeysql.helpers :refer :all]
             [honeysql.format :as fmt]
             [rapids :as lt]
-            [clojure.spec.alpha :as s])
+            [clojure.spec.alpha :as s]
+            [pia-server.util :as util])
   (:import (com.zaxxer.hikari HikariDataSource)
            (java.util UUID)))
 
@@ -33,13 +34,14 @@
                          :maximum-pool-size  10
                          :pool-name          "db-pool"
                          :classname          "org.postgresql.Driver"
-                         :dbtype             "postgresql"
-                         :adapter            "postgresql"
-                         :username           (get @env :db-username (System/getProperty "user.name"))
-                         :password           (get @env :db-password "")
-                         :dbname             (get @env :db-name "pia_runstore")
-                         :server-name        (get @env :db-server-name "localhost")
-                         :port-number        (Integer/parseInt (get @env :db-port "5432"))
+                         :jdbcUrl            (util/heroku-db-url->jdbc-url
+                                              (get @env
+                                                   ;; resolve Heroku indirection
+                                                   (-> @env
+                                                       (get :db-env-var-runstore)
+                                                       keywordize)
+                                                   ;; default if no vars are set
+                                                   (str "postgres://" (System/getProperty "user.name") "@localhost:5432/pia_runstore")))
                          :register-mbeans    false})
 
 (declare from-db-record make-runstore)

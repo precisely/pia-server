@@ -37,7 +37,7 @@
   :description "Precisely Intelligent Agent"
   :dependencies [[org.clojure/clojure "1.10.0"]
 
-                 [envvar "1.1.1"]
+                 [envvar "1.1.2"]
 
                  ;; application support
                  [precisely/rapids "0.3.4"]
