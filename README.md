@@ -23,6 +23,9 @@ git clone git+ssh://git@github.com/precisely/pia-server.git```
   - NOTE: the pia-developer user in our AWS dev-precisely account has minimal permissions for retrieving the longterm library from our S3 bucket    
   - env.edn is in .gitignore
 
+* code style guide:
+https://github.com/bbatsov/clojure-style-guide
+
 ### Database setup
 
 #### Install Postgres
