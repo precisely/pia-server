@@ -1,4 +1,4 @@
-(ns pia-server.flows.sleep
+(ns pia-server.flows.cfsdemo.sleep
   (:require [rapids :refer :all]
             [pia-server.flows.form :refer :all]
             ))

@@ -1,4 +1,4 @@
-(ns pia-server.flows.orthostatic
+(ns pia-server.flows.cfsdemo.orthostatic
   (:require [rapids :refer :all]
             [pia-server.flows.form :refer :all]
             ))

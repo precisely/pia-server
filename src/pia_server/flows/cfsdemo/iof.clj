@@ -1,4 +1,4 @@
-(ns pia-server.flows.iof
+(ns pia-server.flows.cfsdemo.iof
   (:require [rapids :refer :all]
             [pia-server.chat :refer :all]
             ))

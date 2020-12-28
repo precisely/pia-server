@@ -1,4 +1,4 @@
-(ns pia-server.flows.six-months
+(ns pia-server.flows.cfsdemo.six_months
   (:require [rapids :refer :all]
             [pia-server.chat :refer :all]
             ))

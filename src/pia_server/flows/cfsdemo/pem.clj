@@ -1,4 +1,4 @@
-(ns pia-server.flows.pem
+(ns pia-server.flows.cfsdemo.pem
   (:require [rapids :refer :all]
             [pia-server.flows.form :refer :all]
             ))

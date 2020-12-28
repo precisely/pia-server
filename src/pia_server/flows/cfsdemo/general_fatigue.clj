@@ -1,4 +1,4 @@
-(ns pia-server.flows.general-fatigue
+(ns pia-server.flows.cfsdemo.general-fatigue
   (:require [rapids :refer :all]
             [pia-server.chat :refer :all]))
 

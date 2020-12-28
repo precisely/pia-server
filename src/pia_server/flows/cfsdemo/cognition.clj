@@ -1,4 +1,4 @@
-(ns pia-server.flows.cognition
+(ns pia-server.flows.cfsdemo.cognition
   (:require [rapids :refer :all]
             [pia-server.flows.form :refer :all]
             ))
