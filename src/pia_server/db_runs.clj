@@ -23,36 +23,50 @@
   (:import (com.zaxxer.hikari HikariDataSource)
            (java.util UUID)))
 
-(declare query-run-with-next to-db-record from-db-record)
-
-(def datasource-options {:auto-commit        false
-                         :read-only          false
-                         :connection-timeout 30000
-                         :validation-timeout 5000
-                         :idle-timeout       600000
-                         :max-lifetime       1800000
-                         :minimum-idle       10
-                         :maximum-pool-size  10
-                         :pool-name          "db-pool"
-                         :classname          "org.postgresql.Driver"
-                         :jdbcUrl            (util/heroku-db-url->jdbc-url
-                                              (get @env
-                                                   ;; resolve Heroku indirection
-                                                   (-> @env
-                                                       (get :db-env-var-runstore)
-                                                       keywordize)
-                                                   ;; default if no vars are set
-                                                   (str "postgres://" (System/getProperty "user.name") "@localhost:5432/pia_runstore")))
-                         :register-mbeans    false})
-
-(declare from-db-record make-runstore)
+(def datasource-options
+  {:auto-commit        false
+   :read-only          false
+   :connection-timeout 30000
+   :validation-timeout 5000
+   :idle-timeout       600000
+   :max-lifetime       1800000
+   :minimum-idle       10
+   :maximum-pool-size  10
+   :pool-name          "db-runs-pool"
+   :classname          "org.postgresql.Driver"
+   :jdbcUrl            (util/heroku-db-url->jdbc-url
+                        (get @env
+                             ;; resolve Heroku indirection
+                             (-> @env
+                                 (get :db-env-var-runstore)
+                                 keywordize)
+                             ;; default if no vars are set
+                             (str "postgres://"
+                                  (System/getProperty "user.name")
+                                  "@localhost:5432/pia_runstore")))
+   :register-mbeans    false})
 
 (def ^:dynamic *connection-pool*)
+
 (defn start-connection-pool! []
   (if (bound? #'*connection-pool*)
-    *connection-pool*
-    (alter-var-root #'*connection-pool*
-                    (fn [_] (connection/->pool HikariDataSource datasource-options)))))
+      *connection-pool*
+      (alter-var-root #'*connection-pool*
+                      (fn [_] (connection/->pool HikariDataSource datasource-options)))))
+
+(defn migration-conf []
+  {:store :database
+   :migration-dir "migrations/runstore"
+   :migration-table-name "schema_migrations_runstore"
+   :db {:connection (jdbc/get-connection *connection-pool*)}})
+
+(defn migrate! []
+  (migratus/migrate (migration-conf))
+  (log/info "Runstore database migrated"))
+
+(declare query-run-with-next to-db-record from-db-record)
+
+(declare from-db-record make-runstore)
 
 (defmacro with-transaction
   "jrs will be bound to a JDBCRunstore object"
@@ -175,14 +189,6 @@
                    (from :runs)
                    (where [:< :suspend_expires now])
                    sql/format)))))
-
-(defn migrate! []
-  (let [conf {:store :database
-              :migration-dir "migrations/runstore"
-              :migration-table-name "runstore_schema_migrations"
-              :db {:connection (jdbc/get-connection *connection-pool*)}}]
-    (migratus/migrate conf))
-  #_(log/info "Runstore database migrated"))
 
 ;; HELPERS for debugging
 (defn uuid [] (UUID/randomUUID))
