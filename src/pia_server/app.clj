@@ -6,7 +6,7 @@
             [ring.util.http-response :refer :all]
             [ring.middleware.conditional :refer [if-url-starts-with]]
             [rapids :refer :all]
-            [pia-server.db :as db]
+            [pia-server.db-runs :as db-runs]
             [pia-server.expiry-monitor :as expiry-monitor]
             [schema.core :as scm]
             [clojure.string :as str]
@@ -72,7 +72,7 @@
           :return Run
           :body [args [scm/Any] []]
           :summary "starts a Run based on the given flow"
-          (ok (let [result (run-result (db/with-transaction [_]
+          (ok (let [result (run-result (db-runs/with-transaction [_]
                                          (apply start! (var-get (get flows flow)) args)))]
                 (log/debug (str "/api/runs/" flow " =>") result)
                 result)))
@@ -83,7 +83,7 @@
           :body [event Event]
           :summary "continues a run"
           (ok (let [result (run-result
-                             (db/with-transaction [_]
+                             (db-runs/with-transaction [_]
                                (continue!
                                  id
                                  event)))]
@@ -97,7 +97,7 @@
           ;; TODO: clean up the nest of macros involved here
           ;;       we don't need a transaction, but with-transaction wraps
           ;;       with-runstore, which binds the JDBC runstore
-          (ok (let [result (run-result (db/with-transaction [_] (get-run id)))]
+          (ok (let [result (run-result (db-runs/with-transaction [_] (get-run id)))]
                 (log/debug (str "/api/runs/" id " =>") result)
                 result)))))
 
