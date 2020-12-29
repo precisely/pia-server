@@ -52,16 +52,23 @@ createdb test_pia_runstore # for testing
         (list-sources "test"))
     (clojure.test/run-all-tests #"pia-server.*test.*"))
 ```
-### Run the application locally
 
-```bash
-lein ring server
-```
+### Start the app 
 
-### Run the application in the REPL
+#### REPL mode
+
+Recommended for development. Allows hot reloading code with your development environment.
 
 ```clojure
 (start)
+```
+
+#### Command line mode
+
+With this approach, you will need to stop and restart the server if you change any files in pia-server, but you avoid having to start a REPL. This might be useful if you want to start pia-server from a script.
+
+```bash
+lein ring server
 ```
 
 ### Run the tests
