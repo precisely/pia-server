@@ -40,6 +40,7 @@ brew install postgres
 createdb pia_runstore
 createdb test_pia_runstore
 createdb hl7
+createdb test_hl7
 ```
 
 #### Migrations
