@@ -16,6 +16,10 @@ jobs:
       DB_PASSWORD: postgres
       DB_PORT: 5432
       DB_NAME: pia_runstore
+      DB_ENV_VAR_RUNSTORE: HEROKU_POSTGRESQL_CERULEAN_URL
+      DB_ENV_VAR_HL7: HEROKU_POSTGRESQL_PHTHALO_URL
+      HEROKU_POSTGRESQL_CERULEAN_URL: postgres://postgres:postgres@localhost:5432/pia_runstore
+      HEROKU_POSTGRESQL_PHTHALO_URL: postgres://postgres:postgres@localhost:5432/hl7
 
     services:
       postgres:
@@ -43,6 +47,7 @@ jobs:
     - name: Create Database
       run: |
         PGPASSWORD=postgres createdb -U postgres -p 5432 -h localhost $DB_NAME && PGPASSWORD=postgres createdb -U postgres -p 5432 -h localhost test_$DB_NAME
+        PGPASSWORD=postgres createdb -U postgres -p 5432 -h localhost hl7 && PGPASSWORD=postgres createdb -U postgres -p 5432 -h localhost test_hl7
         lein run -m scripts/create-db
 
     - name: Run Coverage

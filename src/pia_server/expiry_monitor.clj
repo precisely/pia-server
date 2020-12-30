@@ -7,9 +7,9 @@
   (:require
     [rapids :as lt]
     [taoensso.timbre :as log]
-    [pia-server.db :refer [get-expired-run-ids]]
+    [pia-server.db-runs :refer [get-expired-run-ids]]
     [clojure.core.async :refer [go-loop <! timeout chan]]
-    [pia-server.db :as db]))
+    [pia-server.db-runs :as db-runs]))
 
 (def ^:dynamic *interval* nil)
 (defn start
@@ -22,9 +22,9 @@
      (let [interval-seconds (or interval-seconds 30)]
        (alter-var-root #'*interval* (constantly interval-seconds))
        (log/info "Expiry monitor: starting")
-       (db/start-connection-pool!)
+       (db-runs/start-connection-pool!)
        (go-loop []
-         (db/with-transaction [jrs]
+         (db-runs/with-transaction [jrs]
            (doseq [run-id (get-expired-run-ids jrs)]
              (try
                (log/debug "Expiry monitor: expiring run" run-id)

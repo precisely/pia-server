@@ -1,6 +1,6 @@
-(ns pia-server.db-test
+(ns pia-server.db-runs-test
   (:refer-clojure :exclude [select update])
-  (:require [pia-server.db :refer :all]
+  (:require [pia-server.db-runs :refer :all]
             [clojure.test :refer :all]
             [clojure.core :as clj]
             [rapids.run :as r]
@@ -10,9 +10,11 @@
             [honeysql.core :as sql]
             [honeysql.helpers :refer :all]
             [rapids.runstore :as rs]
-            [pia-server.db :as db])
+            ;; FIXME: :refer :all above and db here
+            [pia-server.db-runs :as db])
   (:import (com.zaxxer.hikari HikariDataSource)))
-;(def log-level-map
+
+                                        ;(def log-level-map
 ;  {:off     Level/OFF,
 ;   :severe  Level/SEVERE,
 ;   :warning Level/WARNING,
@@ -40,6 +42,7 @@
 ;         #_(doseq [[logger# level#] (interleave loggers# pre-levels#)]
 ;             (if level# (set-logger-level logger# level#)))))))
 
+;; FIXME: This is all wrong. Test database configuration should be dedicated.
 (defonce test-connection-pool
   (let [options (reduce #(clj/update %1 (first %2) (second %2))
                   datasource-options
@@ -52,7 +55,7 @@
   `(binding [*connection-pool* test-connection-pool]
      (let [connection# (jdbc/get-connection test-connection-pool)]
        (rapids/with-runstore [(make-runstore connection#)]
-         (db/create-db!)
+         (db/migrate!)
          ~@body
          (db/delete-db!)))))
 

@@ -2,11 +2,13 @@
 
 FIXME
 
+
 ## Usage
 
 ### Getting Started
 
 * install Clojure
+
 ```shell
 brew install clojure/tools/clojure
 ```
@@ -23,6 +25,7 @@ git clone git+ssh://git@github.com/precisely/pia-server.git```
   - NOTE: the pia-developer user in our AWS dev-precisely account has minimal permissions for retrieving the longterm library from our S3 bucket    
   - env.edn is in .gitignore
 
+
 ### Database setup
 
 #### Install Postgres
@@ -30,10 +33,21 @@ git clone git+ssh://git@github.com/precisely/pia-server.git```
 ```shell
 brew install postgres
 ```
+
 #### Create dbs
+
 ```shell
-createdb pia_runstore # for local development
-createdb test_pia_runstore # for testing
+createdb pia_runstore
+createdb test_pia_runstore
+createdb hl7
+createdb test_hl7
+```
+
+#### Migrations
+
+Migrations should run automatically on PIA server startup, but can also manually run like this:
+```shell
+lein run -m scripts/create-db
 ```
 
 ### IntelliJ tips:
@@ -52,6 +66,8 @@ createdb test_pia_runstore # for testing
         (list-sources "test"))
     (clojure.test/run-all-tests #"pia-server.*test.*"))
 ```
+
+### Run the application locally
 
 ### Start the app 
 
@@ -85,7 +101,3 @@ java -jar target/server.jar
 ### Packaging as war
 
 `lein ring uberwar`
-
-## License
-
-Copyright ©  FIXME

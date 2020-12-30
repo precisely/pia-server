@@ -1,4 +1,4 @@
-(ns pia-server.db
+(ns pia-server.db-runs
   (:refer-clojure :exclude [select update])
   (:require [clojure.core :as clj]
             [taoensso.timbre :as log]
@@ -8,7 +8,7 @@
             [rapids.run :as r]
             [rapids.signals :refer [suspend-signal?]]
             [rapids.util :refer [in?]]
-            [envvar.core :refer [env]]
+            [envvar.core :refer [env keywordize]]
             [next.jdbc :as jdbc]
             [next.jdbc.types :refer [as-other]]
             [next.jdbc.connection :as connection]
@@ -17,39 +17,56 @@
             [honeysql.helpers :refer :all]
             [honeysql.format :as fmt]
             [rapids :as lt]
-            [clojure.spec.alpha :as s])
+            [clojure.spec.alpha :as s]
+            [migratus.core :as migratus]
+            [pia-server.util :as util])
   (:import (com.zaxxer.hikari HikariDataSource)
            (java.util UUID)))
 
-(declare query-run-with-next to-db-record from-db-record)
-
-(def datasource-options {:auto-commit        false
-                         :read-only          false
-                         :connection-timeout 30000
-                         :validation-timeout 5000
-                         :idle-timeout       600000
-                         :max-lifetime       1800000
-                         :minimum-idle       10
-                         :maximum-pool-size  10
-                         :pool-name          "db-pool"
-                         :classname          "org.postgresql.Driver"
-                         :dbtype             "postgresql"
-                         :adapter            "postgresql"
-                         :username           (get @env :db-username (System/getProperty "user.name"))
-                         :password           (get @env :db-password "")
-                         :dbname             (get @env :db-name "pia_runstore")
-                         :server-name        (get @env :db-server-name "localhost")
-                         :port-number        (Integer/parseInt (get @env :db-port "5432"))
-                         :register-mbeans    false})
-
-(declare from-db-record make-runstore)
+(def datasource-options
+  {:auto-commit        false
+   :read-only          false
+   :connection-timeout 30000
+   :validation-timeout 5000
+   :idle-timeout       600000
+   :max-lifetime       1800000
+   :minimum-idle       10
+   :maximum-pool-size  10
+   :pool-name          "db-runs-pool"
+   :classname          "org.postgresql.Driver"
+   :jdbcUrl            (util/heroku-db-url->jdbc-url
+                        (get @env
+                             ;; resolve Heroku indirection
+                             (-> @env
+                                 (get :db-env-var-runstore)
+                                 keywordize)
+                             ;; default if no vars are set
+                             (str "postgres://"
+                                  (System/getProperty "user.name")
+                                  "@localhost:5432/pia_runstore")))
+   :register-mbeans    false})
 
 (def ^:dynamic *connection-pool*)
+
 (defn start-connection-pool! []
   (if (bound? #'*connection-pool*)
-    *connection-pool*
-    (alter-var-root #'*connection-pool*
-                    (fn [_] (connection/->pool HikariDataSource datasource-options)))))
+      *connection-pool*
+      (alter-var-root #'*connection-pool*
+                      (fn [_] (connection/->pool HikariDataSource datasource-options)))))
+
+(def migration-conf
+  {:store :database
+   :migration-dir "migrations/runstore"
+   :migration-table-name "schema_migrations_runstore"})
+
+(defn migrate! []
+  (with-open [c (jdbc/get-connection *connection-pool*)]
+    (migratus/migrate (assoc migration-conf :db {:connection c})))
+  (log/info "Runstore database migrated"))
+
+(declare query-run-with-next to-db-record from-db-record)
+
+(declare from-db-record make-runstore)
 
 (defmacro with-transaction
   "jrs will be bound to a JDBCRunstore object"
@@ -173,47 +190,6 @@
                    (where [:< :suspend_expires now])
                    sql/format)))))
 
-(defn create-db! []
-  (jdbc/execute! *connection-pool* ["
-      CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\";
-
-      DO $$ BEGIN
-        CREATE TYPE RUN_STATES AS ENUM ('created', 'suspended', 'complete', 'error');
-      EXCEPTION
-        WHEN duplicate_object THEN null;
-      END $$;
-
-      DO $$ BEGIN
-        CREATE TYPE RETURN_MODES AS ENUM ('block', 'redirect');
-      EXCEPTION
-        WHEN duplicate_object THEN null;
-      END $$;
-
-      CREATE TABLE IF NOT EXISTS runs (
-        id UUID DEFAULT uuid_generate_v4(),
-        PRIMARY KEY (id),
-
-        -- data columns
-        error BYTEA,
-        next_id UUID,
-        parent_run_id UUID,
-        response BYTEA,
-        result BYTEA,
-        return_mode RETURN_MODES,
-        run_response BYTEA,
-        stack BYTEA,
-        start_form TEXT,
-        state RUN_STATES,
-        suspend BYTEA,
-        suspend_expires TIMESTAMP,
-
-        -- timestamps
-        created_at TIMESTAMP  NOT NULL  DEFAULT current_timestamp,
-        updated_at TIMESTAMP  NOT NULL  DEFAULT current_timestamp
-      );
-      CREATE INDEX IF NOT EXISTS runs_suspend_expires ON runs (suspend_expires);"])
-  #_(log/info "Database created"))
-
 ;; HELPERS for debugging
 (defn uuid [] (UUID/randomUUID))
 (defmacro log-errors [& body]
@@ -221,6 +197,9 @@
         (catch Exception e#
           (log/error "While " '~body ":" e#))))
 (defn delete-db! []
+  ;; FIXME:
+  ;; 1. The :datasource-options test will no longer work with JDBC configuration.
+  ;; 2. This is not the appropriate way to set up databases for tests! Transactions should be used!
   (if-not (-> datasource-options :server-name (= "localhost"))
     (log/error "Refusing to drop database when datasource-options :server-name is not localhost"))
   (log-errors (jdbc/execute! *connection-pool* ["drop table runs;"]))
