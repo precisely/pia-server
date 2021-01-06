@@ -12,7 +12,10 @@
             [clojure.string :as str]
             [ring.logger :as logger]
             [pia-server.flows.cfsdemo :refer [welcome]]
-            [taoensso.timbre :as log]))
+            [taoensso.timbre :as log]
+            [compojure.api.exception :as ex]
+            [ring.util.http-response :as response]))
+
 
 (scm/defschema JSONK (scm/maybe
                        (scm/cond-pre scm/Num scm/Str scm/Bool scm/Keyword
@@ -49,6 +52,11 @@
              (select-keys run
                           [:id :response :next-id :next :result :state :return-mode :run_response :parent-run-id])))
 
+
+(defn custom-handler [f type]
+  (fn [^Exception e data request]
+    (f {:message (.getMessage e), :type type})))
+
 (def base-handler
   (api
     {:swagger
@@ -59,7 +67,19 @@
                 :data                     {:info {:title       "pia-server"
                                                   :description "Precisely Intelligent Agent Server API"}
                                            :tags [{:name "api", :description "For starting flows and continuing runs"}]}}
-     :coercion :schema}
+     :coercion :schema
+
+     :exceptions
+               {:handlers
+                {:input-error            (custom-handler response/bad-request :input)
+
+                 :compojure.api.exception/request-validation (custom-handler response/bad-request :input)
+
+                 ;; catches all SQLExceptions (and it's subclasses)
+                 java.sql.SQLException   (ex/with-logging (custom-handler response/internal-server-error :server) :info)
+
+                 ;; everything else
+                 ::ex/default            (ex/with-logging (custom-handler response/internal-server-error :server) :error)}}}
 
     (context "/api" []
       :tags ["api"]
@@ -73,7 +93,7 @@
           :body [args [scm/Any] []]
           :summary "starts a Run based on the given flow"
           (ok (let [result (run-result (db-runs/with-transaction [_]
-                                         (apply start! (var-get (get flows flow)) args)))]
+                                                                 (apply start! (var-get (get flows flow)) args)))]
                 (log/debug (str "/api/runs/" flow " =>") result)
                 result)))
 
@@ -84,9 +104,9 @@
           :summary "continues a run"
           (ok (let [result (run-result
                              (db-runs/with-transaction [_]
-                               (continue!
-                                 id
-                                 event)))]
+                                                       (continue!
+                                                         id
+                                                         event)))]
                 (log/debug (str "/" id "/continue =>") result)
                 result)))
 
