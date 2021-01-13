@@ -43,9 +43,9 @@
     (*> (str value " world!"))
     "some result"))
 
-(def flows {:foo     #'foo
-            :welcome #'welcome
-            })
+;; marking flows as dynamic to enable tests
+(def ^:dynamic flows {:foo     #'foo
+                      :welcome #'welcome})
 
 (defn run-result [run]
   (reduce-kv #(assoc %1 (keyword (str/replace (name %2) "-" "_")) %3) {}
@@ -71,15 +71,17 @@
 
      :exceptions
                {:handlers
-                {:input-error            (custom-handler response/bad-request :input)
+                {:input-error                                (custom-handler response/bad-request :input)
 
                  :compojure.api.exception/request-validation (custom-handler response/bad-request :input)
 
                  ;; catches all SQLExceptions (and it's subclasses)
-                 java.sql.SQLException   (ex/with-logging (custom-handler response/internal-server-error :server) :info)
+                 java.sql.SQLException                       (ex/with-logging
+                                                               (response/internal-server-error {:message "Server error" :type :db})
+                                                               :info)
 
                  ;; everything else
-                 ::ex/default            (ex/with-logging (custom-handler response/internal-server-error :server) :error)}}}
+                 ::ex/default                                (ex/with-logging response/internal-server-error :error)}}}
 
     (context "/api" []
       :tags ["api"]
