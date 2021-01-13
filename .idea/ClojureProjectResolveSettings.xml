@@ -1,28 +1,28 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ClojureProjectResolveSettings">
-    <item key="taoensso.nippy/extend-thaw" resolves-as="cursive.intentions.resolve/resolve-none" />
-    <item key="longterm.defrecordfn/defrecordfn" resolves-as="cljs.core/defrecord" />
     <item key="taoensso.nippy/extend-freeze" resolves-as="cljs.core/defmethod" />
     <item key="longterm.deflow/deflow" resolves-as="clojure.core/defn" />
-    <item key="rapids/deflow" resolves-as="clojure.core/defn" />
-    <item key="longterm/deflow" resolves-as="clojure.core/defn" />
     <item key="rapids.testing/branch" resolves-as="cursive.intentions.resolve/resolve-none" />
     <item key="longterm.core/deflow" resolves-as="cursive.intentions.resolve/resolve-none" />
     <item key="pia-server.db/with-connection" resolves-as="clojure.core/with-open" />
     <item key="longterm.util/aif" resolves-as="cursive.intentions.resolve/resolve-none" />
-    <item key="pia-server.db/with-transaction" resolves-as="clojure.core/with-open" />
-    <item key="rapids.testing/test-flow" resolves-as="cursive.intentions.resolve/resolve-none" />
-    <item key="honeysql.helpers/defhelper" resolves-as="clojure.core/defn" />
     <item key="clojure.core.match/match" resolves-as="cursive.intentions.resolve/resolve-none" />
     <item key="clojure.test/is" resolves-as="cursive.intentions.resolve/resolve-none" />
     <item key="longterm.run-store/with-run!" resolves-as="clojure.core/let" />
-    <item key="potemkin/import-vars" resolves-as="cursive.intentions.resolve/resolve-none" />
-    <item key="longterm.util/ifit" resolves-as="clojure.core/let" />
-    <item key="rapids.defrecordfn/defrecordfn" resolves-as="clojure.core/defrecord" />
     <item key="pia-server.db.core/with-connection" resolves-as="clojure.core/with-open" />
     <item key="clojure.tools.macro/macrolet" resolves-as="cljs.core/letfn" />
     <item key="longterm.deftypefn/deftypefn" resolves-as="cljs.core/deftype" />
+    <item key="taoensso.nippy/extend-thaw" resolves-as="cursive.intentions.resolve/resolve-none" />
+    <item key="longterm.defrecordfn/defrecordfn" resolves-as="cljs.core/defrecord" />
+    <item key="rapids/deflow" resolves-as="clojure.core/defn" />
+    <item key="longterm/deflow" resolves-as="clojure.core/defn" />
+    <item key="pia-server.db/with-transaction" resolves-as="clojure.core/with-open" />
+    <item key="rapids.testing/test-flow" resolves-as="cursive.intentions.resolve/resolve-none" />
+    <item key="honeysql.helpers/defhelper" resolves-as="clojure.core/defn" />
+    <item key="potemkin/import-vars" resolves-as="cursive.intentions.resolve/resolve-none" />
+    <item key="longterm.util/ifit" resolves-as="clojure.core/let" />
+    <item key="rapids.defrecordfn/defrecordfn" resolves-as="clojure.core/defrecord" />
     <item key="longterm.runner/with-run!" resolves-as="cursive.intentions.resolve/resolve-none" />
     <item key="rapids.util/ifit" resolves-as="clojure.core/let" />
     <currentScheme>PROJECT</currentScheme>
