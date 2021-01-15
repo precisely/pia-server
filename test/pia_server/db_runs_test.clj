@@ -69,6 +69,7 @@
 (defn fixture-test-db [f]
   (binding [*connection-pool* test-connection-pool]
     (rapids/with-runstore [(make-runstore *connection*)]
+      (db/migrate!)
       (f))))
 
 (defn fixture-reset [f]
