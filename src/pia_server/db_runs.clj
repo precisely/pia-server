@@ -196,19 +196,8 @@
   `(try ~@body
         (catch Exception e#
           (log/error "While " '~body ":" e#))))
-(defn delete-db! []
-  ;; FIXME:
-  ;; 1. The :datasource-options test will no longer work with JDBC configuration.
-  ;; 2. This is not the appropriate way to set up databases for tests! Transactions should be used!
-  (if-not (-> datasource-options :server-name (= "localhost"))
-    (log/error "Refusing to drop database when datasource-options :server-name is not localhost"))
-  (log-errors (jdbc/execute! *connection-pool* ["drop table runs;"]))
-  (log-errors (jdbc/execute! *connection-pool* ["drop type run_states;"]))
-  (log-errors (jdbc/execute! *connection-pool* ["drop type return_modes;"])))
 
-;;
-;;
-;;
+;; ???
 (defn simple-test []
   (let [run     (r/make-test-run)
         run-rec (dissoc (r/run-to-record run) :result :error :state :stack :suspend :response :return_mode)
