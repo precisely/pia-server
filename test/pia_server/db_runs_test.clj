@@ -14,7 +14,7 @@
             [pia-server.db-runs :as db])
   (:import (com.zaxxer.hikari HikariDataSource)))
 
-                                        ;(def log-level-map
+;(def log-level-map
 ;  {:off     Level/OFF,
 ;   :severe  Level/SEVERE,
 ;   :warning Level/WARNING,

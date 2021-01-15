@@ -3,6 +3,7 @@
             [clojure.test :refer :all]
             [cheshire.core :refer [generate-string parse-string]]
             [ring.mock.request :as mock]
+            [pia-server.test-helpers :refer [with-test-db]]
             [rapids :refer :all]))
 
 (defn json-request [method resource & {:keys [params body] :or {params []}}]
@@ -21,26 +22,27 @@
   (ex-info "Ooops!" {:type :oops}))
 
 (deftest AppExceptionTest
-  (binding [flows {:simple-flow #'simple-flow
-                   :error-flow #'error-flow}]
-    (testing "input error while starting a flow"
-      (let [{status :status, body :body} (json-request :post "/api/runs/simple-flow" :body "not-an-array")]
-        (is (= status 400))
-        (is (= (:type body) "input"))))
+  (with-test-db
+    (binding [flows {:simple-flow #'simple-flow
+                     :error-flow  #'error-flow}]
+      (testing "input error while starting a flow"
+        (let [{status :status, body :body} (json-request :post "/api/runs/simple-flow" :body "not-an-array")]
+          (is (= status 400))
+          (is (= (:type body) "input"))))
 
-    (testing "starting a flow"
-      (let [{status :status, {id :id, state :state, next_id :next_id, :as body} :body}
-            (json-request :post "/api/runs/simple-flow" :body [])]
-        (is (= status 200))
-        (is (string? id))
-        (is (= id next_id))
-        (is (= state "suspended"))
+      (testing "starting a flow"
+        (let [{status :status, {id :id, state :state, next_id :next_id, :as body} :body}
+              (json-request :post "/api/runs/simple-flow" :body [])]
+          (is (= status 200))
+          (is (string? id))
+          (is (= id next_id))
+          (is (= state "suspended"))
 
-        (testing "continuing a flow"
-          (let [{status :status, {id :id, state :state, next_id :next-id, :as body} :body}
-                (json-request :post (str "/api/runs/" next_id "/continue")
-                              :body {:data "FOO"})]
-            (is (= status 200))
-            (is (= state "complete"))
-            (is (nil? next_id))
-            (is (= (:response body) ["I received FOO"]))))))))
+          (testing "continuing a flow"
+            (let [{status :status, {id :id, state :state, next_id :next-id, :as body} :body}
+                  (json-request :post (str "/api/runs/" next_id "/continue")
+                                :body {:data "FOO"})]
+              (is (= status 200))
+              (is (= state "complete"))
+              (is (nil? next_id))
+              (is (= (:response body) ["I received FOO"])))))))))

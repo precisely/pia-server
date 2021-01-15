@@ -75,13 +75,14 @@
 
                  :compojure.api.exception/request-validation (custom-handler response/bad-request :input)
 
-                 ;; catches all SQLExceptions (and it's subclasses)
-                 java.sql.SQLException                       (ex/with-logging
-                                                               (response/internal-server-error {:message "Server error" :type :db})
-                                                               :info)
+                 ;; catches all SQLExceptions (and its subclasses)
+                 java.sql.SQLException                       ex/safe-handler
+                                                               ;(ex/safe-handler)
+                                                               ;(response/internal-server-error {:message "Server error" :type :db})
+                                                               ;:info)
 
                  ;; everything else
-                 ::ex/default                                (ex/with-logging response/internal-server-error :error)}}}
+                 ::ex/default                                ex/safe-handler #_(ex/with-logging response/internal-server-error :error)}}}
 
     (context "/api" []
       :tags ["api"]
