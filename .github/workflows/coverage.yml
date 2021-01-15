@@ -48,7 +48,6 @@ jobs:
       run: |
         PGPASSWORD=postgres createdb -U postgres -p 5432 -h localhost $DB_NAME && PGPASSWORD=postgres createdb -U postgres -p 5432 -h localhost test_$DB_NAME
         PGPASSWORD=postgres createdb -U postgres -p 5432 -h localhost hl7 && PGPASSWORD=postgres createdb -U postgres -p 5432 -h localhost test_hl7
-        lein run -m scripts/create-db
 
     - name: Run Coverage
       run: lein cloverage --lcov
