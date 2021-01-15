@@ -44,45 +44,50 @@
 ;         #_(doseq [[logger# level#] (interleave loggers# pre-levels#)]
 ;             (if level# (set-logger-level logger# level#)))))))
 
-(defonce test-connection-pool
-         (let [options (assoc datasource-options
-                         :jdbcUrl (util/heroku-db-url->jdbc-url
-                                    (get @env
-                                         ;; resolve Heroku indirection
-                                         (-> @env
-                                             (get :db-env-var-runstore)
-                                             keywordize)
-                                         ;; default if no vars are set
-                                         (str "postgres://"
-                                              (System/getProperty "user.name")
-                                              "@localhost:5432/test_pia_runstore"))))
-               #_(reduce #(clj/update %1 (first %2) (second %2))
-                         datasource-options
-                         [[:dbname #(str "test_" %)]
-                          [:maximum-pool-size (constantly 2)]
-                          [:pool-name #(str "test_" %)]])]
-           (connection/->pool HikariDataSource options)))
+(defn jdbc-url []
+  (let [indirect-var (if (@env :db-env-var-test-runstore)
+                         :db-env-var-test-runstore
+                         :db-env-var-runstore)
+        real-var (-> @env
+                     (get indirect-var)
+                     keywordize)
+        db-val (get @env
+                    real-var
+                    ;; default if no vars are set
+                    (str "postgres://"
+                         (System/getProperty "user.name")
+                         "@localhost:5432/test_pia_runstore"))]
+    (util/heroku-db-url->jdbc-url db-val)))
 
-(defmacro with-test-db [& body]
-  `(binding [*connection-pool* test-connection-pool]
-     (let [connection# (jdbc/get-connection test-connection-pool)]
-       (rapids/with-runstore [(make-runstore connection#)]
-                             (db/migrate!)
-                             ~@body
-                             (db/delete-db!)))))
+(defonce test-connection-pool
+  (let [options (assoc datasource-options :jdbcUrl (jdbc-url))]
+    (connection/->pool HikariDataSource options)))
+
+;; No connection pooling really necessary for test runs.
+(defonce ^:dynamic *connection* (jdbc/get-connection test-connection-pool))
+
+(defn fixture-test-db [f]
+  (binding [*connection-pool* test-connection-pool]
+    (rapids/with-runstore [(make-runstore *connection*)]
+      (f))))
+
+(defn fixture-reset [f]
+  (f)
+  (jdbc/execute! *connection* ["truncate table runs;"]))
+
+(use-fixtures :once fixture-test-db)
+(use-fixtures :each fixture-reset)
 
 (deftest ^:db write-run
   (testing "can create a run in the database"
-    (with-test-db
-      (let [[run, rec] (r/make-test-run :id :error)
-            db-rec (with-transaction [jrs]
-                                     (rs/rs-create! jrs rec))
-            db-run (r/run-from-record db-rec)]
-        (is (= (dissoc run :id) (dissoc db-run :id)))
+    (let [[run, rec] (r/make-test-run :id :error)
+          db-rec (with-transaction [jrs] (rs/rs-create! jrs rec))
+          db-run (r/run-from-record db-rec)]
+      (is (= (dissoc run :id) (dissoc db-run :id)))
 
-        (testing "new created run should have an id"
-          (is (-> run :id nil? not))
-          (is (-> db-run :id nil? not))))))
+      (testing "new created run should have an id"
+        (is (-> run :id nil? not))
+        (is (-> db-run :id nil? not)))))
 
   (testing "can continue a run"
     ))
