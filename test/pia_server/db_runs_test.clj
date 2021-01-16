@@ -61,6 +61,7 @@
 
 (defonce test-connection-pool
   (let [options (assoc datasource-options :jdbcUrl (jdbc-url))]
+    (println "test-connection-pool options = " options)
     (connection/->pool HikariDataSource options)))
 
 ;; No connection pooling really necessary for test runs.
