@@ -128,7 +128,6 @@
                  (lock :mode :update)
                  (where [:= :id run-id])
                  sql/format)]
-      (println stmt)
       (from-db-record
         (exec-one! jrs stmt))))
 

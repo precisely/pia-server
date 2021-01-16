@@ -12,6 +12,7 @@
     <item key="longterm.run-store/with-run!" resolves-as="clojure.core/let" />
     <item key="pia-server.db-runs/with-transaction" resolves-as="clojure.core/let" />
     <item key="pia-server.db.core/with-connection" resolves-as="clojure.core/with-open" />
+    <item key="pia-server.test/deftest" resolves-as="cljs.test/deftest" />
     <item key="clojure.tools.macro/macrolet" resolves-as="cljs.core/letfn" />
     <item key="longterm.deftypefn/deftypefn" resolves-as="cljs.core/deftype" />
     <item key="taoensso.nippy/extend-thaw" resolves-as="cursive.intentions.resolve/resolve-none" />
