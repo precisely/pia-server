@@ -7,9 +7,9 @@
   (:require
     [rapids :as lt]
     [taoensso.timbre :as log]
-    [pia-server.db-runs :refer [get-expired-run-ids]]
+    [pia-server.db.runs :refer [get-expired-run-ids]]
     [clojure.core.async :refer [go-loop <! timeout chan]]
-    [pia-server.db-runs :as db-runs]))
+    [pia-server.db.runs :as db-runs]))
 
 (def ^:dynamic *interval* nil)
 (defn start

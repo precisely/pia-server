@@ -1,6 +1,6 @@
 (ns pia-server.db-runs-test
   (:refer-clojure :exclude [select update])
-  (:require [pia-server.db-runs :refer :all]
+  (:require [pia-server.db.runs :refer :all]
             [pia-server.test :refer :all]
             [rapids.run :as r]
             hikari-cp.core

@@ -6,7 +6,7 @@
             [ring.util.http-response :refer :all]
             [ring.middleware.conditional :refer [if-url-starts-with]]
             [rapids :refer :all]
-            [pia-server.db-runs :as db-runs]
+            [pia-server.db.runs :as db-runs]
             [pia-server.expiry-monitor :as expiry-monitor]
             [schema.core :as scm]
             [clojure.string :as str]

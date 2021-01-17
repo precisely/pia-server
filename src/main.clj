@@ -3,8 +3,8 @@
             [envvar.core :refer [env]]
             [pia-server.app :as pia]
             [taoensso.timbre :as log]
-            [pia-server.db-runs :as db-runs]
-            [pia-server.db-hl7 :as db-hl7]
+            [pia-server.db.runs :as db-runs]
+            [pia-server.db.hl7 :as db-hl7]
             [pia-server.expiry-monitor :as expiry-monitor])
   (:gen-class))
 

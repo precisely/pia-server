@@ -1,4 +1,4 @@
-(ns pia-server.db-hl7
+(ns pia-server.db.hl7
   (:refer-clojure :exclude [select update])
   (:require [clojure.core :as clj]
             [clojure.string :as str]

@@ -1,5 +1,5 @@
 (ns pia-server.test
-  (:require [pia-server.db-runs :refer [migrate! *connection-pool* datasource-options make-runstore]]
+  (:require [pia-server.db.runs :refer [migrate! *connection-pool* datasource-options make-runstore]]
             [clojure.test :as test]
             [potemkin :refer [import-vars]]
             [rapids :refer [with-runstore]]
