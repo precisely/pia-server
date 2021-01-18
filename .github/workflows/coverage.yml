@@ -40,7 +40,9 @@ jobs:
 
     - name: Create Databases
       run: |
+        PGPASSWORD=postgres createdb -U postgres -p 5432 -h localhost pia_runstore
         PGPASSWORD=postgres createdb -U postgres -p 5432 -h localhost test_pia_runstore
+        PGPASSWORD=postgres createdb -U postgres -p 5432 -h localhost hl7
         PGPASSWORD=postgres createdb -U postgres -p 5432 -h localhost test_hl7
 
     - name: Run Coverage
