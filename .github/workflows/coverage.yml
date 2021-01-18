@@ -15,9 +15,6 @@ jobs:
       DISABLE_JWT_AUTH: 1
       TESTDB_RUNSTORE: jdbc:postgresql://localhost:5432/test_pia_runstore?user=postgres&password=postgres
       TESTDB_HL7: jdbc:postgresql://localhost:5432/test_hl7?user=postgres&password=postgres
-      # TODO: Non-test databases are needed in test environments. Not used. Fix?
-      DB_RUNSTORE: jdbc:postgresql://localhost:5432/pia_runstore?user=postgres&password=postgres
-      DB_HL7: jdbc:postgresql://localhost:5432/hl7?user=postgres&password=postgres
 
     services:
       postgres:
@@ -42,14 +39,12 @@ jobs:
 #    - name: Setup tmate session
 #      uses: mxschmitt/action-tmate@v3
 
-    - name: Create Databases
+    - name: Create databases
       run: |
         PGPASSWORD=postgres createdb -U postgres -p 5432 -h localhost test_pia_runstore
         PGPASSWORD=postgres createdb -U postgres -p 5432 -h localhost test_hl7
-        PGPASSWORD=postgres createdb -U postgres -p 5432 -h localhost pia_runstore
-        PGPASSWORD=postgres createdb -U postgres -p 5432 -h localhost hl7
 
-    - name: Run Coverage
+    - name: Run Cloverage
       run: lein cloverage --lcov
 
     - name: Checkout ${{ github.base_ref }} branch
@@ -63,12 +58,12 @@ jobs:
         cd base_branch
         lein deps
 
-    - name: Run Coverage for ${{ github.base_ref }} branch
+    - name: Run Cloverage for ${{ github.base_ref }} branch
       run: |
         cd base_branch
         lein cloverage --lcov
 
-    - name: Partial LCOV Code Coverage Report
+    - name: Partial LCOV code coverage report
       uses: risetechnologies/lcov-reporter-action@1.0.4
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
