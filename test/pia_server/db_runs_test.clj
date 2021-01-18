@@ -1,5 +1,4 @@
 (ns pia-server.db-runs-test
-  (:refer-clojure :exclude [select update])
   (:require [clojure.test :as test]
             [pia-server.db.runs :refer :all]
             [pia-server.test :refer :all]
