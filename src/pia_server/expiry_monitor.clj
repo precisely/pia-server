@@ -22,7 +22,6 @@
      (let [interval-seconds (or interval-seconds 30)]
        (alter-var-root #'*interval* (constantly interval-seconds))
        (log/info "Expiry monitor: starting")
-       (db-runs/start-connection-pool!)
        (go-loop []
          (db-runs/with-transaction [jrs]
            (doseq [run-id (get-expired-run-ids jrs)]
