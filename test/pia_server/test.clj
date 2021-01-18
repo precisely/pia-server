@@ -16,7 +16,7 @@
 
 (defonce test-db-runs-connection-pool
   (let [options (assoc db-runs/datasource-options
-                       :jdbcUrl (get @env :testdb-runstore
+                       :jdbcUrl (get @env :testdb-pia-runstore
                                      (str "jdbc:postgresql://localhost:5432/test_pia_runstore"
                                           "?user=" (System/getProperty "user.name")
                                           "&password=")))]

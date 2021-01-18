@@ -15,7 +15,7 @@ jobs:
       MAVEN_REPO_AWS_ACCESS_KEY_SECRET: ${{ secrets.MAVEN_REPO_AWS_ACCESS_KEY_SECRET }}
       AWS_REGION: us-east-1
       DISABLE_JWT_AUTH: 1
-      TESTDB_RUNSTORE: jdbc:postgresql://localhost:5432/test_pia_runstore?user=postgres&password=postgres
+      TESTDB_PIA_RUNSTORE: jdbc:postgresql://localhost:5432/test_pia_runstore?user=postgres&password=postgres
       TESTDB_HL7: jdbc:postgresql://localhost:5432/test_hl7?user=postgres&password=postgres
 
     services:
