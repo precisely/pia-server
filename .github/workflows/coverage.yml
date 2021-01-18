@@ -14,6 +14,9 @@ jobs:
       AWS_REGION: us-east-1
       TESTDB_RUNSTORE: jdbc:postgresql://localhost:5432/test_pia_runstore?user=postgres&password=postgres
       TESTDB_HL7: jdbc:postgresql://localhost:5432/test_hl7?user=postgres&password=postgres
+      # TODO: Non-test databases are needed in test environments. Not used. Fix?
+      DB_RUNSTORE: jdbc:postgresql://localhost:5432/pia_runstore?user=postgres&password=postgres
+      DB_HL7: jdbc:postgresql://localhost:5432/hl7?user=postgres&password=postgres
 
     services:
       postgres:
@@ -40,10 +43,10 @@ jobs:
 
     - name: Create Databases
       run: |
-        PGPASSWORD=postgres createdb -U postgres -p 5432 -h localhost pia_runstore
         PGPASSWORD=postgres createdb -U postgres -p 5432 -h localhost test_pia_runstore
-        PGPASSWORD=postgres createdb -U postgres -p 5432 -h localhost hl7
         PGPASSWORD=postgres createdb -U postgres -p 5432 -h localhost test_hl7
+        PGPASSWORD=postgres createdb -U postgres -p 5432 -h localhost pia_runstore
+        PGPASSWORD=postgres createdb -U postgres -p 5432 -h localhost hl7
 
     - name: Run Coverage
       run: lein cloverage --lcov
