@@ -12,6 +12,7 @@
   :longterm.util/aif :only-indent
   :potemkin/import-vars :only-indent
   :taoensso.nippy/extend-thaw :only-indent
+  :taoensso.timbre/with-level 1
 }</ClojureCodeStyleSettings>
     <JetCodeStyleSettings>
       <option name="PACKAGES_TO_USE_STAR_IMPORTS">

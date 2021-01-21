@@ -3,8 +3,8 @@
             [envvar.core :refer [env]]
             [pia-server.app :as pia]
             [taoensso.timbre :as log]
-            [pia-server.db-runs :as db-runs]
-            [pia-server.db-hl7 :as db-hl7]
+            [pia-server.db.runs :as db-runs]
+            [pia-server.db.hl7 :as db-hl7]
             [pia-server.expiry-monitor :as expiry-monitor])
   (:gen-class))
 
@@ -22,9 +22,7 @@
   ([app & {:keys [port join? expiry-seconds]
           :or   {port 8080, join? false, expiry-seconds 10}}]
   (log/info (str "Starting pia-server at http://localhost:" port))
-  (db-runs/start-connection-pool!)
   (db-runs/migrate!)
-  (db-hl7/start-connection-pool!)
   (db-hl7/migrate!)
   (log/info (str "Starting expiry monitor with timeout of " expiry-seconds " seconds"))
   (expiry-monitor/start expiry-seconds)

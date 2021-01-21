@@ -1,12 +1,11 @@
-(ns pia-server.db-hl7
+(ns pia-server.db.hl7
   (:refer-clojure :exclude [select update])
   (:require [clojure.core :as clj]
             [clojure.string :as str]
-            [envvar.core :refer [env keywordize]]
             [migratus.core :as migratus]
             [next.jdbc :as jdbc]
             [next.jdbc.connection :as connection]
-            [pia-server.util :as util]
+            [pia-server.db.core :as db]
             [taoensso.timbre :as log])
   (:import (com.zaxxer.hikari HikariDataSource)
            (java.util UUID)))
@@ -22,25 +21,12 @@
    :maximum-pool-size  10
    :pool-name          "db-hl7-pool"
    :classname          "org.postgresql.Driver"
-   :jdbcUrl            (util/heroku-db-url->jdbc-url
-                        (get @env
-                             ;; resolve Heroku indirection
-                             (-> @env
-                                 (get :db-env-var-hl7)
-                                 keywordize)
-                             ;; default if no vars are set
-                             (str "postgres://"
-                                  (System/getProperty "user.name")
-                                  "@localhost:5432/hl7")))
+   :jdbcUrl            (db/jdbc-url :hl7)
    :register-mbeans    false})
 
-(def ^:dynamic *connection-pool*)
-
-(defn start-connection-pool! []
-  (if (bound? #'*connection-pool*)
-      *connection-pool*
-      (alter-var-root #'*connection-pool*
-                      (fn [_] (connection/->pool HikariDataSource datasource-options)))))
+;; reset: (alter-var-root #'*connection-pool* (fn [_] (connection/->pool HikariDataSource datasource-options)))
+(defonce ^:dynamic *connection-pool*
+  (connection/->pool HikariDataSource datasource-options))
 
 (def migration-conf
   {:store :database

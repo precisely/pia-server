@@ -1,7 +1,7 @@
 (ns pia-server.hl7-playground
   (:require [clojure.data.json :as json]
             [json-schema.core :as json-schema]
-            [pia-server.db-hl7 :as db-hl7]))
+            [pia-server.db.hl7 :as db-hl7]))
 
 
 (def r4-schema-json (clojure.java.io/resource "hl7-schemas/r4.json"))

@@ -1,4 +1,4 @@
-(ns pia-server.db-runs
+(ns pia-server.db.runs
   (:refer-clojure :exclude [select update])
   (:require [clojure.core :as clj]
             [taoensso.timbre :as log]
@@ -8,7 +8,6 @@
             [rapids.run :as r]
             [rapids.signals :refer [suspend-signal?]]
             [rapids.util :refer [in?]]
-            [envvar.core :refer [env keywordize]]
             [next.jdbc :as jdbc]
             [next.jdbc.types :refer [as-other]]
             [next.jdbc.connection :as connection]
@@ -16,10 +15,10 @@
             [honeysql.core :as sql]
             [honeysql.helpers :refer :all]
             [honeysql.format :as fmt]
+            [pia-server.db.core :as db]
             [rapids :as lt]
             [clojure.spec.alpha :as s]
-            [migratus.core :as migratus]
-            [pia-server.util :as util])
+            [migratus.core :as migratus])
   (:import (com.zaxxer.hikari HikariDataSource)
            (java.util UUID)))
 
@@ -34,25 +33,12 @@
    :maximum-pool-size  10
    :pool-name          "db-runs-pool"
    :classname          "org.postgresql.Driver"
-   :jdbcUrl            (util/heroku-db-url->jdbc-url
-                        (get @env
-                             ;; resolve Heroku indirection
-                             (-> @env
-                                 (get :db-env-var-runstore)
-                                 keywordize)
-                             ;; default if no vars are set
-                             (str "postgres://"
-                                  (System/getProperty "user.name")
-                                  "@localhost:5432/pia_runstore")))
+   :jdbcUrl            (db/jdbc-url :pia-runstore)
    :register-mbeans    false})
 
-(def ^:dynamic *connection-pool*)
-
-(defn start-connection-pool! []
-  (if (bound? #'*connection-pool*)
-      *connection-pool*
-      (alter-var-root #'*connection-pool*
-                      (fn [_] (connection/->pool HikariDataSource datasource-options)))))
+;; reset: (alter-var-root #'*connection-pool* (fn [_] (connection/->pool HikariDataSource datasource-options)))
+(defonce ^:dynamic *connection-pool*
+  (connection/->pool HikariDataSource datasource-options))
 
 (def migration-conf
   {:store :database
@@ -128,7 +114,6 @@
                  (lock :mode :update)
                  (where [:= :id run-id])
                  sql/format)]
-      (println stmt)
       (from-db-record
         (exec-one! jrs stmt))))
 
