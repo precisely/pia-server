@@ -12,7 +12,8 @@
 
 (defn jdbc-url [db]
   {:pre [(keyword? db)]}
-  (let [name-db (str/replace (name db) "-" "_")
+  (let [name-db (name db)
+        name-db-underscore (str/replace name-db "-" "_")
         heroku-indirection-var (keyword (str "herokudb-env-var-" name-db))
         jdbc-var (keyword (str "db-" name-db))]
     (cond
@@ -27,6 +28,6 @@
       (@env jdbc-var)
       ;; else no known database environment variable set, return a reasonable default:
       :else
-      (str "jdbc:postgresql://localhost:5432/" name-db
+      (str "jdbc:postgresql://localhost:5432/" name-db-underscore
            "?user=" (System/getProperty "user.name")
            "&password="))))
