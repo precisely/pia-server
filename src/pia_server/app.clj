@@ -12,6 +12,7 @@
             [clojure.string :as str]
             [ring.logger :as logger]
             [pia-server.flows.cfsdemo :refer [welcome]]
+            [pia-server.flows.anticoagulation :refer [anticoagulation]]
             [taoensso.timbre :as log]
             [compojure.api.exception :as ex]
             [ring.util.http-response :as response]))
@@ -39,12 +40,15 @@
 
 (deflow foo []
   (*> "hello")
-  (let [value (<* :permit "the-permit" :expires (-> 30 minutes from-now) :default "default-suspend-value")]
+  ; alternate with permit & expiry:
+  ; (let [value (<* :permit "the-permit" :expires (-> 30 minutes from-now) :default "default-suspend-value")]
+  (let [value (<*)]
     (*> (str value " world!"))
     "some result"))
 
 ;; marking flows as dynamic to enable tests
 (def ^:dynamic flows {:foo     #'foo
+                      :anticoagulation #'anticoagulation
                       :welcome #'welcome})
 
 (defn run-result [run]

@@ -47,6 +47,7 @@
                  [potemkin "0.4.5"]
                  [org.clojure/data.json "1.0.0"]
                  [luposlip/json-schema "0.2.9"]
+                 [digest "1.4.10"]
 
                  ;; web server stuff
                  [javax.servlet/javax.servlet-api "4.0.1"]

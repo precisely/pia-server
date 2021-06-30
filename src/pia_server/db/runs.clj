@@ -38,11 +38,11 @@
 
 ;; reset: (alter-var-root #'*connection-pool* (fn [_] (connection/->pool HikariDataSource datasource-options)))
 (defonce ^:dynamic *connection-pool*
-  (connection/->pool HikariDataSource datasource-options))
+         (connection/->pool HikariDataSource datasource-options))
 
 (def migration-conf
-  {:store :database
-   :migration-dir "migrations/runstore"
+  {:store                :database
+   :migration-dir        "migrations/runstore"
    :migration-table-name "schema_migrations_runstore"})
 
 (defn migrate! []
@@ -78,7 +78,7 @@
          (str/join ", " (map fmt/to-sql v))
          (fmt/to-sql v))))
 
-(defrecord JDBCRunstore [connection]
+(defrecord JDBCRunstore [connection txn-count]
   IRunStore
   (rs-get [jrs run-id]
     (from-db-record (query-run-with-next jrs run-id)))
@@ -118,18 +118,30 @@
         (exec-one! jrs stmt))))
 
   (rs-tx-begin! [jrs]
-    (log/trace "Begin transaction")
-    (exec-one! jrs ["BEGIN;"]))
+    (let [txn-count (:txn-count jrs)]
+      (when (= @txn-count 0)
+        (log/trace "Begin transaction")
+        (let [result (exec-one! jrs ["BEGIN;"])]
+          (swap! txn-count inc)
+          result))))
 
   (rs-tx-commit! [jrs]
-    (log/trace "Commit transaction")
-    (exec-one! jrs ["COMMIT;"]))
+    (let [txn-count (:txn-count jrs)]
+      (when (> @txn-count 0)
+        (log/trace "Commit transaction")
+        (let [result (exec-one! jrs ["COMMIT;"])]
+          (swap! txn-count dec)
+          result))))
 
   (rs-tx-rollback! [jrs]
-    (log/trace "Rollback transaction")
-    (exec-one! jrs ["ROLLBACK;"])))
+    (let [txn-count (:txn-count jrs)]
+      (when (> @txn-count 0)
+        (log/trace "Rollback transaction")
+        (let [result (exec-one! jrs ["ROLLBACK;"])]
+          (swap! txn-count dec)
+          result)))))
 
-(defn make-runstore [connection] (JDBCRunstore. connection))
+(defn make-runstore [connection] (JDBCRunstore. connection (atom 0)))
 (defn query-run-with-next [jrs run-id]
   (let [runs (map from-db-record
 

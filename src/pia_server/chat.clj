@@ -5,4 +5,4 @@
 
 (import-vars
   [pia-server.chat.survey survey radiogroup rating number-slider]
-  [pia-server.chat.basic choices text])
+  [pia-server.chat.basic choices text form finput flabel])
