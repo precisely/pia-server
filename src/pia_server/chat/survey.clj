@@ -64,7 +64,7 @@
      :required-text"
   (let [options (or options {})
         permit (str (UUID/randomUUID))]
-    (*> (merge options
+    (>* (merge options
           {:type     :survey
            :elements {:questions controls}
            :permit   permit}))

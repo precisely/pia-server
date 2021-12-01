@@ -20,7 +20,7 @@
   Usage (choices :yes \"Oh Yes!\" :no \"No, thank you\")"
   [style? & kvs]
   (let [permit (str (UUID/randomUUID))]
-    (*> (assoc (apply make-choices style? kvs) :permit permit))
+    (>* (assoc (apply make-choices style? kvs) :permit permit))
     (keyword (<* :permit permit))))
 
 (defn text [t] {:type :text, :text t})

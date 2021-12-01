@@ -13,13 +13,13 @@
 
 
 ;(deflow orthostatic []
-;        (*> "For the final piece of information, there are a few questions about how you feel when sitting or standing in an upright position.",
+;        (>* "For the final piece of information, there are a few questions about how you feel when sitting or standing in an upright position.",
 ;            "Please answer them as best as you can, then we can finish up and help you make some decisions")
 ;        (let [
-;              _ (*> "Do you experience fatigue when you stand up?")
+;              _ (>* "Do you experience fatigue when you stand up?")
 ;              _ (number-slider 0 "Never" 4 "Always" "Fatigue when standing up" 1)
 ;              when-standing (<*)
-;              _ (*> "Which fatigue severity statement do you relate to the most?")
+;              _ (>* "Which fatigue severity statement do you relate to the most?")
 ;              _ (choices [
 ;                          "I do not experience fatigue when I stand up"
 ;                          "I experience mild fatigue when I stand up"
@@ -27,7 +27,7 @@
 ;                          "I experience severe fatigue when I stand up and frequently have to sit back down for relief"
 ;                          "I experience severe fatigue when I stand up and almost always have to sit back down for relief"] "Select a sentence")
 ;              severity-statement (<*)
-;              _ (*> "Now, for our last question, think about some of these conditions:",
+;              _ (>* "Now, for our last question, think about some of these conditions:",
 ;                    "Prolonged standing, a meal, exertion (like walking), or heat exposure like a shower or hot day",
 ;                    "After these circumstances, how often do you experience fatigue?")
 ;              _ (choices [
@@ -38,7 +38,7 @@
 ;                          "Always when I stand up, the conditions do not matter"
 ;                          ] "Choose the most relatable one")
 ;              conditions-statement (<*)]
-;          (*> "Thank you again for providing these answers"
+;          (>* "Thank you again for providing these answers"
 ;              "You've reached the end of the assessment!",
 ;              )
 ;          ))

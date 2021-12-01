@@ -6,15 +6,14 @@
             [ring.util.http-response :refer :all]
             [ring.middleware.conditional :refer [if-url-starts-with]]
             [rapids :refer :all]
-            [pia-server.db.runs :as db-runs]
-            [pia-server.expiry-monitor :as expiry-monitor]
             [schema.core :as scm]
             [clojure.string :as str]
             [ring.logger :as logger]
             [pia-server.flows.cfsdemo :refer [welcome]]
             [taoensso.timbre :as log]
             [compojure.api.exception :as ex]
-            [ring.util.http-response :as response]))
+            [ring.util.http-response :as response])
+  (:import (java.sql SQLException)))
 
 
 (scm/defschema JSONK (scm/maybe
@@ -24,23 +23,19 @@
 
 (scm/defschema Run
   {:id                               scm/Uuid
-   :state                            (scm/enum :running :suspended :complete)
+   :state                            (scm/enum :running :complete :error)
    (scm/optional-key :result)        JSONK
    :response                         [JSONK]
-   (scm/optional-key :run_response)  [JSONK]
-   (scm/optional-key :return_mode)   (scm/maybe (scm/enum :block :redirect))
-   :next_id                          (scm/maybe scm/Uuid)
-   (scm/optional-key :parent_run_id) (scm/maybe scm/Uuid)
-   (scm/optional-key :next)          (scm/maybe (scm/recursive #'Run))})
+   (scm/optional-key :parent_run_id) (scm/maybe scm/Uuid)})
 
 (scm/defschema Event
   (scm/maybe {(scm/optional-key :permit) JSONK
               (scm/optional-key :data)   JSONK}))
 
 (deflow foo []
-  (*> "hello")
+  (>* "hello")
   (let [value (<* :permit "the-permit" :expires (-> 30 minutes from-now) :default "default-suspend-value")]
-    (*> (str value " world!"))
+    (>* (str value " world!"))
     "some result"))
 
 ;; marking flows as dynamic to enable tests
@@ -48,9 +43,10 @@
                       :welcome #'welcome})
 
 (defn run-result [run]
-  (reduce-kv #(assoc %1 (keyword (str/replace (name %2) "-" "_")) %3) {}
-             (select-keys run
-                          [:id :response :next-id :next :result :state :return-mode :run_response :parent-run-id])))
+  (let [raw-run (.rawData run)]
+    (reduce-kv #(assoc %1 (keyword (str/replace (name %2) "-" "_")) %3) {}
+               (select-keys raw-run
+                            [:id :response :next-id :next :result :state :return-mode :run_response :parent-run-id]))))
 
 
 (defn custom-handler [f type]
@@ -76,10 +72,10 @@
                  :compojure.api.exception/request-validation (custom-handler response/bad-request :input)
 
                  ;; catches all SQLExceptions (and its subclasses)
-                 java.sql.SQLException                       ex/safe-handler
-                                                               ;(ex/safe-handler)
-                                                               ;(response/internal-server-error {:message "Server error" :type :db})
-                                                               ;:info)
+                 SQLException                                ex/safe-handler
+                 ;(ex/safe-handler)
+                 ;(response/internal-server-error {:message "Server error" :type :db})
+                 ;:info)
 
                  ;; everything else
                  ::ex/default                                ex/safe-handler #_(ex/with-logging response/internal-server-error :error)}}}
@@ -95,8 +91,7 @@
           :return Run
           :body [args [scm/Any] []]
           :summary "starts a Run based on the given flow"
-          (ok (let [result (run-result (db-runs/with-transaction [_]
-                                                                 (apply start! (var-get (get flows flow)) args)))]
+          (ok (let [result (run-result (apply start! (var-get (get flows flow)) args))]
                 (log/debug (str "/api/runs/" flow " =>") result)
                 result)))
 
@@ -105,11 +100,7 @@
           :return Run
           :body [event Event]
           :summary "continues a run"
-          (ok (let [result (run-result
-                             (db-runs/with-transaction [_]
-                                                       (continue!
-                                                         id
-                                                         event)))]
+          (ok (let [result (run-result (continue! id :data (:data event) :permit (:permit event) :interrupt (:interrupt event)))]
                 (log/debug (str "/" id "/continue =>") result)
                 result)))
 
@@ -120,7 +111,7 @@
           ;; TODO: clean up the nest of macros involved here
           ;;       we don't need a transaction, but with-transaction wraps
           ;;       with-runstore, which binds the JDBC runstore
-          (ok (let [result (run-result (db-runs/with-transaction [_] (get-run id)))]
+          (ok (let [result (run-result (ensure-cached-connection (get-run! id)))]
                 (log/debug (str "/api/runs/" id " =>") result)
                 result)))))
 

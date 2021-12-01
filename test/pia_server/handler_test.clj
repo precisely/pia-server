@@ -6,12 +6,14 @@
 (deftest foo-test
   (testing "Can start a flow"
     (let [run (start! foo)]
-      (is (run-in-state? run :suspended))
+      (is (run? run))
+      (is (= :running (:state run)))
       (is (= (:response run) '["hello"]))
 
       (testing "can continue a flow"
-        (let [run (continue! (:id run) {:data "cruel" :permit "the-permit"} [])]
-          (is (run-in-state? run :complete))
+        (let [run (continue! (:id run) :data "cruel" :permit "the-permit")]
+          (is (run? run))
+          (is (= :complete (:state run)))
           (is (= (:response run) '["cruel world!"])))))))
 
 

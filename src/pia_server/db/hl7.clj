@@ -7,8 +7,7 @@
             [next.jdbc.connection :as connection]
             [pia-server.db.core :as db]
             [taoensso.timbre :as log])
-  (:import (com.zaxxer.hikari HikariDataSource)
-           (java.util UUID)))
+  (:import (com.zaxxer.hikari HikariDataSource)))
 
 (def datasource-options
   {:auto-commit        false

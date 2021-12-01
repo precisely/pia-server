@@ -12,10 +12,10 @@
 
 
 (defn pem-freqs [q]
-  (*> q, (rating "pemFreq" "Frequency in the last 6 months" 0 4 :min-text "None of the time" :max-text "All of the time")))
+  (>* q, (rating "pemFreq" "Frequency in the last 6 months" 0 4 :min-text "None of the time" :max-text "All of the time")))
 
 (defn pem-sevs [q]
-  (*> q, (rating "pemSev" "Severity in the last 6 months" 0 4 :min-text "No issue" :max-text "Very severe")))
+  (>* q, (rating "pemSev" "Severity in the last 6 months" 0 4 :min-text "No issue" :max-text "Very severe")))
 
 
 (def pem-questions {
@@ -30,14 +30,14 @@
 
 
 (deflow no-pem []
-  (*> "Thanks for taking the time to answer these questions until this point",
+  (>* "Thanks for taking the time to answer these questions until this point",
       "Your post-exertional malaise appear to be within normal ranges right now, but you should still keep track of your symptoms.",
       "To help you with that, you can come back here to answer some more questions when you see a notification",
       "Let's make sure you recover your energy!"))
 
 
 ;(deflow pem []
-;        (*> "Let's now look at how often and how much you feel tired after activities. This is called post-exertional malaise (PEM)",
+;        (>* "Let's now look at how often and how much you feel tired after activities. This is called post-exertional malaise (PEM)",
 ;            "In the next statements, rate the frequency and severity you felt in the last 6 months.")
 ;        (loop [
 ;               [question & questions] pem-questions
@@ -49,7 +49,7 @@
 ;                sev (<*)
 ;                ]
 ;            (if (and (>= freq 2) (>= sev 2))
-;              (*> "After your answers so far, your post-exertional malaise shows serious signs of long-term issues",
+;              (>* "After your answers so far, your post-exertional malaise shows serious signs of long-term issues",
 ;                  "You would benefit greatly from completing the next questions, and overall you are almost finished with the assessment")
 ;              (if (rest questions)
 ;                (recur (first questions) (rest questions))

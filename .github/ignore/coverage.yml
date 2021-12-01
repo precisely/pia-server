@@ -1,3 +1,4 @@
+# cloverage causes "Method code too large!" errors, so removing it for now.
 name: pia-server coverage
 
 on:
