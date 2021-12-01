@@ -100,7 +100,7 @@
           :return Run
           :body [event Event]
           :summary "continues a run"
-          (ok (let [result (run-result (continue! id event))]
+          (ok (let [result (run-result (continue! id :data (:data event) :permit (:permit event) :interrupt (:interrupt event)))]
                 (log/debug (str "/" id "/continue =>") result)
                 result)))
 
