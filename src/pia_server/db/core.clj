@@ -1,15 +1,17 @@
 (ns pia-server.db.core
   (:require [clojure.string :as str]
-            [envvar.core :as envvar :refer [env keywordize]]))
+            [envvar.core :as envvar :refer [env keywordize]])
+  (:import (java.net URI)))
 
 
 (defn heroku-db-url->jdbc-url [heroku-db-url]
-  (let [uri (java.net.URI. heroku-db-url)
+  (let [uri (URI. heroku-db-url)
         [username password] (str/split (.getUserInfo uri) #":")]
     (str "jdbc:postgresql://"
          (.getHost uri) ":" (.getPort uri) (.getPath uri)
          "?user=" username "&password=" password)))
 
+;; TODO: Need a description string for this fn
 (defn jdbc-url [db]
   {:pre [(keyword? db)]}
   (let [name-db (name db)

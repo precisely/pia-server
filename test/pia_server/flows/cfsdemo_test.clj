@@ -10,5 +10,5 @@
     (println "Starting now")
     (let [run (start! welcome)]
       (println "Run started")
-      (is (run-in-state? run :suspended))
+      (is (run-in-state? run :running))
       #_(println "This is the welcome-test :response " (:response run)))))

@@ -12,14 +12,14 @@
                                   :max-text "Strongly agree"))))
 
 (deflow no-severe-fatigue []
-  (*> "Thanks for taking that time to answer the fatigue questions.",
+  (>* "Thanks for taking that time to answer the fatigue questions.",
       "Your fatigue levels appear to be within normal ranges right now, but you should still keep track of your symptoms.",
       "To help you with that, you can come back here to answer some more questions when you see a notification",
       "Let's make sure you recover your energy!")
   "end")
 
 (deflow general []
-  (*> "Now, let's chat about fatigue you've been feeling since last week.")
+  (>* "Now, let's chat about fatigue you've been feeling since last week.")
   (let [
         _          (general-nslider "Is your motivation lower when you've been fatigued?")
         motivation (<*)
@@ -41,6 +41,6 @@
         socials    (<*)]
     (if (< (+ motivation exercise ease physf problems sustain interfere rank socials) 36)
       (no-severe-fatigue)
-      (*> "It sounds like you have some serious fatigue issues.",
+      (>* "It sounds like you have some serious fatigue issues.",
           "This means there could be problems in your recovery that we need to look at more closely.")
       )))

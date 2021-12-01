@@ -16,9 +16,9 @@
     (update response :body #(-> % slurp (parse-string keyword)))))
 
 (deflow simple-flow []
-  (*> "hi")
+  (>* "hi")
   (let [result (<*)]
-    (*> (str "I received " result))))
+    (>* (str "I received " result))))
 
 (deflow error-flow []
   (ex-info "Ooops!" {:type :oops}))
@@ -32,18 +32,16 @@
         (is (= (:type body) "input"))))
 
     (testing "starting a flow"
-      (let [{status :status, {id :id, state :state, next_id :next_id} :body}
+      (let [{status :status, {id :id, state :state} :body}
             (json-request :post "/api/runs/simple-flow" :body [])]
         (is (= status 200))
         (is (string? id))
-        (is (= id next_id))
-        (is (= state "suspended"))
+        (is (= state "running"))
 
         (testing "continuing a flow"
-          (let [{status :status, {id :id, state :state, next_id :next-id, :as body} :body}
+          (let [{status :status, {id :id, state :state, :as body} :body}
                 (json-request :post (str "/api/runs/" next_id "/continue")
                               :body {:data "FOO"})]
             (is (= status 200))
             (is (= state "complete"))
-            (is (nil? next_id))
             (is (= (:response body) ["I received FOO"]))))))))

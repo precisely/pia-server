@@ -5,11 +5,10 @@
 ;;
 (ns pia-server.expiry-monitor
   (:require
-    [rapids :as lt]
+    [rapids :as r]
     [taoensso.timbre :as log]
-    [pia-server.db.runs :refer [get-expired-run-ids]]
-    [clojure.core.async :refer [go-loop <! timeout chan]]
-    [pia-server.db.runs :as db-runs]))
+    [clojure.stacktrace :as stacktrace]
+    [clojure.core.async :refer [go-loop <! timeout]]))
 
 (def ^:dynamic *interval* nil)
 (defn start
@@ -23,16 +22,24 @@
        (alter-var-root #'*interval* (constantly interval-seconds))
        (log/info "Expiry monitor: starting")
        (go-loop []
-         (db-runs/with-transaction [jrs]
-           (doseq [run-id (get-expired-run-ids jrs)]
-             (try
-               (log/debug "Expiry monitor: expiring run" run-id)
-               (lt/expire-run! run-id)
-               (catch Exception e
-                 (log/error "Expiry monitor: run " run-id ": " e)))))
          (if *interval*
-           (do (<! (timeout (* *interval* 1000)))
-               (recur))
+           (do
+             (try
+               (r/ensure-cached-connection
+                 (doseq [run (r/get-expired-runs)
+                         :let [run-id (:id run)]]
+                   (try
+                     (log/debug "Expiry monitor: expiring run" run-id)
+                     (r/expire-run! run)
+                     (catch Exception e
+                       (log/error "Expiry monitor: run " run-id ": " e)
+                       (stacktrace/print-stack-trace e)))))
+               (catch Exception e
+                 (log/error "Expiry monitor: failed while retrieving expired runs:" e)
+                 (stacktrace/print-stack-trace e)))
+             (<! (timeout (* *interval* 1000)))
+             (recur))
+           ;; ELSE:
            (log/debug "Expiry monitor: stopped")))))))
 
 (defn stop []

@@ -7,11 +7,11 @@
 ;; Two dropout buckets exist here, fatigue and fatigue-iof
 
 (defn iof-nslider [q]
-  (*> q, (number-slider 0 "No difficulty" 10 "Very difficult"
+  (>* q, (number-slider 0 "No difficulty" 10 "Very difficult"
                         :title "In the last 7 days")))
 
 (deflow no-iof []
-  (*> "Thanks for taking the time to answer these question about your impairment of function (IOF)",
+  (>* "Thanks for taking the time to answer these question about your impairment of function (IOF)",
       "Your level of impairment appears to be within normal ranges right now, but you should still keep track of your symptoms.",
       "To help you with that, when you see a notification from us, please come back for another chat",
       "Let's make sure you recover your energy!")
@@ -19,9 +19,9 @@
 
 
 (deflow iof []
-  (*> "Next, you can measure your impairment of function (IOF) from fatigue")
-  (*> "To do this, rate how difficult each of the following activities were for you in the last 7 days")
-  (*> "For activities you did not perform in the last 7 days, try to give your best rating for the last time you did it")
+  (>* "Next, you can measure your impairment of function (IOF) from fatigue")
+  (>* "To do this, rate how difficult each of the following activities were for you in the last 7 days")
+  (>* "For activities you did not perform in the last 7 days, try to give your best rating for the last time you did it")
   (let [
         _             (iof-nslider "Brushing or combing your hair")
         brushing-hair (<*)
@@ -43,7 +43,7 @@
         shopping      (<*)
         ]
     (if (> (/ (+ brushing-hair walking cooking cleaning lifting stairs sheets sitting shopping) 3) 8)
-      (*> "Your answers so far show that your impairment from fatigue is a problem")
+      (>* "Your answers so far show that your impairment from fatigue is a problem")
       (no-iof)
       )
     ))

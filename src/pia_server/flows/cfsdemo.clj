@@ -6,48 +6,48 @@
             [pia-server.flows.six-months :refer :all]))
 
 (deflow foo-remote []
-  (*> "hello")
+  (>* "hello")
   (let [value (<* :permit "the-permit" :expires (-> 2 minutes from-now) :default "default-suspend-value")]
-    (*> (str value " world!"))
+    (>* (str value " world!"))
     :result))
 
 (deflow fatigue-iof-6m []
-  (*> "This is the flow where people failing PEM go"))
+  (>* "This is the flow where people failing PEM go"))
 
 (defn welcome-rating [q]
-  (*> q, (survey {}
+  (>* q, (survey {}
                  (rating "welcomeRate" 0 10
                          :title "Is everything okay?"
                          :min-text "No"
                          :max-text "Yes"))))
 
 (deflow welcome []
-  (*> "Welcome to the Precisely app!")
-  (*> "The purpose here is to track your symptoms and determine if you are developing long-term covid problems.")
-  (*> "Specifically, the problems being tracked here can lead to Chronic Fatigue Syndrome (CFS)")
-  (*> "You can assess your own risk for CFS by simply answering the next questions about how you feel.")
-  (*> "It usually takes less than 10 minutes, or only seconds if you are showing no signs of CFS")
+  (>* "Welcome to the Precisely app!")
+  (>* "The purpose here is to track your symptoms and determine if you are developing long-term covid problems.")
+  (>* "Specifically, the problems being tracked here can lead to Chronic Fatigue Syndrome (CFS)")
+  (>* "You can assess your own risk for CFS by simply answering the next questions about how you feel.")
+  (>* "It usually takes less than 10 minutes, or only seconds if you are showing no signs of CFS")
   (let [welcome-answers (survey {}
                                 (radiogroup :ready "Ready to start?" ["Yes", "No"])
                                 (rating :feeling "How are you feeling today?" 0 10
                                         :min-text "Terrible"
                                         :max-text "Great"))
         feeling         (:feeling welcome-answers)]
-    (*> "The result is " (str welcome-answers))
+    (>* "The result is " (str welcome-answers))
     (cond
-      (> feeling 5) (*> "Glad to hear you're feeling well")
-      (> feeling 3) (*> "Not so great, huh? Maybe things will get better soon.")
-      :else (*> "Sorry to hear you're feeling bad. We're here to fix that.")))
+      (> feeling 5) (>* "Glad to hear you're feeling well")
+      (> feeling 3) (>* "Not so great, huh? Maybe things will get better soon.")
+      :else (>* "Sorry to hear you're feeling bad. We're here to fix that.")))
 
-  (*> "Would you like to press a button?")
+  (>* "Would you like to press a button?")
   (case (choices :yes "Yes please!", :no "No, thank you.")
-    :yes (*> "Glad you enjoyed pressing a button!")
-    :no (*> "Despite what you say, it seems like you like pressing buttons.")
-    (*> "Huh what? Something got confused.")))
+    :yes (>* "Glad you enjoyed pressing a button!")
+    :no (>* "Despite what you say, it seems like you like pressing buttons.")
+    (>* "Huh what? Something got confused.")))
 
 (deflow ender [final-results]
-  (*> "You have reached the end of this demo")
-  (*> (str "Your final results were:\n" final-results)))
+  (>* "You have reached the end of this demo")
+  (>* (str "Your final results were:\n" final-results)))
 
 (deflow timeout [at-time]
   (<* :expires at-time))

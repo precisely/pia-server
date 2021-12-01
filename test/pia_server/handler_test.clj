@@ -6,7 +6,7 @@
 (deftest foo-test
   (testing "Can start a flow"
     (let [run (start! foo)]
-      (is (run-in-state? run :suspended))
+      (is (run-in-state? run :running))
       (is (= (:response run) '["hello"]))
 
       (testing "can continue a flow"

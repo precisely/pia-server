@@ -13,10 +13,10 @@
 
 
 (defn sleep-freqs [q]
-  (*> q, (rating "sleepFreq" "Frequency in the last 6 months" 0 4 :min-text "None of the time" :max-text "All of the time" )))
+  (>* q, (rating "sleepFreq" "Frequency in the last 6 months" 0 4 :min-text "None of the time" :max-text "All of the time" )))
 
 (defn sleep-sevs [q]
-  (*> q, (rating "sleepSev" "Severity in the last 6 months" 0 4 :min-text "No issue" :max-text "Very severe" )))
+  (>* q, (rating "sleepSev" "Severity in the last 6 months" 0 4 :min-text "No issue" :max-text "Very severe" )))
 
 
 (def sleep-questions {
@@ -32,14 +32,14 @@
 
 
 (deflow no-sleep []
-        (*> "Thanks for taking the time to answer these questions until this point",
+        (>* "Thanks for taking the time to answer these questions until this point",
             "Your sleep issues appear to be within normal ranges right now, but you should still keep track of your symptoms",
             "To help you with that, you can come back here to answer some more questions when you see a notification",
             "Let's make sure you recover your energy!"))
 
 
 ;(deflow sleep []
-;         (*> "This part of the test will focus on your sleep symptoms, which are very important.",
+;         (>* "This part of the test will focus on your sleep symptoms, which are very important.",
 ;             "In the next statements, rate the frequency and severity you felt the problems in the last 6 months.")
 ;         (loop [
 ;                [question & questions] sleep-questions
@@ -51,7 +51,7 @@
 ;                 sev (<*)
 ;                 ]
 ;             (if (and (>= freq 2) (>= sev 2))
-;               (*> "Based on these responses, your sleep problems indicate a possibly serious issue",
+;               (>* "Based on these responses, your sleep problems indicate a possibly serious issue",
 ;                   "Also, when examining your answers from previous sections, your overall risk for developing chronic fatigue is high",
 ;                   "There are two more short sections to complete now, and we urge you to finish this assessment so we can make as informed of a referral as possible.")
 ;               (if (rest questions)
