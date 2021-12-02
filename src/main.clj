@@ -27,14 +27,14 @@
    (log/info (str "Starting pia-server at http://localhost:" port))
    (rapids-pg/postgres-storage-migrate!)
    (log/info (str "Starting expiry monitor with timeout of " expiry-seconds " seconds"))
-   (expiry-monitor/start expiry-seconds)
+   (start-expiry-monitor! :delay expiry-seconds)
    (reset! *server* (jetty/run-jetty app {:port port, :join? join?}))))
 
 (defn stop []
   (when-not (nil? @*server*)
     (.stop @*server*)
     (reset! *server* nil))
-  (expiry-monitor/stop))
+  (stop-expiry-monitor!))
 
 (defn -main [& args]
   (let [port (read-string (get @env :port 8080))]
