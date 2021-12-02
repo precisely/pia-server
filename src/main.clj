@@ -2,7 +2,6 @@
   (:require [ring.adapter.jetty :as jetty]
             [envvar.core :refer [env]]
             [pia-server.app :as pia]
-            [pia-server.expiry-monitor :as expiry-monitor]
             [pia-server.db.core :refer [jdbc-url]]
             [taoensso.timbre :as log]
             [rapids.implementations.postgres-storage :as rapids-pg]
