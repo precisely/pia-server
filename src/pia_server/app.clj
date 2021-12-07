@@ -9,7 +9,7 @@
             [schema.core :as scm]
             [clojure.string :as str]
             [ring.logger :as logger]
-            [pia-server.flows.cfsdemo :refer [welcome]]
+            [pia-server.flows.anticoagulation :refer [anticoagulation]]
             [taoensso.timbre :as log]
             [compojure.api.exception :as ex]
             [ring.util.http-response :as response])
@@ -39,8 +39,8 @@
     "some result"))
 
 ;; marking flows as dynamic to enable tests
-(def ^:dynamic flows {:foo     #'foo
-                      :welcome #'welcome})
+(def ^:dynamic flows {:foo             #'foo
+                      :anticoagulation #'anticoagulation})
 
 (defn run-result [run]
   (let [raw-run (.rawData run)]
@@ -80,6 +80,7 @@
                  ;; everything else
                  ::ex/default                                ex/safe-handler #_(ex/with-logging response/internal-server-error :error)}}}
 
+
     (context "/api" []
       :tags ["api"]
 
@@ -108,9 +109,6 @@
           :path-params [id :- scm/Uuid]
           :return Run
           :summary "gets a run"
-          ;; TODO: clean up the nest of macros involved here
-          ;;       we don't need a transaction, but with-transaction wraps
-          ;;       with-runstore, which binds the JDBC runstore
           (ok (let [result (run-result (ensure-cached-connection (get-run! id)))]
                 (log/debug (str "/api/runs/" id " =>") result)
                 result)))))
