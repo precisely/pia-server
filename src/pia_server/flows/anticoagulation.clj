@@ -41,12 +41,22 @@
 (defn get-patient-age [patient])
 ;; Version 0: curl precisely/api/runs/{current-run-id} -X '{"iron"
 ;; Version 1: curl https://precise.ly/callbacks/labcorp/ -X '{"accession-number" 123123, }'
+
+(defn get-patient-medications [patient])
+(defn get-patient-schedule [patient])
+
 (deflow anticoagulation [pid]
   (let [patient            (get-patient pid)
         blood-order        (<<! (start! get-blood-order patient))
-        {inr-level        :inr-level,
-         creatinine-level :creatinine-level} blood-order
+        {baseline-inr        :baseline-inr,
+         creatinine-level :creatinine-level
+         cbc-platelets :cbc-platelets} blood-order
         disease-conditions (get-disease-conditions patient) ; hypertension, congestive-heart-failure
-        age                (get-patient-age patient)]
+        age                (get-patient-age patient)
+        medications (get-patient-medications patient)
+        upcoming-surgeries (get-patient-schedule patient)]
     (print "blood-order-run" blood-order-run)
+
+
+
     ()))
