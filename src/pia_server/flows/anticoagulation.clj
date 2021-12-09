@@ -55,7 +55,7 @@
         age                (get-patient-age patient)
         medications (get-patient-medications patient)
         upcoming-surgeries (get-patient-schedule patient)]
-    (print "blood-order-run" blood-order-run)
+    (print "blood-order-run" blood-order)
 
 
 
