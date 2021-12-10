@@ -1,4 +1,4 @@
-(ns pia_server.chat.basic_test
+(ns pia-server.chat.basic_test
   (:require [pia-server.chat.basic :refer :all]
             [clojure.test :refer :all]))
 

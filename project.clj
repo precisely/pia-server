@@ -40,7 +40,7 @@
                  [envvar "1.1.2"]
 
                  ;; application support
-                 [precisely/rapids "0.6.5"]
+                 [precisely/rapids "0.6.6-SNAPSHOT"]
                  [clojure.java-time "0.3.2"]
                  [org.clojure/core.async "1.3.610"]
                  [camel-snake-kebab "0.4.2"]
@@ -78,7 +78,7 @@
   :main main
   :source-paths ["src"]
   :resource-paths ["resources"]
-  :ring {:handler       pia-server.core/app
+  :ring {:handler       pia-server.app/app
          :port          ~(read-string (env :port "8080"))
          :auto-refresh? true
          :auto-reload?  true
