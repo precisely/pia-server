@@ -34,7 +34,9 @@
 
 (deflow foo []
   (>* "hello")
-  (let [value (<* :permit "the-permit" :expires (-> 30 minutes from-now) :default "default-suspend-value")]
+  (let [value (<* :permit "the-permit"                      ; must be provided as :permit argument to continue!
+                  :expires (-> 30 minutes from-now)         ; auto expire this list operation after 30min
+                  :default "default-suspend-value")]        ;             with this value
     (>* (str value " world!"))
     "some result"))
 

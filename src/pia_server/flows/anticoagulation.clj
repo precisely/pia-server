@@ -28,15 +28,15 @@
     (println "LAB ORDER:" (assoc order :id lab-request-id))))
 
 (defn notify [entity message & {:keys [run-id]
-                                :or   {run-id   (current-run :id)}}]
-   (println ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
-   (println "SENDING NOTIFICATION => " entity ": "
-            {:message message :run-id run-id}))
+                                :or   {run-id (current-run :id)}}]
+  (println ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
+  (println "SENDING NOTIFICATION => " entity ": "
+           {:message message :run-id run-id}))
 
 (deflow get-baseline-inr [patient clinic]
   #_#_#_(let [inr-lab (get-inr-lab clinic)])
-  (notify clinic patient :initial-inr)
-  (notify-patient patient clinic "You "))
+      (notify clinic patient :initial-inr)
+      (notify-patient patient clinic "You "))
 
 (deflow order-labs [patient & orders]
   (let [lab-request (call-lab-api {:tracking-num (current-run :id)
@@ -58,16 +58,19 @@
 
 (defn get-patient-medications [patient])
 (defn get-patient-schedule [patient])
-
+;
+;(defn order-rx [patient & orders]
+;  (let [p (->pool)]
+;    (letflow [(monitor)])))
 (deflow anticoagulation [pid]
   (let [patient            (get-patient pid)
         blood-order        (<<! (start! order-labs patient [:iron :cbc]))
-        {baseline-inr        :baseline-inr,
+        {baseline-inr     :baseline-inr,
          creatinine-level :creatinine-level
-         cbc-platelets :cbc-platelets} blood-order
+         cbc-platelets    :cbc-platelets} blood-order
         disease-conditions (get-disease-conditions patient) ; hypertension, congestive-heart-failure
         age                (get-patient-age patient)
-        medications (get-patient-medications patient)
+        medications        (get-patient-medications patient)
         upcoming-surgeries (get-patient-schedule patient)]
     (print "blood-order-run" blood-order)))
 
