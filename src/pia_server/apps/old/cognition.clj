@@ -1,6 +1,6 @@
 (ns pia-server.flows.cognition
   (:require [rapids :refer :all]
-            [pia-server.chat.survey :refer :all]
+            [pia-server.chat.surveyjs :refer :all]
             ))
 
 ;; Assesses the patient's cognitive impairment

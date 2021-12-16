@@ -9,7 +9,7 @@
             [schema.core :as scm]
             [clojure.string :as str]
             [ring.logger :as logger]
-            [pia-server.flows.anticoagulation :refer [anticoagulation]]
+            [pia-server.apps.anticoagulation.flows.main :refer [anticoagulation]]
             [taoensso.timbre :as log]
             [compojure.api.exception :as ex]
             [ring.util.http-response :as response])

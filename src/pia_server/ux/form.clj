@@ -1,4 +1,4 @@
-(ns pia-server.flows.components
+(ns pia-server.ux.form
   (:require [rapids :refer :all]
             [rapids.support.util :refer [new-uuid]]))
 

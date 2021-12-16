@@ -1,6 +1,6 @@
 (ns pia-server.flows.sleep
   (:require [rapids :refer :all]
-            [pia-server.chat.survey :refer :all]
+            [pia-server.chat.surveyjs :refer :all]
             ))
 
 ;; Assesses the patient's post-exertional malaise
