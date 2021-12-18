@@ -26,6 +26,7 @@
    :state                            (scm/enum :running :complete :error)
    (scm/optional-key :result)        JSONK
    :response                         [JSONK]
+   :status                            JSONK
    (scm/optional-key :parent_run_id) (scm/maybe scm/Uuid)})
 
 (scm/defschema Event
@@ -33,11 +34,13 @@
               (scm/optional-key :data)   JSONK}))
 
 (deflow foo []
+  (set-status! :foo 1 :bar 2)
   (>* "hello")
   (let [value (<* :permit "the-permit"                      ; must be provided as :permit argument to continue!
                   :expires (-> 30 minutes from-now)         ; auto expire this list operation after 30min
                   :default "default-suspend-value")]        ;             with this value
     (>* (str value " world!"))
+    (set-status! :foo :updated)
     "some result"))
 
 ;; marking flows as dynamic to enable tests
@@ -48,7 +51,7 @@
   (let [raw-run (.rawData run)]
     (reduce-kv #(assoc %1 (keyword (str/replace (name %2) "-" "_")) %3) {}
                (select-keys raw-run
-                            [:id :response :next-id :next :result :state :return-mode :run_response :parent-run-id]))))
+                            [:id :response :result :state :status :parent-run-id]))))
 
 
 (defn custom-handler [f type]
