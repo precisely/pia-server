@@ -5,6 +5,7 @@
             [envvar.core :refer [env]]
             [ring.util.http-response :refer :all]
             [ring.middleware.conditional :refer [if-url-starts-with]]
+            [com.unbounce.encors :refer [wrap-cors]]
             [rapids :refer :all]
             [schema.core :as scm]
             [clojure.string :as str]
@@ -80,6 +81,9 @@
                  ;; everything else
                  ::ex/default                                ex/safe-handler #_(ex/with-logging response/internal-server-error :error)}}}
 
+    (GET "/hello" []
+      (ok {:message "hello world"}))
+
     (context "/api" []
       :tags ["api"]
 
@@ -144,10 +148,22 @@
         (handler request)
         (unauthorized)))))
 
+;; FIXME: This is such shit.
+(def cors-policy
+  {:allowed-origins :star-origin
+   :allowed-methods #{:get :post :options}
+   :request-headers #{"Accept" "Content-Type" "Origin" "Referer" "User-Agent"}
+   :exposed-headers nil
+   :allow-credentials? true
+   :origin-varies? false
+   :max-age nil
+   :require-origin? false
+   :ignore-failures? true})
+
 (def app
   (-> #'base-handler
-      (if-url-starts-with "/api" logger/wrap-with-logger)
+      logger/wrap-with-logger
       wrap-jwt
       ;; encors for CORS (https://github.com/unbounce/encors):
-      ;;(wrap-cors cors-policy)
+      (wrap-cors cors-policy)
       ))
