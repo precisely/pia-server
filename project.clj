@@ -56,6 +56,7 @@
                  [metosin/compojure-api "2.0.0-alpha31"]
                  [metosin/jsonista "0.2.7"]
                  [buddy/buddy-auth "2.2.0"]
+                 [com.unbounce/encors "2.4.1"]
 
                  ;; logger
                  [com.taoensso/timbre "5.1.0"]
