@@ -34,14 +34,21 @@
   (scm/maybe {(scm/optional-key :permit) JSONK
               (scm/optional-key :data)   JSONK}))
 
-(deflow foo []
-  (set-status! :foo 1 :bar 2)
+;;
+;; Simple example flow
+;;
+(deflow foo
+  "This flow demonstrates status variables and an expiring listen operation.
+  The initial response is 'hello' and the second response is the continue! :data
+  appended to 'world'."
+  []
+  (set-status! :bar "initial" :baz "unchanging")
   (>* "hello")
   (let [value (<* :permit "the-permit"                      ; must be provided as :permit argument to continue!
                   :expires (-> 30 minutes from-now)         ; auto expire this list operation after 30min
                   :default "default-suspend-value")]        ;             with this value
     (>* (str value " world!"))
-    (set-status! :foo :updated)
+    (set-status! :bar "updated")
     "some result"))
 
 ;; marking flows as dynamic to enable tests

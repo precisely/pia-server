@@ -5,21 +5,44 @@
   (:require [rapids :refer :all]
             [pia-server.db.models.exports :refer :all]))
 
-(defn call-lab-api [order]
-  (let [lab-request-id (rapids.support.util/new-uuid)]
-    (println ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
-    (println "LAB ORDER:" (assoc order :id lab-request-id))))
+(defn- send-lab-orders
+  "Calls the lab API, sends fax, etc."
+  [lab patient orders]
+  (println ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
+  (println "LAB ORDER:" lab
+           {:tracking-num (current-run :id)
+            :patient      patient
+            :orders       orders}))
 
-(defn validate-lab-result [lr] lr)
+(def LabStatus #{"received" "processing" "failed" "complete"})
 
-(defn save-lab-result [p lr]
-  (update-patient! p :lab-results conj lr))
+(defn lab-status-error [status]
+  (throw (ex-info "Invalid lab status provided" {:status status})))
 
-(deflow order-labs [patient & orders]
-  (let [lab-request (call-lab-api {:tracking-num (current-run :id)
-                                   :orders       orders})
-        lab-result  (<*)]
-    (validate-lab-result lab-result)
-    (save-lab-result patient lab-result)
-    (println "save-lab-result:" lab-result)
-    lab-result))
+(defn start-labwork
+  "Returns a run which takes input from the lab. The run provides a :sample status value:
+   :sample - one of \"waiting\" \"received\" \"processing\" \"failed\" or \"success\"
+   When \"success\" or \"failed\" is reached, the run completes.
+   If the labwork status is \"success\", the return value is the lab results.
+   If the labwork status is \"failed\", the return value represents the failure reason."
+  [lab patient & orders]
+  (start!
+    (flow []
+      (set-status! :roles [:lab] :patient-id (:id patient))
+      (send-lab-orders lab patient orders)
+      (loop
+        [{status :status data :data} (<*)]
+
+        (if-not (LabStatus status)
+          (lab-status-error status)
+          (set-status! :sample status))
+
+        (cond
+          (#{"failed" "success"} status) data
+          (recur (<*)))))))
+
+;; send order to lab
+;; notify patient
+;; remind patient
+;;   - allow patient to cancel reminder
+;; if lab order doesn't complete

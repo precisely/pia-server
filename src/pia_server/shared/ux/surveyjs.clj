@@ -1,4 +1,4 @@
-(ns pia-server.ux.surveyjs
+(ns pia-server.shared.ux.surveyjs
   (:require [rapids :refer :all]
             [pia-server.util :refer :all])
   (:import (java.util UUID)))
