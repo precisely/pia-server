@@ -18,7 +18,7 @@
 
 
 (scm/defschema JSONK (scm/maybe
-                       (scm/cond-pre scm/Num scm/Str scm/Bool scm/Keyword
+                       (scm/cond-pre scm/Num scm/Str scm/Bool scm/Keyword scm/Uuid
                                      [(scm/recursive #'JSONK)]
                                      {(scm/cond-pre scm/Str scm/Keyword) (scm/recursive #'JSONK)})))
 

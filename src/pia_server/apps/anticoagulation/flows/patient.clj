@@ -4,7 +4,13 @@
 (ns pia-server.apps.anticoagulation.flows.patient
   (:require [rapids :refer :all]
             [pia-server.shared.ux.basic :refer :all]
-            [pia-server.shared.notifier :refer :all]))
+            [pia-server.shared.ux.form :refer :all]
+            [pia-server.shared.roles :refer [require-roles]]
+            [pia-server.shared.notifier :refer :all]
+            [pia-server.shared.util :refer [range-case]]))
+
+(declare pills-from-dosage calculate-next-initiation-dose-ucsd coumadin-pill-colors)
+(declare-suspending post-measurement-follow-up)
 
 (deflow start-pick-lab-for-orders
   "In future, this might launch an interaction with the patient to determine the right lab. This might just request
@@ -16,37 +22,163 @@
   ;; in future, initiate the interaction:
   #_(notify patient "Please pick a lab")
   (start! (flow []
-            (set-status! :roles [:patient] :patient-id (:id patient))
+            (require-roles :patient)
+            (set-status! :patient-id (:id patient))
             ;; for now, just return a default lab...
             {:id "lc-9876", :name "Labcorp Lab, 123 Main Street"})))
 
-(defn pills-from-dosage
-  "Given two numbers representing units-per-time (the dosage) and unit-per-pill,
-  the amount of the drug per pill, returns the number of pills per unit time"
-  [unit-per-time unit-per-pill]
-  [:pre [(number? unit-per-time) (number? unit-per-pill)]]
-  (/ unit-per-time unit-per-pill))
+(deflow confirm-pills-taken
+  "Asks the patient whether they took their pills,
+  Returns :yes | :pills-finished | :forgot"
+  [patient day days dosage]
+  (notify patient (str "Time to take your pills (" dosage " mg)"))
+  (>* (text "It's day" day " of " days)
+      (text "Time to take your dose of coumadin (" dosage " mg).")
+      (text "Please confirm you took your dose."))
+  (case (<*buttons [{:id :yes, :text (str "Yes, I took " dosage " mg")}
+                    {:id :problem, :text "No, there was a problem"}])
+    :problem (<*buttons [{:id :pills-finished, :text "Not enough pills left"}
+                         {:id :forgot, :text "I forgot"}])
+    :yes))
+
+(deflow measure-inr-level []
+  (>* (text "Please use your INR test and record your INR level here (0-5)."))
+  (<*form [(number :inr :min 0 :max 5)]))
+
+;; Some ideas for warfarin dosing:
+;; https://www.uwhealth.org/files/uwhealth/docs/pdf3/Warfarin_Dosing_Protocol.pdf
+;; initiation: https://depts.washington.edu/anticoag/home/content/warfarin-initiation-dosing
+;; maintenance: https://depts.washington.edu/anticoag/home/content/warfarin-maintenance-dosing-nomogram
+;; https://health.ucsd.edu/for-health-care-professionals/anticoagulation-guidelines/warfarin/warfarin-initiation/Pages/default.aspx
+
 
 (deflow initiation-phase
-  ([patient initial-dosage units-per-pill days]
-   (set-status! :roles [:patient])
-   (loop [day    1
-          dosage initial-dosage]
-     (let [pills (pills-from-dosage dosage units-per-pill)]
-       (>* (text "It's day" day " of " days)
-           (text "Time to take your dose of coumadin (" pills ") pills."))
-       (>* "Please confirm you took your dose.")
-       (case (<*buttons [{:id :yes, :text (str "Yes, " pills " pills")}
-                         {:id :no, :text "No, there was a problem"}])
-         :no ))))
-  ([patient initial-dosage units-per-pill]
-   (initiation-phase patient initial-dosage units-per-pill 5)))
+  "Attempts to get to a therapeutic dose. Target INR not yet used."
+  ([patient target-inr days]
+   (require-roles :patient)
+   (>* (text "Please follow the directions in the order shown."))
+   (loop [inr-levels         []
+          pill-confirmations []
+          follow-ups         []
+          doses              []]
+     (notify patient "Time to measure your INR levels and take your Coumadin.")
+     (let [day                (count inr-levels)
+           new-dose           (calculate-next-initiation-dose-ucsd patient (last doses) inr-levels)
+           new-inr-level      (measure-inr-level)
+           inr-levels         (conj inr-levels new-inr-level)
+           pill-confirmations (conj pill-confirmations (confirm-pills-taken patient day days new-dose))
+           follow-ups         (conj follow-ups (post-measurement-follow-up inr-levels))
+           doses              (conj doses new-dose)]
+       (set-status! :initiation-phase {:day day :dose new-dose :inr-level new-inr-level})
+       (if (<= day days)
+         (do
+           (<* :delay (-> 24 hours from-now) :permit "timeout")
+           (recur inr-levels, pill-confirmations, follow-ups, doses))
+         (set-status! [:initiation-phase :complete] true))))
+   ([patient target-inr]
+    (initiation-phase patient target-inr 5))))
 
-(deflow adverse-reaction-questions
-  []
-  )
+(deflow post-measurement-follow-up [inr-levels]
+  (let [last-inr-level (last inr-levels)]
+    {:post-measurement-follow-up
+     (range-case last-inr-level
+       [> 3] (do (>* (text "Your INR level is a bit high, indicating your blood is not clotting.")
+                     (text "Did you drink cranberry juice or alcohol within the last 24 hours?"))
+                 {:high-inr-reason (<*buttons [{:id :alcohol :text "Alcohol"} {:id :cranberry :text "Cranberry Juice"}
+                                               {:id :none :text "No"}])})
+       [< 1] (do (>* (text "Your INR level is very low, indicating your blood is clotting too much.")
+                     (text "Vitamin K can interfere with your treatment.")
+                     (text "Did you eat a large amount of any of the following in the last day?")
+                     (text "Kale, Spinach, Brussels sprouts, Collards, Mustard greens, Chard, Broccoli, Asparagus, Green tea"))
+                 {:low-inr-reason (<*buttons [{:id :vitamin-k-foods :text "I did"} {:id :none, :text "I did not"}])}))}))
 
-(defn start-patient-initiation-phase [patient dosage]
-  (start! initiation-phase patient dosage))
+(deflow maintenance-phase [& rest]
+  :tbd)
+;;
+;; Helper fns
+;;
+;; another helpful calculator: http://warfarindosing.org/Source/InitialDose.aspx
+;; Dr. Brian Gage developed the GIFT algorithm (Genetic InFormatics Trial (GIFT) of Warfarin Therapy to Prevent DVT Trial):
+;;      https://generalmedicalsciences.wustl.edu/people/brian-f-gage-md-msc/
+(defn calculate-starting-dose [race age sex]
+  ;; https://health.ucsd.edu/for-health-care-professionals/anticoagulation-guidelines/warfarin/warfarin-initiation/Pages/default.aspx
+  (cond
+    (= race :black) (if (< age 70) 7.5 5)
+    ((some :white :hispanic) race) (if (< age 70) 5 (if (= sex :male) 5 2.5))
+    (= race :asian) 2.5))
 
-(deflow start-maintenance-loop [])
+(defn round
+  "Round a double to the given precision (number of significant digits)"
+  [precision d]
+  (let [factor (Math/pow 10 precision)
+        d      (float d)]
+    (/ (Math/round (* d factor)) factor)))
+
+(defn round-to-nearest-half [num]
+  (/ (round 0 (* num 2)) 2.0))
+
+(defn calculate-next-initiation-dose-ucsd
+  ;; https://health.ucsd.edu/for-health-care-professionals/anticoagulation-guidelines/warfarin/warfarin-initiation/Pages/default.aspx
+  [patient last-dose inr-levels]
+  (let [latest-inr (last inr-levels)]
+    (if (nil? inr-levels)
+      (calculate-starting-dose (:race patient) (:age patient) (:sex patient))
+      (min 12 (max
+                0 (round-to-nearest-half (range-case latest-inr
+                                           [< 1.1] (* 2 last-dose)
+                                           [< 1.5] last-dose
+                                           [< 1.9] (* 4/5 last-dose)
+                                           [< 2.5] (* 3/4 last-dose)
+                                           [< 3.5] (* 1/2 last-dose)
+                                           [>= 3.5] 0)))))))
+
+(defn calculate-next-initiation-dose-uwash
+  "Based roughly on:  https://depts.washington.edu/anticoag/home/content/warfarin-initiation-dosing"
+  [patient last-dose inr-levels]
+  (let [day        (count inr-levels)
+        recent-inr (last inr-levels)]
+    (case day
+      0 5
+      1 (range-case recent-inr
+          [< 1.5] 5
+          [< 1.9] 2.5
+          [< 2.5] 2                                         ;[1 2.5]
+          [>= 2.5] 0)
+      2 (range-case recent-inr
+          [< 1.5] 7.5                                       ;[5 10]
+          [< 1.9] 2.5                                       ;[2.5, 5]
+          [< 2.5] 0                                         ;[0, 2.5]
+          [< 3] 0                                           ; [0, 2.5]
+          [>= 3] 0)
+      3 (range-case recent-inr
+          [< 1.5] 7.5
+          [< 1.9] 4
+          [< 2.5] 2
+          [< 3] 1
+          [>= 3] 0)
+      4 (range-case recent-inr
+          [< 1.5] 10
+          [< 1.9] 6
+          [< 3] 3
+          [>= 3] 0)
+      5 (range-case recent-inr
+          [< 1.5] 10
+          [< 1.9] 8
+          [< 3] 3
+          [>= 3] 0)
+      6 (range-case recent-inr
+          [< 1.5] 10
+          [< 1.9] 8
+          [< 3] 5
+          [>= 3] 0))))
+
+(def coumadin-pill-colors
+  {1   :pink,
+   2   :lavender
+   2.5 :green
+   3   :tan
+   4   :blue
+   5   :peach
+   6   :teal
+   7.5 :yellow
+   10  :white})

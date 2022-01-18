@@ -1,6 +1,6 @@
 (ns pia-server.shared.flows.patient
   (:require [rapids :refer :all]
-            [pia-server.ux.basic :refer [<*buttons]]
+            [pia-server.shared.ux.basic :refer [<*buttons]]
             [pia-server.shared.notifier :refer [notify]])
   (:import (java.time Period)))
 
@@ -27,10 +27,11 @@
   user-delays - nil or a vector of two-tuples providing text and a java period,
         e.g., :user-delays [[\"tomorrow\" (days 1)] [\"next week\" (week 1)]
   "
-  [patient message & {:keys [cancelable user-delays until max interval reminder-type]
+  [patient message & {:keys [cancelable user-delays until max interval]
                       :or   {interval (days 1)}}]
-  {:pre [or (if max (number? max))
-         (if test (closure? until))]}
+  {:pre [(or max until)
+         (or (nil? max) (number? max))
+         (or (nil? until) (closure? until) (fn? until))]}
   (let [cancel-text    (if (string? cancelable) cancelable "Stop reminding me")
         cancel-buttons (cond-> []
                                cancelable (conj {:id   :cancel,
@@ -48,9 +49,12 @@
             (recur (inc count))))))))
 
 (deflow start-patient-reminders [patient message &
-                                 {:keys [cancelable user-delays test max interval]
+                                 {:keys [cancelable user-delays until max interval]
                                   :or   {interval (days 1)}}]
   (start! remind-patient patient message
           :cancelable cancelable
           :user-delays user-delays
-          :test test :max max :interval interval))
+          :until until
+          :max max
+          :interval interval))
+

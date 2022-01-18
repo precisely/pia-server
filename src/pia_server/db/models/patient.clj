@@ -1,9 +1,13 @@
 (ns pia-server.db.models.patient)
 
 (def +patients+ (atom {123 {:id             123,
+                            :type :patient
                             :name           "Bob Smith"
                             :email          "bob@bobmail.com"
-                            :age            55
+                            :age            55              ;; yeah, yeah, this should be bday, but this is a demo
+                            :sex            :male
+                            :race           :white
+                            :genetic-variants {}
                             :diseases       {
                                              :heart-disease  true,
                                              :kidney-disease false,

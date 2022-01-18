@@ -17,14 +17,14 @@
 ;;        map-params (if (contains? map-params :or) map-params (conj map-params {:or {}}))
 ;;        map-params (assoc-in map-params [:or 'required] true)
 ;;        map-params (assoc map-params :keys (distinct (conj keys 'required)))
-(defmacro ^{:arglists ['[name docstring? generator-fn ]]}
+(defmacro ^{:arglists ['[name docstring? generator-fn]]}
   defcontrol
   [name & cdecl]
   {:pre [(symbol? name)]}
   (let [[docstring params & rest-cdecl] (if (-> cdecl first string?) cdecl (conj cdecl nil))
         [prepost-map input-expr result-expr?] (if (-> rest-cdecl first map?) rest-cdecl (conj {} rest-cdecl))
         validation-expr (or result-expr? (constantly true))
-        id (-> name clojure.core/name keyword)]
+        id              (-> name clojure.core/name keyword)]
     (assert (vector? params))
     (assert (or (nil? docstring) (string? docstring)))
     `(defn ~name ~docstring ~[] ~prepost-map
@@ -35,7 +35,7 @@
 (defn- normalize-button-def [bdef]
   (letfn [(keyword-to-nice-string [k]
             (s/join (map s/capitalize (s/split (name k) #"_")) " "))
-          (button-def-error [] (throw "Invalid button def" bdef))]
+          (button-def-error [] (throw (ex-info "Invalid button def" bdef)))]
     (cond
       (keyword? bdef) {:id bdef :text (keyword-to-nice-string bdef)}
       (map? bdef) (if (and (-> bdef :id keyword?)
@@ -43,6 +43,20 @@
                     bdef
                     (button-def-error))
       :else (button-def-error))))
+
+(defn normalize-id-map
+  "Converts an object of the form {:yes {:text \"Yes\"}, :no {:text \"No\"}}
+  => [{:id "
+  ([obj]
+   (normalize-id-map obj #(if (map? %)
+                            %
+                            (throw (ex-info "normalize-id-map expected map of ids to maps" {:invalid %})))))
+  ([obj f]
+   (cond
+     (vector? obj) obj
+     (map? obj) (reduce (fn [arr [id val]]
+                          (conj arr (assoc (f val) :id id)))
+                        [] (seq obj)))))
 
 (defn ^:suspending <*buttons
   "Presents a button in the UI.

@@ -1,6 +1,6 @@
 (ns pia-server.shared.ux.form
   (:require [rapids :refer :all]
-            [pia-server.ux.basic :refer [<*control]]))
+            [pia-server.shared.ux.basic :refer [<*control]]))
 
 (deflow <*form [elements & {:keys [expires default]}]
   (let [result (<*control {:type :form, :elements elements}

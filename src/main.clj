@@ -21,8 +21,9 @@
 (defn start
   ([] (start #'pia/app))
 
-  ([app & {:keys [port join? expiry-seconds]
-           :or   {port 8080, join? false, expiry-seconds 10}}]
+  ([app & {:keys [port join? expiry-seconds level]
+           :or   {port 8080, join? false, expiry-seconds 10, level :info}}]
+   (log/set-level! level)
    (log/info (str "Starting pia-server at http://localhost:" port))
    (rapids-pg/postgres-storage-migrate!)
    (log/info (str "Starting expiry monitor with timeout of " expiry-seconds " seconds"))
