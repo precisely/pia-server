@@ -43,7 +43,7 @@
 ;;  "When the doctor must review the patient and labwork manually. The result is a dosage or nil."
 ;;  [patient labwork]
 ;;  (display-patient-labs patient labwork)
-;;  (>* "Please enter the initial coumadin dosage for the patient")
+;;  (>* "Please enter the initial warfarin dosage for the patient")
 ;;  (<*form (number :dosage :label "Dosage in mg/mL")))
 
 (deflow determine-target-inr [patient labwork]
@@ -60,51 +60,53 @@
   }"
   [patient tests]
   (let [lab              (block! (patient/start-pick-lab-for-orders patient tests))
-        _                (println "lab = " lab)
+        _                (println ">>>>>>>>>>\nLab selected: " lab)
         labwork-run      (start-labwork lab patient tests)
         patient-reminder (start-patient-reminders
                            patient "Please go get your labwork done"
                            :until #(not= (-> labwork-run :status :sample) "waiting")
                            :cancelable true)]
     (set-status!
-      [:lab :initial-tests] (:id labwork-run)
-      [:patient :reminder :labwork] (:id patient-reminder))
+      [:runs :lab :initial-tests] (:id labwork-run)
+      [:runs :patient :labwork-reminder] (:id patient-reminder))
     (block! labwork-run)))
 
-(defn start-coumadin-prescription
-  "Start a prescription for coumadin to the patient. Returns a run."
-  [patient]
-  (s-pharmacy/start-prescription patient
-                                 :drug "coumadin",
-                                 :strength 10,
-                                 :units :pills,
-                                 :frequency :as-directed,
-                                 :route :po,
-                                 :dosage :as-directed))
+(deflow obtain-warfarin-prescription
+  "Start a prescription for warfarin to the patient. Returns a run."
+  [patient strength]
+  (let [prescription-phase (s-pharmacy/start-prescription patient
+                                                          :drug "warfarin",
+                                                          :strength strength,
+                                                          :unit :pills,
+                                                          :frequency :as-directed,
+                                                          :route :po,
+                                                          :dosage :as-directed)]
+    (set-status! [:runs :pharmacy :warfarin-prescription]
+                 (:id prescription-phase))
+    (block! prescription-phase)))
 
-(defn obtain-maintenance-dosage [patient target-inr]
+(deflow obtain-maintenance-dosage [patient target-inr]
   (let [run (start! patient/initiation-phase patient target-inr)]
-    (set-status! [:patient :protocol :initiation-phase] (:id run))
+    (set-status! [:runs :patient :initiation-phase] (:id run))
     (block! run)))
 
 (defn start-maintenance-phase [patient maintenance-dosage]
   (let [run (start! patient/maintenance-phase patient maintenance-dosage)]
-    (set-status! [:patient :protocol :maintenance-phase] (:id run))))
+    (set-status! [:runs :patient :maintenance-phase] (:id run))))
 
 (deflow anticoagulation [patient-id]
   (require-roles :doctor)
   (let [patient (get-patient patient-id)
         labwork (obtain-labwork patient [:iron :cbc :kidney])]
     (if-let [target-inr (determine-target-inr patient labwork)]
-      (let [prescription-phase (start-coumadin-prescription patient)
-            _                  (set-status! [:patient :protocol :coumadin-prescription]
-                                            (:id prescription-phase))
-            prescription       (block! prescription-phase)
+      (let [
+            ;; get the initiation phase prescription - 1mg size
+            _                  (obtain-warfarin-prescription patient 1)
+            ;; start the initiation phase
             maintenance-dosage (obtain-maintenance-dosage patient target-inr)
-            maintenance-phase  (start-maintenance-phase patient maintenance-dosage)]
-        (set-status! [:patient :protocol :maintenance]
-                     (:id maintenance-phase))))))
-
+            ;; get the maintenance prescription
+            _                  (obtain-warfarin-prescription patient maintenance-dosage)]
+        (start-maintenance-phase patient maintenance-dosage)))))
 
 ;; onboarding
 ;; (+) get blood work done

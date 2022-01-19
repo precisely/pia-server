@@ -1,5 +1,15 @@
 (ns pia-server.shared.util)
 
+(defn round
+  "Round a double to the given precision (number of significant digits)"
+  [precision d]
+  (let [factor (Math/pow 10 precision)
+        d      (float d)]
+    (/ (Math/round (* d factor)) factor)))
+
+(defn round-to-nearest-half [num]
+  (/ (round 0 (* num 2)) 2.0))
+
 (defmacro range-case [target & cases]
   "Compare the target against a set of ranges or constant values and return
    the first one that matches. If none match, and there exists a case with the

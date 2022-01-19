@@ -43,7 +43,7 @@
 (deflow prescribe
   [patient & {:keys [drug strength unit dosage frequency dispense refills route] :as args
               :or   {refills 0}}]
-  (println "SENDING PRESCRIPTION TO PHARMACY....." patient args)
+  (println "SENDING PRESCRIPTION TO PHARMACY....." args "  patient" (:id patient))
   (println (str "Pharmacy service should POST \"delivered\" to http://localhost:8080/api/runs/continue/"
                 (current-run :id)))
   (set-status! :prescription "ordered")
@@ -104,10 +104,10 @@
   (start! prescribe patient
           :drug (have! string? drug)
           :strength (have! number? strength)
-          :unit (have! #{:pills :vials :mls} unit)
-          :dosage (have! number? dosage)
+          :unit (have! [:el #{:pills :vials :mls}] unit)
+          :dosage (have! [:or number? #(= % :as-directed)] dosage)
           :frequency (have! [:or
-                             [:el #{:daily :eod :bid :tid :qid :qhs :qwk}]
+                             [:el #{:daily :eod :bid :tid :qid :qhs :qwk :as-directed}]
                              [:and map?
                               [:or #(-> % :hours number?)
                                [:and #(-> % :hours seq?)

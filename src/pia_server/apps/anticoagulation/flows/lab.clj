@@ -15,10 +15,11 @@
             :patient      patient
             :orders       orders}))
 
-(def LabStatus #{"received" "processing" "failed" "complete"})
+(def LabStatus #{"received" "processing" "failed" "success"})
 
 (defn lab-status-error [status]
-  (throw (ex-info "Invalid lab status provided" {:status status})))
+  (throw (ex-info (str "Invalid lab status provided. Continue data should be a map with 'status' and"
+                       " optional 'result' keys. The status key should be one of " (seq LabStatus)) {:type :input-error :status status})))
 
 (deflow start-labwork
   "Returns a run which takes input from the lab. The run provides a :sample status value:
@@ -33,14 +34,14 @@
       (set-status! :patient-id (:id patient))
       (send-lab-orders lab patient orders)
       (loop
-        [{status :status data :data} (<*)]
+        [{status :status result :result} (<*)]
 
         (if-not (LabStatus status)
           (lab-status-error status)
           (set-status! :sample status))
 
         (cond
-          (#{"failed" "success"} status) data
+          (#{"failed" "success"} status) result
          :else (recur (<*)))))))
 
 ;; send order to lab

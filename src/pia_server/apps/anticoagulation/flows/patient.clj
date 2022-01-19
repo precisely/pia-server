@@ -7,9 +7,9 @@
             [pia-server.shared.ux.form :refer :all]
             [pia-server.shared.roles :refer [require-roles]]
             [pia-server.shared.notifier :refer :all]
-            [pia-server.shared.util :refer [range-case]]))
+            [pia-server.shared.util :refer [range-case round-to-nearest-half]]))
 
-(declare pills-from-dosage calculate-next-initiation-dose-ucsd coumadin-pill-colors)
+(declare pills-from-dosage calculate-next-initiation-dose-ucsd warfarin-pill-colors)
 (declare-suspending post-measurement-follow-up)
 
 (deflow start-pick-lab-for-orders
@@ -33,7 +33,7 @@
   [patient day days dosage]
   (notify patient (str "Time to take your pills (" dosage " mg)"))
   (>* (text "It's day" day " of " days)
-      (text "Time to take your dose of coumadin (" dosage " mg).")
+      (text "Time to take your dose of warfarin (" dosage " mg).")
       (text "Please confirm you took your dose."))
   (case (<*buttons [{:id :yes, :text (str "Yes, I took " dosage " mg")}
                     {:id :problem, :text "No, there was a problem"}])
@@ -61,7 +61,7 @@
           pill-confirmations []
           follow-ups         []
           doses              []]
-     (notify patient "Time to measure your INR levels and take your Coumadin.")
+     (notify patient "Time to measure your INR levels and take your warfarin.")
      (let [day                (count inr-levels)
            new-dose           (calculate-next-initiation-dose-ucsd patient (last doses) inr-levels)
            new-inr-level      (measure-inr-level)
@@ -72,11 +72,11 @@
        (set-status! :initiation-phase {:day day :dose new-dose :inr-level new-inr-level})
        (if (<= day days)
          (do
-           (<* :delay (-> 24 hours from-now) :permit "timeout")
+           (<* :delay (-> 24 hours from-now) :permit "timeout") ;; TODO: FIXME 24h
            (recur inr-levels, pill-confirmations, follow-ups, doses))
-         (set-status! [:initiation-phase :complete] true))))
-   ([patient target-inr]
-    (initiation-phase patient target-inr 5))))
+         (set-status! [:initiation-phase :complete] true)))))
+  ([patient target-inr]
+   (initiation-phase patient target-inr 5)))
 
 (deflow post-measurement-follow-up [inr-levels]
   (let [last-inr-level (last inr-levels)]
@@ -104,24 +104,14 @@
   ;; https://health.ucsd.edu/for-health-care-professionals/anticoagulation-guidelines/warfarin/warfarin-initiation/Pages/default.aspx
   (cond
     (= race :black) (if (< age 70) 7.5 5)
-    ((some :white :hispanic) race) (if (< age 70) 5 (if (= sex :male) 5 2.5))
+    ((some-fn :white :hispanic) race) (if (< age 70) 5 (if (= sex :male) 5 2.5))
     (= race :asian) 2.5))
-
-(defn round
-  "Round a double to the given precision (number of significant digits)"
-  [precision d]
-  (let [factor (Math/pow 10 precision)
-        d      (float d)]
-    (/ (Math/round (* d factor)) factor)))
-
-(defn round-to-nearest-half [num]
-  (/ (round 0 (* num 2)) 2.0))
 
 (defn calculate-next-initiation-dose-ucsd
   ;; https://health.ucsd.edu/for-health-care-professionals/anticoagulation-guidelines/warfarin/warfarin-initiation/Pages/default.aspx
   [patient last-dose inr-levels]
   (let [latest-inr (last inr-levels)]
-    (if (nil? inr-levels)
+    (if (nil? latest-inr)
       (calculate-starting-dose (:race patient) (:age patient) (:sex patient))
       (min 12 (max
                 0 (round-to-nearest-half (range-case latest-inr
@@ -172,7 +162,7 @@
           [< 3] 5
           [>= 3] 0))))
 
-(def coumadin-pill-colors
+(def warfarin-pill-colors
   {1   :pink,
    2   :lavender
    2.5 :green
