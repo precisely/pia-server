@@ -22,12 +22,31 @@
   (let [{baseline-inr     :baseline-inr,
          creatinine-level :creatinine-level,
          cbc-platelets    :cbc-platelets} results
-        disease-conditions (-> patient :diseases)           ; hypertension, congestive-heart-failure
+        disease-conditions (-> patient :diseases)           ; hypertension, congestive-heart-failure, this could double as indicator
         age                (-> patient :age)
-        medications        (-> patient :medications)]
+        medications        (-> patient :medications)
+        supplements        (-> patient :supplements)
+        diet        (-> patient :diet)
+        smoking        (-> patient :smoking)
+        race        (-> patient :race)
+        weight        (-> patient :weight)
+        height        (-> patient :height)
+        genetics        (-> patient :genetics)
+        pregnant        (-> patient :pregnant)
+        ]
+
+    ;; Contra if baseline INR is >1.5
+
+    ;; contra medications (Azoles, statins)
+
+    ;; Contra disease conditions (liver disease)
+
+    ;; Contra creatinine levels (liver disease
     ;;
-    ;; some calculation here...
-    ;;
+
+    ;;contra indicate for preganancy
+
+    ;; Are they taking Vitamin K or Grapefruit/Cranberry juice
     true))
 
 ;; This section is to demonstrate a doctor manually overriding the lab test results
@@ -43,7 +62,7 @@
 ;;  "When the doctor must review the patient and labwork manually. The result is a dosage or nil."
 ;;  [patient labwork]
 ;;  (display-patient-labs patient labwork)
-;;  (>* "Please enter the initial coumadin dosage for the patient")
+;;  (>* "Please enter the initial warfarin dosage for the patient")
 ;;  (<*form (number :dosage :label "Dosage in mg/mL")))
 
 (deflow determine-target-inr [patient labwork]
@@ -71,11 +90,11 @@
       [:patient :reminder :labwork] (:id patient-reminder))
     (block! labwork-run)))
 
-(defn start-coumadin-prescription
-  "Start a prescription for coumadin to the patient. Returns a run."
+(defn start-warfarin-prescription
+  "Start a prescription for warfarin to the patient. Returns a run."
   [patient]
   (s-pharmacy/start-prescription patient
-                                 :drug "coumadin",
+                                 :drug "warfarin",
                                  :strength 10,
                                  :units :pills,
                                  :frequency :as-directed,
@@ -96,8 +115,8 @@
   (let [patient (get-patient patient-id)
         labwork (obtain-labwork patient [:iron :cbc :kidney])]
     (if-let [target-inr (determine-target-inr patient labwork)]
-      (let [prescription-phase (start-coumadin-prescription patient)
-            _                  (set-status! [:patient :protocol :coumadin-prescription]
+      (let [prescription-phase (start-warfarin-prescription patient)
+            _                  (set-status! [:patient :protocol :warfarin-prescription]
                                             (:id prescription-phase))
             prescription       (block! prescription-phase)
             maintenance-dosage (obtain-maintenance-dosage patient target-inr)

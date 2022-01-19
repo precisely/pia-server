@@ -22,7 +22,7 @@
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel>
-      <module name="pia-server" target="1.5" />
+      <module name="pia-server-1" target="1.5" />
     </bytecodeTargetLevel>
   </component>
 </project>
