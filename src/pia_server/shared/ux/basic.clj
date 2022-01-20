@@ -7,7 +7,7 @@
   "Outputs a control to the response vector, generating a random unique permit value,
    and injecting that into the control expr and using that in the listen operation"
   [expr & {:keys [expires default]}]
-  (let [permit (new-uuid)]
+  (let [permit (str (new-uuid))]
     (>* (assoc expr :permit permit))
     (<* :permit permit :expires expires :default default)))
 
