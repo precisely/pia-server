@@ -56,10 +56,13 @@
                       :anticoagulation #'anticoagulation})
 
 (defn run-result [run]
-  (let [raw-run (.rawData run)]
-    (reduce-kv #(assoc %1 (keyword (str/replace (name %2) "-" "_")) %3) {}
-               (select-keys raw-run
-                            [:id :response :result :state :status :parent-run-id]))))
+  (let [raw-run (.rawData run)
+        run (reduce-kv #(assoc %1 (keyword (str/replace (name %2) "-" "_")) %3) {}
+                           (select-keys raw-run
+                                        [:id :response :result :state :status :parent-run-id]))]
+    (if (-> run :state (not= :complete run))
+      (dissoc run :result)
+      run)))
 
 
 (defn custom-handler [f type]
