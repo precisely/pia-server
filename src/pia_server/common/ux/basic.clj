@@ -1,11 +1,11 @@
-(ns pia-server.shared.ux.basic
+(ns pia-server.common.ux.basic
   (:require [clojure.string :as s]
             [rapids :refer :all]
             [rapids.support.util :refer [new-uuid]]))
 
 (defn ^:suspending <*control
   "Outputs a control to the response vector, generating a random unique permit value,
-   and injecting that into the control expr and using that in the listen operation"
+   and injecting the permit into the control expr and using that in the listen operation"
   [expr & {:keys [expires default]}]
   (let [permit (str (new-uuid))]
     (>* (assoc expr :permit permit))

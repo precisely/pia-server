@@ -1,4 +1,4 @@
-(ns pia-server.shared.roles
+(ns pia-server.common.roles
   (:require [rapids :refer :all]))
 
 (def ^:dynamic *current-roles* #{})

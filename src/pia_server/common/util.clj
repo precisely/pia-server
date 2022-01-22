@@ -1,4 +1,4 @@
-(ns pia-server.shared.util)
+(ns pia-server.common.util)
 
 (defn round
   "Round a double to the given precision (number of significant digits)"

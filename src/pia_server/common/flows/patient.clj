@@ -1,7 +1,8 @@
-(ns pia-server.shared.flows.patient
+(ns pia-server.common.flows.patient
   (:require [rapids :refer :all]
-            [pia-server.shared.ux.basic :refer [<*buttons]]
-            [pia-server.shared.notifier :refer [notify]])
+            [pia-server.common.ux.basic :refer [<*buttons]]
+            [pia-server.common.notifier :refer [notify]]
+            [pia-server.common.roles :refer [require-roles]])
   (:import (java.time Period)))
 
 (defn- valid-user-delay [x]
@@ -17,7 +18,7 @@
                  [{:id idx :text (first ud)}
                   (second ud)])))
 
-(deflow remind-patient
+(deflow send-reminders
   "Regularly sends a message to the patient until the test condition or the maximum
   number of reminders is provided.
 
@@ -48,13 +49,17 @@
           (when-not (= delay-result :cancel)
             (recur (inc count))))))))
 
-(deflow start-patient-reminders [patient message &
-                                 {:keys [cancelable user-delays until max interval]
-                                  :or   {interval (days 1)}}]
-  (start! remind-patient patient message
-          :cancelable cancelable
-          :user-delays user-delays
-          :until until
-          :max max
-          :interval interval))
 
+(deflow pick-lab
+  "In future, this might launch an interaction with the patient to determine the right lab. This might just request
+  a map picker/list control be shown, for example, with labs which provide the appropriate bloodwork.
+  Extra points for a flow which "
+  ;; QUESTION: what if multiple tests are requested and no lab provides all coverage? What if some labs provide all
+  ;; coverage (but they're further away) while closer labs provide partial coverage?
+  [patient orders]
+  ;; in future, initiate the interaction:
+  #_(notify patient "Please pick a lab")
+  (require-roles :patient)
+  (set-status! :patient-id (:id patient))
+  ;; for now, just return a default lab...
+  {:id "lc-9876", :name "Labcorp Lab, 123 Main Street"})

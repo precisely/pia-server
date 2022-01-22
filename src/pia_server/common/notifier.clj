@@ -1,4 +1,4 @@
-(ns pia-server.shared.notifier
+(ns pia-server.common.notifier
   (:require [rapids :refer :all]))
 
 (defn notify [entity message & {:keys [run-id]

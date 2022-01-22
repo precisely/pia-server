@@ -8,13 +8,13 @@
 ;;
 (ns pia-server.apps.anticoagulation.flows.main
   (:require [rapids :refer :all]
-            [pia-server.apps.anticoagulation.flows.lab :refer [start-labwork]]
+            [pia-server.common.flows.lab :refer [lab-monitor]]
             [pia-server.apps.anticoagulation.flows.patient :as patient]
-            [pia-server.shared.ux.form :refer :all]
-            [pia-server.shared.flows.pharmacy :as s-pharmacy]
-            [pia-server.shared.ux.medical :refer [display-patient-labs]]
-            [pia-server.shared.roles :refer [require-roles]]
-            [pia-server.shared.flows.patient :refer [start-patient-reminders]]
+            [pia-server.common.ux.form :refer :all]
+            [pia-server.common.flows.pharmacy :as common-pharmacy]
+            [pia-server.common.ux.medical :refer [display-patient-labs]]
+            [pia-server.common.roles :refer [require-roles]]
+            [pia-server.common.flows.patient :as common-patient]
             [pia-server.db.models.exports :refer :all]))
 
 
@@ -59,28 +59,34 @@
     :patient {:reminder {:labwork RUNID}}
   }"
   [patient tests]
-  (let [lab              (block! (patient/start-pick-lab-for-orders patient tests))
+  (let [lab              (block! (start! common-patient/pick-lab patient tests))
         _                (println ">>>>>>>>>>\nLab selected: " lab)
-        labwork-run      (start-labwork lab patient tests)
-        patient-reminder (start-patient-reminders
-                           patient "Please go get your labwork done"
-                           :until #(not= (-> labwork-run :status :sample) "waiting")
-                           :cancelable true)]
+        labwork-run      (start! lab-monitor lab patient tests)
+        patient-reminder (start! common-patient/send-reminders
+                                 patient "Please go get your labwork done"
+                                 :until #(not= (-> labwork-run :status :sample) "waiting")
+                                 :cancelable true)]
     (set-status!
       [:runs :lab :initial-tests] (:id labwork-run)
       [:runs :patient :labwork-reminder] (:id patient-reminder))
     (block! labwork-run)))
 
+(defn start-run! [role action flow & args]
+  (let [run (apply start! flow args)]
+    (set-status! [:runs role action] (:id run))
+    run))
+
 (deflow obtain-warfarin-prescription
   "Start a prescription for warfarin to the patient. Returns a run."
   [patient strength]
-  (let [prescription-phase (s-pharmacy/start-prescription patient
-                                                          :drug "warfarin",
-                                                          :strength strength,
-                                                          :unit :pills,
-                                                          :frequency :as-directed,
-                                                          :route :po,
-                                                          :dosage :as-directed)]
+  (let [prescription-phase (start! common-pharmacy/order-prescription patient
+                                   :drug "warfarin",
+                                   :strength strength,
+                                   :unit :pills,
+                                   :frequency :as-directed,
+                                   :dispense 100,
+                                   :route :po,
+                                   :dosage :as-directed)]
     (set-status! [:runs :pharmacy :warfarin-prescription]
                  (:id prescription-phase))
     (block! prescription-phase)))

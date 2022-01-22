@@ -1,6 +1,6 @@
-(ns pia-server.shared.flows.pharmacy
+(ns pia-server.common.flows.pharmacy
   (:require [rapids :refer :all]
-            [pia-server.shared.notifier :refer [notify]]
+            [pia-server.common.notifier :refer [notify]]
             [taoensso.truss :refer [have have? have!]]))
 
 ;; For a pharmacist to dispense a controlled substance, the prescription must include specific information to be considered valid:
@@ -40,22 +40,27 @@
 (defn validate-rx-status [s]
   (have! [:el #{"ordered" "fulfilled" "delivered"}] s))
 
-(deflow prescribe
-  [patient & {:keys [drug strength unit dosage frequency dispense refills route] :as args
-              :or   {refills 0}}]
-  (println "SENDING PRESCRIPTION TO PHARMACY....." args "  patient" (:id patient))
-  (println (str "Pharmacy service should POST \"delivered\" to http://localhost:8080/api/runs/continue/"
-                (current-run :id)))
-  (set-status! :prescription "ordered")
-  (loop [rx-status (<*)]
-    (validate-rx-status rx-status)
-    (set-status! :prescription rx-status)
-    (if (not= rx-status "delivered")
-      (recur (<*)))))
+(defn validate-prescription-order [& {:keys [drug strength unit dosage frequency dispense refills route]}]
+  (have! string? drug)
+  (have! number? strength)
+  (have! [:el #{:pills :vials :mls}] unit)
+  (have! [:or number? #(= % :as-directed)] dosage)
+  (have! [:or
+          [:el #{:daily :eod :bid :tid :qid :qhs :qwk :as-directed}]
+          [:and map?
+           [:or #(-> % :hours number?)
+            [:and #(-> % :hours seq?)
+             #(-> % :hours first number?)
+             #(-> % :hours second number?)]]]]
+         frequency)
+  (have! number? dispense)
+  (have! number? refills)
+  (have! [:el #{:po :pr :im :iv :id :in :tp :sl :bucc :ip}] route))
 
-(defn start-prescription
-  "Starts a run that manages a prescription.
-  :status
+(deflow order-prescription
+  "Orders a prescription
+
+  sets :status
      :prescription - state of the Rx
        => ordered
        => fulfilled (prescription available)
@@ -99,20 +104,17 @@
   :dispense - number of units dispensed in a single Rx fulfillment
 
   :refills - Number of Refills."
-  [patient & {:keys [drug strength unit dosage frequency refills route]
+  [patient & {:keys [drug strength unit dosage frequency dispense refills route] :as args
               :or   {refills 0}}]
-  (start! prescribe patient
-          :drug (have! string? drug)
-          :strength (have! number? strength)
-          :unit (have! [:el #{:pills :vials :mls}] unit)
-          :dosage (have! [:or number? #(= % :as-directed)] dosage)
-          :frequency (have! [:or
-                             [:el #{:daily :eod :bid :tid :qid :qhs :qwk :as-directed}]
-                             [:and map?
-                              [:or #(-> % :hours number?)
-                               [:and #(-> % :hours seq?)
-                                #(-> % :hours first number?)
-                                #(-> % :hours second number?)]]]]
-                            frequency)
-          :refills (have! number? refills)
-          :route (have! [:el #{:po :pr :im :iv :id :in :tp :sl :bucc :ip}] route)))
+  {:pre [(validate-prescription-order :drug drug :strength strength :unit unit :dosage dosage
+                                      :dispense dispense :frequency frequency
+                                      :refills refills :route route)]}
+  (println "SENDING PRESCRIPTION TO PHARMACY....." args "  patient" (:id patient))
+  (println (str "Pharmacy service should POST \"delivered\" to http://localhost:8080/api/runs/continue/"
+                (current-run :id)))
+  (set-status! :prescription "ordered")
+  (loop [rx-status (<*)]
+    (validate-rx-status rx-status)
+    (set-status! :prescription rx-status)
+    (if (not= rx-status "delivered")
+      (recur (<*)))))

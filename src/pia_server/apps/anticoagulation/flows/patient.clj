@@ -3,29 +3,14 @@
 ;;
 (ns pia-server.apps.anticoagulation.flows.patient
   (:require [rapids :refer :all]
-            [pia-server.shared.ux.basic :refer :all]
-            [pia-server.shared.ux.form :refer :all]
-            [pia-server.shared.roles :refer [require-roles]]
-            [pia-server.shared.notifier :refer :all]
-            [pia-server.shared.util :refer [range-case round-to-nearest-half]]))
+            [pia-server.common.ux.basic :refer :all]
+            [pia-server.common.ux.form :refer :all]
+            [pia-server.common.roles :refer [require-roles]]
+            [pia-server.common.notifier :refer :all]
+            [pia-server.common.util :refer [range-case round-to-nearest-half]]))
 
 (declare pills-from-dosage calculate-next-initiation-dose-ucsd warfarin-pill-colors)
 (declare-suspending post-measurement-follow-up)
-
-(deflow start-pick-lab-for-orders
-  "In future, this might launch an interaction with the patient to determine the right lab. This might just request
-  a map picker/list control be shown, for example, with labs which provide the appropriate bloodwork.
-  Extra points for a flow which "
-  ;; QUESTION: what if multiple tests are requested and no lab provides all coverage? What if some labs provide all
-  ;; coverage (but they're further away) while closer labs provide partial coverage?
-  [patient orders]
-  ;; in future, initiate the interaction:
-  #_(notify patient "Please pick a lab")
-  (start! (flow []
-            (require-roles :patient)
-            (set-status! :patient-id (:id patient))
-            ;; for now, just return a default lab...
-            {:id "lc-9876", :name "Labcorp Lab, 123 Main Street"})))
 
 (deflow confirm-pills-taken
   "Asks the patient whether they took their pills,
@@ -50,7 +35,6 @@
 ;; initiation: https://depts.washington.edu/anticoag/home/content/warfarin-initiation-dosing
 ;; maintenance: https://depts.washington.edu/anticoag/home/content/warfarin-maintenance-dosing-nomogram
 ;; https://health.ucsd.edu/for-health-care-professionals/anticoagulation-guidelines/warfarin/warfarin-initiation/Pages/default.aspx
-
 
 (deflow initiation-phase
   "Attempts to get to a therapeutic dose. Target INR not yet used."
@@ -84,16 +68,19 @@
      (range-case last-inr-level
        [> 3] (do (>* (text "Your INR level is a bit high, indicating your blood is not clotting.")
                      (text "Did you drink cranberry juice or alcohol within the last 24 hours?"))
-                 {:high-inr-reason (<*buttons [{:id :alcohol :text "Alcohol"} {:id :cranberry :text "Cranberry Juice"}
+                 {:high-inr-reason (<*buttons [{:id :alcohol :text "Alcohol"}
+                                               {:id :cranberry :text "Cranberry Juice"}
                                                {:id :none :text "No"}])})
        [< 1] (do (>* (text "Your INR level is very low, indicating your blood is clotting too much.")
                      (text "Vitamin K can interfere with your treatment.")
                      (text "Did you eat a large amount of any of the following in the last day?")
                      (text "Kale, Spinach, Brussels sprouts, Collards, Mustard greens, Chard, Broccoli, Asparagus, Green tea"))
-                 {:low-inr-reason (<*buttons [{:id :vitamin-k-foods :text "I did"} {:id :none, :text "I did not"}])}))}))
+                 {:low-inr-reason (<*buttons [{:id :vitamin-k-foods :text "I did"}
+                                              {:id :none, :text "I did not"}])}))}))
 
 (deflow maintenance-phase [& rest]
-  :tbd)
+  :TODO)
+
 ;;
 ;; Helper fns
 ;;
