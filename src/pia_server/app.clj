@@ -78,7 +78,7 @@
                 :ignore-missing-mappings? true
                 :data                     {:info {:title       "pia-server"
                                                   :description "Precisely Intelligent Agent Server API"}
-                                           :tags [{:name "api", :description "For starting flows and continuing runs"}]}}
+                                           :tags [{:name "Precisely API", :description "For starting flows and continuing runs"}]}}
      :coercion :schema
 
      :exceptions
@@ -95,9 +95,6 @@
 
                  ;; everything else
                  ::ex/default                                ex/safe-handler #_(ex/with-logging response/internal-server-error :error)}}}
-
-    (GET "/hello" []
-      (ok {:message "hello world"}))
 
     (context "/api" []
       :tags ["api"]
