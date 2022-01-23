@@ -13,4 +13,4 @@
       (is (run? run))
       (is (= :running (:state run)))
 
-      #_(println "This is the welcome-test :response " (:response run)))))
+      #_(println "This is the welcome-test :output " (:output run)))))

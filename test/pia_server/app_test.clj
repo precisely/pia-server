@@ -41,7 +41,7 @@
         (testing "continuing a flow"
           (let [{status :status, {id :id, state :state, :as body} :body}
                 (json-request :post (str "/api/runs/" id "/continue")
-                              :body {:data "FOO"})]
+                              :body {:input "FOO"})]
             (is (= status 200))
             (is (= state "complete"))
-            (is (= (:response body) ["I received FOO"]))))))))
+            (is (= (:output body) ["I received FOO"]))))))))

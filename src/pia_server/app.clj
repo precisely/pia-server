@@ -26,20 +26,20 @@
   {:id                               scm/Uuid
    :state                            (scm/enum :running :complete :error)
    (scm/optional-key :result)        JSONK
-   :response                         [JSONK]
-   :status                            JSONK
+   :output                           [JSONK]
+   :status                           JSONK
    (scm/optional-key :parent_run_id) (scm/maybe scm/Uuid)})
 
 (scm/defschema Event
   (scm/maybe {(scm/optional-key :permit) JSONK
-              (scm/optional-key :data)   JSONK}))
+              (scm/optional-key :input)  JSONK}))
 
 ;;
 ;; Simple example flow
 ;;
 (deflow foo
   "This flow demonstrates status variables and an expiring listen operation.
-  The initial response is 'hello' and the second response is the continue! :data
+  The initial response is 'hello' and the second response is the continue! :input
   appended to 'world'."
   []
   (set-status! :bar "initial" :baz "unchanging")
@@ -57,10 +57,10 @@
 
 (defn run-result [run]
   (let [raw-run (.rawData run)
-        run (reduce-kv #(assoc %1 (keyword (str/replace (name %2) "-" "_")) %3) {}
+        run     (reduce-kv #(assoc %1 (keyword (str/replace (name %2) "-" "_")) %3) {}
                            (select-keys raw-run
-                                        [:id :response :result :state :status :parent-run-id]))]
-    (if (-> run :state (not= :complete run))
+                                        [:id :output :result :state :status :parent-run-id]))]
+    (if (-> run :state (not= :complete))
       (dissoc run :result)
       run)))
 
@@ -119,7 +119,7 @@
           :return Run
           :body [event Event]
           :summary "continues a run"
-          (ok (let [result (run-result (continue! id :data (:data event) :permit (:permit event) :interrupt (:interrupt event)))]
+          (ok (let [result (run-result (continue! id :input (:input event) :permit (:permit event) :interrupt (:interrupt event)))]
                 (log/debug (str "/" id "/continue =>") result)
                 result)))
 
@@ -162,15 +162,15 @@
 
 ;; FIXME: This is such shit.
 (def cors-policy
-  {:allowed-origins :star-origin
-   :allowed-methods #{:get :post :options}
-   :request-headers #{"Accept" "Content-Type" "Origin" "Referer" "User-Agent"}
-   :exposed-headers nil
+  {:allowed-origins    :star-origin
+   :allowed-methods    #{:get :post :options}
+   :request-headers    #{"Accept" "Content-Type" "Origin" "Referer" "User-Agent"}
+   :exposed-headers    nil
    :allow-credentials? true
-   :origin-varies? false
-   :max-age nil
-   :require-origin? false
-   :ignore-failures? true})
+   :origin-varies?     false
+   :max-age            nil
+   :require-origin?    false
+   :ignore-failures?   true})
 
 (def app
   (-> #'base-handler

@@ -8,13 +8,13 @@
     (let [run (start! foo)]
       (is (run? run))
       (is (= :running (:state run)))
-      (is (= (:response run) '["hello"]))
+      (is (= (:output run) '["hello"]))
 
       (testing "can continue a flow"
-        (let [run (continue! (:id run) :data "cruel" :permit "the-permit")]
+        (let [run (continue! (:id run) :input "cruel" :permit "the-permit")]
           (is (run? run))
           (is (= :complete (:state run)))
-          (is (= (:response run) '["cruel world!"])))))))
+          (is (= (:output run) '["cruel world!"])))))))
 
 
 ;(def log-level-map

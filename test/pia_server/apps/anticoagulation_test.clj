@@ -40,8 +40,8 @@
         "Deliver lab tests"
         (keys-match lab-run
           :state :running
-          :response [[{:type :buttons, :buttons [{:id :cancel}]}]])
+          :output [[{:type :buttons, :buttons [{:id :cancel}]}]])
 
-        (branch [lab-run (continue! lab-tests-id :data {:status "success", :result {:kidney 1}})]
+        (branch [lab-run (continue! lab-tests-id :input {:status "success", :result {:kidney 1}})]
           "Lab produces result"
           )))))
