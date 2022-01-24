@@ -10,9 +10,9 @@
   (:require [rapids :refer :all]
             [pia-server.common.flows.lab :refer [lab-monitor]]
             [pia-server.apps.anticoagulation.flows.patient :as patient]
-            [pia-server.common.ux.form :refer :all]
+            [pia-server.common.controls.form :refer :all]
             [pia-server.common.flows.pharmacy :as common-pharmacy]
-            [pia-server.common.ux.medical :refer [display-patient-labs]]
+            [pia-server.common.controls.medical :refer [display-patient-labs]]
             [pia-server.common.roles :refer [require-roles]]
             [pia-server.common.flows.patient :as common-patient]
             [pia-server.db.models.exports :refer :all]))

@@ -1,36 +1,6 @@
-(ns pia-server.common.ux.basic
+(ns pia-server.common.controls.basic
   (:require [clojure.string :as s]
-            [rapids :refer :all]
-            [rapids.support.util :refer [new-uuid]]))
-
-(defn ^:suspending <*control
-  "Outputs a control to the response vector, generating a random unique permit value,
-   and injecting the permit into the control expr and using that in the listen operation"
-  [expr & {:keys [expires default]}]
-  (let [permit (str (new-uuid))]
-    (>* (assoc expr :permit permit))
-    (<* :permit permit :expires expires :default default)))
-
-;;[ordered-params map-params] (if (-> params reverse second (= '&))
-;;                                      [(-> params butlast butlast) (last params)]
-;;                                      [params {:keys []}])
-;;        map-params (if (contains? map-params :or) map-params (conj map-params {:or {}}))
-;;        map-params (assoc-in map-params [:or 'required] true)
-;;        map-params (assoc map-params :keys (distinct (conj keys 'required)))
-(defmacro ^{:arglists ['[name docstring? generator-fn]]}
-  defcontrol
-  [name & cdecl]
-  {:pre [(symbol? name)]}
-  (let [[docstring params & rest-cdecl] (if (-> cdecl first string?) cdecl (conj cdecl nil))
-        [prepost-map input-expr result-expr?] (if (-> rest-cdecl first map?) rest-cdecl (conj {} rest-cdecl))
-        validation-expr (or result-expr? (constantly true))
-        id              (-> name clojure.core/name keyword)]
-    (assert (vector? params))
-    (assert (or (nil? docstring) (string? docstring)))
-    `(defn ~name ~docstring ~[] ~prepost-map
-       (conj ~input-expr
-             {:id id}
-             {:_validation (fn)}))))
+            [pia-server.common.controls.core :refer [<*control]]))
 
 (defn- normalize-button-def [bdef]
   (letfn [(keyword-to-nice-string [k]

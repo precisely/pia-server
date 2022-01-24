@@ -1,6 +1,6 @@
 (ns pia-server.common.flows.patient
   (:require [rapids :refer :all]
-            [pia-server.common.ux.basic :refer [<*buttons]]
+            [pia-server.common.controls.basic :refer [<*buttons]]
             [pia-server.common.notifier :refer [notify]]
             [pia-server.common.roles :refer [require-roles]])
   (:import (java.time Period)))

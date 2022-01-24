@@ -1,4 +1,4 @@
-(ns pia-server.common.ux.medical)
+(ns pia-server.common.controls.medical)
 
 (defn display-patient-labs
   "Displays labwork about a patient "
