@@ -1,11 +1,13 @@
 (ns pia-server.app
   (:require [compojure.api.sweet :refer :all]
             [clojure.set :refer [rename-keys]]
+            [clojure.core.async :as async]
+            [clojure.data.json :as json]
             [buddy.sign.jwt :as jwt]
             [envvar.core :refer [env]]
             [ring.util.http-response :refer :all]
             [ring.middleware.conditional :refer [if-url-starts-with]]
-            [com.unbounce.encors :refer [wrap-cors]]
+            [ring.middleware.cors :refer [wrap-cors]]
             [rapids :refer :all]
             [schema.core :as scm]
             [clojure.string :as str]
@@ -69,6 +71,14 @@
   (fn [^Exception e data request]
     (f {:message (.getMessage e), :type type})))
 
+(def stream-response
+  (partial assoc {:status 200, :headers {"Content-Type" "text/event-stream"}} :body))
+
+(def EOL "\n")
+
+(defn stream-msg [payload]
+  (str "data:" (json/write-str payload) EOL EOL))
+
 (def base-handler
   (api
     {:swagger
@@ -98,6 +108,15 @@
 
     (GET "/hello" []
       (ok {:message "hello world"}))
+
+    (GET "/async" []
+      (fn [req res raise]
+        (let [ch (async/chan)]
+          (res (stream-response ch))
+          (async/go (async/>! ch (stream-msg {:val 42}))
+                    (async/<! (async/timeout 1000))
+                    (async/>! ch (stream-msg {:val 100}))
+                    (async/close! ch)))))
 
     (context "/api" []
       :tags ["api"]
@@ -142,40 +161,43 @@
 ;; something like {:email alice@example.com, :sub 1, :scp user, :aud nil, :iat
 ;; 1605615895, :exp 1605616195, :jti 03b88e50-45bb-45f3-b340-d4efda27a2de}.
 (defn wrap-jwt [handler]
-  (fn [request]
-    (if-let [auth-hdr (get-in request [:headers "authorization"])]
-      (let [bearer (subs auth-hdr (.length "Bearer "))]
-        (try
-          (handler (assoc request
-                     :identity
-                     (jwt/unsign bearer (@env :jwt-secret))))
-          (catch Exception e
-            (if (= {:type :validation :cause :signature}
-                   (ex-data e))
-              (if (@env :disable-jwt-auth)
-                (handler request)
-                (unauthorized))
-              (internal-server-error)))))
-      (if (@env :disable-jwt-auth)
-        (handler request)
-        (unauthorized)))))
-
-;; FIXME: This is such shit.
-(def cors-policy
-  {:allowed-origins    :star-origin
-   :allowed-methods    #{:get :post :options}
-   :request-headers    #{"Accept" "Content-Type" "Origin" "Referer" "User-Agent"}
-   :exposed-headers    nil
-   :allow-credentials? true
-   :origin-varies?     false
-   :max-age            nil
-   :require-origin?    false
-   :ignore-failures?   true})
+  (fn
+    ([request]
+     (wrap-jwt request nil nil))
+    ([request response-fn raise-fn]
+     (if-let [auth-hdr (get-in request [:headers "authorization"])]
+         (let [bearer (subs auth-hdr (.length "Bearer "))]
+           (try
+             (let [request+identity (assoc request
+                                           :identity
+                                           (jwt/unsign bearer (@env :jwt-secret)))]
+               (if response-fn
+                   (handler request+identity response-fn raise-fn)
+                   (handler request+identity)))
+             (catch Exception e
+               (if (= {:type :validation :cause :signature}
+                      (ex-data e))
+                   (if (@env :disable-jwt-auth)
+                       (if response-fn
+                           (handler request response-fn raise-fn)
+                           (handler request))
+                       (if response-fn
+                           (response-fn (unauthorized))
+                           (unauthorized)))
+                   (if response-fn
+                       (response-fn (internal-server-error))
+                       (internal-server-error))))))
+         (if (@env :disable-jwt-auth)
+             (if response-fn
+                 (handler request response-fn raise-fn)
+                 (handler request))
+             (if response-fn
+                 (response-fn (unauthorized))
+                 (unauthorized)))))))
 
 (def app
   (-> #'base-handler
       logger/wrap-with-logger
-      wrap-jwt
-      ;; encors for CORS (https://github.com/unbounce/encors):
-      (wrap-cors cors-policy)
+      (wrap-cors :access-control-allow-origin [#".*"]
+                 :access-control-allow-methods [:get :post])
       ))

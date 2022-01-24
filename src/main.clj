@@ -1,5 +1,8 @@
 (ns main
   (:require [ring.adapter.jetty :as jetty]
+            [ring.core.protocols :refer [StreamableResponseBody]]
+            [clojure.java.io :as io]
+            [clojure.core.async :as async]
             [envvar.core :refer [env]]
             [pia-server.app :as pia]
             [pia-server.db.core :refer [jdbc-url]]
@@ -10,17 +13,28 @@
   ;[pia-server.db.hl7 :as db-hl7]
   (:gen-class))
 
+;;; Bootstrap core.async SSE support:
+(extend-type clojure.core.async.impl.channels.ManyToManyChannel
+  StreamableResponseBody
+  (write-body-to-stream [channel response output-stream]
+    (async/go (with-open [writer (io/writer output-stream)]
+                (async/loop []
+                  (when-let [msg (async/<! channel)]
+                    (doto writer (.write msg) (.flush))
+                    (recur)))))))
+
 ;;; TODO: Consider using the Component framework. Things which need to be
 ;;; managed:
 ;;;
 ;;; - application server
 ;;; - database connection pool
 
-(defonce ^:dynamic *server* (atom nil))
 (rapids/set-storage! (rapids-pg/->postgres-storage {:jdbcUrl (jdbc-url :rapids-storage)}))
+
+(defonce ^:dynamic *server* (atom nil))
+
 (defn start
   ([] (start #'pia/app))
-
   ([app & {:keys [port join? expiry-seconds level]
            :or   {port 8080, join? false, expiry-seconds 10, level :info}}]
    (log/set-level! level)
@@ -28,7 +42,7 @@
    (rapids-pg/postgres-storage-migrate!)
    (log/info (str "Starting expiry monitor with timeout of " expiry-seconds " seconds"))
    (start-expiry-monitor! :delay expiry-seconds)
-   (reset! *server* (jetty/run-jetty app {:port port, :join? join?}))))
+   (reset! *server* (jetty/run-jetty app {:port port, :join? join?, :async? true}))))
 
 (defn stop []
   (when-not (nil? @*server*)
