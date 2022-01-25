@@ -1,6 +1,6 @@
 (ns pia-server.common.flows.patient
   (:require [rapids :refer :all]
-            [pia-server.common.ux.basic :refer [<*buttons]]
+            [pia-server.common.controls.basic :refer [<*buttons]]
             [pia-server.common.notifier :refer [notify]]
             [pia-server.common.roles :refer [require-roles]])
   (:import (java.time Period)))
@@ -33,6 +33,7 @@
   {:pre [(or max until)
          (or (nil? max) (number? max))
          (or (nil? until) (closure? until) (fn? until))]}
+  (set-status! :patient-id (:id patient))
   (let [cancel-text    (if (string? cancelable) cancelable "Stop reminding me")
         cancel-buttons (cond-> []
                                cancelable (conj {:id   :cancel,

@@ -67,9 +67,10 @@
       run)))
 
 
-(defn custom-handler [f type]
+(defn custom-handler [f type show-data]
   (fn [^Exception e data request]
-    (f {:message (.getMessage e), :type type})))
+    (f (cond-> {:message (.getMessage e), :type type}
+         show-data (assoc :data data)))))
 
 (def stream-response
   (partial assoc {:status 200, :headers {"Content-Type" "text/event-stream"}} :body))
@@ -88,14 +89,15 @@
                 :ignore-missing-mappings? true
                 :data                     {:info {:title       "pia-server"
                                                   :description "Precisely Intelligent Agent Server API"}
-                                           :tags [{:name "api", :description "For starting flows and continuing runs"}]}}
+                                           :tags [{:name "Precisely API", :description "For starting flows and continuing runs"}]}}
      :coercion :schema
 
      :exceptions
                {:handlers
-                {:input-error                                (custom-handler response/bad-request :input)
+                {:input-error                                (custom-handler response/bad-request :input true)
+                 :fatal-error                                (custom-handler response/internal-server-error :server false)
 
-                 :compojure.api.exception/request-validation (custom-handler response/bad-request :input)
+                 :compojure.api.exception/request-validation (custom-handler response/bad-request :input true)
 
                  ;; catches all SQLExceptions (and its subclasses)
                  SQLException                                ex/safe-handler

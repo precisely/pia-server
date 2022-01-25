@@ -48,6 +48,7 @@
                  [org.clojure/data.json "1.0.0"]
                  [luposlip/json-schema "0.2.9"]
                  [com.taoensso/truss "1.6.0"]               ; have/have!/have?
+                 [metosin/malli "0.8.0"]
 
                  ;; web server stuff
                  [javax.servlet/javax.servlet-api "4.0.1"]

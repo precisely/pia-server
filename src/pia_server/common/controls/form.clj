@@ -1,6 +1,6 @@
-(ns pia-server.common.ux.form
+(ns pia-server.common.controls.form
   (:require [rapids :refer :all]
-            [pia-server.common.ux.basic :refer [<*control]]))
+            [pia-server.common.controls.core :refer [<*control]]))
 
 (deflow <*form [elements & {:keys [expires default]}]
   (let [result (<*control {:type :form, :elements elements}

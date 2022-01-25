@@ -3,8 +3,8 @@
 ;;
 (ns pia-server.apps.anticoagulation.flows.patient
   (:require [rapids :refer :all]
-            [pia-server.common.ux.basic :refer :all]
-            [pia-server.common.ux.form :refer :all]
+            [pia-server.common.controls.basic :refer :all]
+            [pia-server.common.controls.form :refer :all]
             [pia-server.common.roles :refer [require-roles]]
             [pia-server.common.notifier :refer :all]
             [pia-server.common.util :refer [range-case round-to-nearest-half]]))
