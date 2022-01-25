@@ -102,6 +102,7 @@
 
 (deflow anticoagulation [patient-id]
   (require-roles :doctor)
+  (set-status! :patient-id patient-id)
   (let [patient (get-patient patient-id)
         labwork (obtain-labwork patient [:iron :cbc :kidney])]
     (if-let [target-inr (determine-target-inr patient labwork)]

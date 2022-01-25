@@ -65,9 +65,10 @@
       run)))
 
 
-(defn custom-handler [f type]
+(defn custom-handler [f type show-data]
   (fn [^Exception e data request]
-    (f {:message (.getMessage e), :type type})))
+    (f (cond-> {:message (.getMessage e), :type type}
+         show-data (assoc :data data)))))
 
 (def base-handler
   (api
@@ -83,9 +84,10 @@
 
      :exceptions
                {:handlers
-                {:input-error                                (custom-handler response/bad-request :input)
+                {:input-error                                (custom-handler response/bad-request :input true)
+                 :fatal-error                                (custom-handler response/internal-server-error :server false)
 
-                 :compojure.api.exception/request-validation (custom-handler response/bad-request :input)
+                 :compojure.api.exception/request-validation (custom-handler response/bad-request :input true)
 
                  ;; catches all SQLExceptions (and its subclasses)
                  SQLException                                ex/safe-handler

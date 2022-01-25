@@ -16,7 +16,7 @@
 
 (def default-control-transformer (mt/transformer mt/string-transformer mt/default-value-transformer))
 
-(defn default-control-value [ctrl input]
+(defn default-control-validator [ctrl input]
   (let [schema (:schema ctrl)
         input  (if schema
                  (m/decode schema input default-control-transformer)
@@ -29,12 +29,25 @@
 (defn args-to-hashmap [args]
   (apply hash-map (if (-> args count odd?) (conj args nil) args)))
 
-(defn- validate-control-sig [sig]
-  (if-not (and (vector? sig)
-               (if ((set sig) '&)
-                 (map? (last sig))))
-    (throw (ex-info "Invalid defcontrol. Varargs used in signature."
-                    {:signature sig}))))
+(defn add-input!-args [sig]
+  (let [args          (first sig)
+        body          (rest sig)
+        valid-args    (vector? args)
+        has-ampersand ((set args) '&)
+        last-arg      (last args)
+        kw-args       (if (map? last-arg)
+                        (:keys last-arg))
+        _             (if (and has-ampersand
+                               (not kw-args))
+                        (throw (ex-info "Invalid defcontrol signature. Varargs not permitted."
+                                        {:signature sig})))]
+
+    (if kw-args
+      `([~@(butlast args) ~(update last-arg :keys (comp vec #(clojure.set/union % #{'expires 'default}) set))] ~@body)
+      `([~@args & {:keys [~'expires ~'default]}] ~@body))))
+
+(defn starts-with-<*? [n]
+  (re-find #"^<*" (name n)))
 
 (defmacro
   defcontrol
@@ -57,53 +70,53 @@
    When provided, the schema is converted to JSONSchema format before being sent to the client.
 
    However, conversion and validation can be customized or extended by providing an alternative
-   value function. E.g.,
+   validator function. E.g.,
 
-   (defcontrol foo {:value ([ctrl, input] ...validate and return transformed input)} [] ...)
+   (defcontrol foo {:validator ([ctrl, input] ...validate and return transformed input)} [] ...)
 
-   The default value function is default-control-value."
-  [n & cdecl]
-  {:pre [(symbol? n)]}
-  (let [name-str      (name n)
-        control       (symbol (str "<*" name-str))
+   The default validator function is default-control-validator."
+  [control-name & cdecl]
+  {:pre [(symbol? control-name) (starts-with-<*? control-name)]}
+  (let [name-str          (name control-name)
         [doc-string? attr-map? & sigs?] cdecl
         [doc-string attr-map sigs] (if (string? doc-string?)
                                      (if (map? attr-map?)
                                        [doc-string? attr-map? sigs?]
-                                       [doc-string? {} `(attr-map? ~@sigs?)])
+                                       [doc-string? {} `(~attr-map? ~@sigs?)])
                                      (if (map? doc-string?)
-                                       [nil doc-string? `(attr-map? ~@sigs?)]
+                                       [nil doc-string? `(~attr-map? ~@sigs?)]
                                        [nil {} `(~doc-string? ~attr-map? ~@sigs?)]))
-        sigs          (if (-> sigs first vector?) [sigs] sigs)
-        value-fn-def  (:value attr-map)
-        value-fn-name (symbol (str name-str "-value"))
-        value-op      (if value-fn-def value-fn-name `default-control-value)
-        attr-map      (dissoc attr-map :value)
-        attr-map      (assoc attr-map
-                        :suspending true
-                        :arglists (vec (map first sigs))
-                        :doc doc-string)
-        default-type  (keyword name-str)]
-    (run! validate-control-sig sigs)
+        sigs              (if (-> sigs first vector?) [sigs] sigs)
+        ctor-name         (symbol (str name-str "-ctor"))
+        validator-fn-def  (:validator attr-map)
+        validator-fn-name (symbol (str name-str "-validator"))
+        validator-op      (if validator-fn-def validator-fn-name `default-control-validator)
+        attr-map          (dissoc attr-map :validator)
+        reified-sigs      (map add-input!-args sigs)
+        attr-map          (assoc attr-map
+                            :arglists (vec (map first reified-sigs))
+                            :doc doc-string)
+        default-type      (keyword name-str)]
     `(do
-       (defn ~n [& args#]
-         (let [ctrl# (apply (fn ~@sigs) args#)
-               ctrl# (update ctrl# :schema #(if % (mjs/transform %)))]
-           (update ctrl# :type #(if % % ~default-type))))
+       (defn ~ctor-name [& args#]
+         (let [ctrl#   (apply (fn ~@reified-sigs) args#)
+               ctrl#   (update ctrl# :type #(if % % ~default-type))
+               output# (update ctrl# :schema #(if % (mjs/transform %)))]
+           [ctrl# output#]))
 
-       ~@(if value-fn-def `((defn ~value-fn-name ~@value-fn-def)))
+       ~@(if validator-fn-def `((defn ~validator-fn-name ~@validator-fn-def)))
 
-       (deflow ~control [& args#]
+       (deflow ~control-name [& args#]
          (let [hashmap-args# (args-to-hashmap args#)
-               expires# (:expires hashmap-args#)
-               default# (:default hashmap-args#)
-               ctrl#   (apply ~n args#)
-               result# (<*control ctrl# :expires expires# :default default#)]
-           (~value-op ctrl# result#)))
+               expires#      (:expires hashmap-args#)
+               default#      (:default hashmap-args#)
+               [ctrl# output#] (apply ~ctor-name args#)
+               result#       (<*control output# :expires expires# :default default#)]
+           (~validator-op ctrl# result#)))
 
-       (alter-meta! #'~control merge '~attr-map)
+       (alter-meta! #'~control-name merge '~attr-map)
 
-       #'~control)))
+       #'~control-name)))
 
 (alter-meta! #'defcontrol merge {:arglists '([name doc-string? attr-map [params*] prepost-map? body]
                                              [name doc-string? attr-map ([params*] prepost-map? body) + attr-map?])})

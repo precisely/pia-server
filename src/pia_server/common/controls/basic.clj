@@ -1,6 +1,6 @@
 (ns pia-server.common.controls.basic
   (:require [clojure.string :as s]
-            [pia-server.common.controls.core :refer [<*control]]))
+            [pia-server.common.controls.core :refer [defcontrol]]))
 
 (defn- normalize-button-def [bdef]
   (letfn [(keyword-to-nice-string [k]
@@ -28,23 +28,18 @@
                           (conj arr (assoc (f val) :id id)))
                         [] (seq obj)))))
 
-(defn ^:suspending <*buttons
-  "Presents a button in the UI.
+(defcontrol <*buttons
+  "Presents choices to the user.
 
   E.g.,
   longhand: (<*buttons [{:id :yes, :text \"Yes\"}, {:id :no, :text \"No\"}])
   shorthand: (<*buttons [:yes :no])
   In shorthand form, the keyword name is capitalized and underscores are turned into spaces)"
-  [button-defs & {:keys [expires default]
-                  :or   {default ::first-button}}]
-  (let [norm-bdefs (map normalize-button-def button-defs)
-        default    (if (= default ::first-button)
-                     (-> norm-bdefs first :id)
-                     default)]
-    (<*control {:type    :buttons
-                :buttons norm-bdefs}
-               :expires expires
-               :default default)))
+  [button-defs]
+  (let [norm-bdefs (map normalize-button-def button-defs)]
+    {:type    :buttons
+     :buttons norm-bdefs
+     :schema [:and :keyword `[:enum ~@(map :id norm-bdefs)]]}))
 
 (defn text [& objs]
   {:type :text, :text (apply str objs)})
