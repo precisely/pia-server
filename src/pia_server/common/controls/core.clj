@@ -78,6 +78,7 @@
   [control-name & cdecl]
   {:pre [(symbol? control-name) (starts-with-<*? control-name)]}
   (let [name-str          (name control-name)
+        default-type      (keyword (subs name-str 2))
         [doc-string? attr-map? & sigs?] cdecl
         [doc-string attr-map sigs] (if (string? doc-string?)
                                      (if (map? attr-map?)
@@ -95,8 +96,7 @@
         reified-sigs      (map add-input!-args sigs)
         attr-map          (assoc attr-map
                             :arglists (vec (map first reified-sigs))
-                            :doc doc-string)
-        default-type      (keyword name-str)]
+                            :doc doc-string)]
     `(do
        (defn ~ctor-name [& args#]
          (let [ctrl#   (apply (fn ~@reified-sigs) args#)

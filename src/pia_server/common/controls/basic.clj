@@ -37,8 +37,7 @@
   In shorthand form, the keyword name is capitalized and underscores are turned into spaces)"
   [button-defs]
   (let [norm-bdefs (map normalize-button-def button-defs)]
-    {:type    :buttons
-     :buttons norm-bdefs
+    {:buttons norm-bdefs
      :schema [:and :keyword `[:enum ~@(map :id norm-bdefs)]]}))
 
 (defn text [& objs]
