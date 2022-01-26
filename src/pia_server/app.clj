@@ -15,8 +15,10 @@
             [pia-server.apps.anticoagulation.flows.main :refer [anticoagulation]]
             [taoensso.timbre :as log]
             [compojure.api.exception :as ex]
-            [ring.util.http-response :as response])
-  (:import (java.sql SQLException)))
+            [ring.util.http-response :as response]
+            [cheshire.core :as cheshire])
+  (:import (java.sql SQLException)
+           (java.util UUID)))
 
 
 (scm/defschema JSONK (scm/maybe
@@ -24,6 +26,7 @@
                                      [(scm/recursive #'JSONK)]
                                      {(scm/cond-pre scm/Str scm/Keyword) (scm/recursive #'JSONK)})))
 
+(scm/defschema QueryArgs (scm/maybe (scm/cond-pre scm/Num scm/Str scm/Bool scm/Keyword scm/Uuid)))
 (scm/defschema Run
   {:id                               scm/Uuid
    :state                            (scm/enum :running :complete :error)
@@ -32,7 +35,7 @@
    :status                           JSONK
    (scm/optional-key :parent_run_id) (scm/maybe scm/Uuid)})
 
-(scm/defschema Event
+(scm/defschema ContinueArgs
   (scm/maybe {(scm/optional-key :permit) JSONK
               (scm/optional-key :input)  JSONK}))
 
@@ -83,13 +86,13 @@
 (def base-handler
   (api
     {:swagger
-               {:ui                       "/"
-                :spec                     "/swagger.json"
-                :options                  {:ui {:doc-expansion :full}}
-                :ignore-missing-mappings? true
-                :data                     {:info {:title       "pia-server"
-                                                  :description "Precisely Intelligent Agent Server API"}
-                                           :tags [{:name "Precisely API", :description "For starting flows and continuing runs"}]}}
+               {:ui      "/"
+                :spec    "/swagger.json"
+                :options {:ui {:doc-expansion :full}}
+                #_#_:ignore-missing-mappings? true
+                :data    {:info {:title       "pia-server"
+                                 :description "Precisely Intelligent Agent Server API"}
+                          :tags [{:name "Precisely API", :description "For starting flows and continuing runs"}]}}
      :coercion :schema
 
      :exceptions
@@ -108,6 +111,61 @@
                  ;; everything else
                  ::ex/default                                ex/safe-handler #_(ex/with-logging response/internal-server-error :error)}}}
 
+    (context "/api" []
+      :tags ["api"]
+
+      (context "/runs" []
+        :tags ["runs"]
+
+        (POST "/start/:flow" []
+          :path-params [flow :- (apply scm/enum (map #(first %) flows))]
+          :return Run
+          :body [args [scm/Any] []]
+          :summary "Starts a Run based on the given flow"
+          (ok (let [result (run-result (apply start! (var-get (get flows flow)) args))]
+                (log/debug (str "/api/runs/" flow " =>") result)
+                result)))
+
+        (POST "/continue/:id" []
+          :path-params [id :- scm/Uuid]
+          :return Run
+          :body [args ContinueArgs]
+          :summary "Continues a run"
+          (ok (let [result (run-result (continue! id :input (:input args) :permit (:permit args) :interrupt (:interrupt args)))]
+                (log/debug (str "/" id "/continue =>") result)
+                result)))
+
+        (GET "/find" [& fields]
+          :summary "Retrieves multiple runs"
+          :return scm/Any
+          (ok
+            (let [uuid-shaped?      (fn [v] (re-find #"^[0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12}$" v))
+                  parse-val         (fn [v]
+                                      (try (if (uuid-shaped? v)
+                                             (UUID/fromString v)
+                                             (cheshire/parse-string v))
+                                           (catch Exception _ v)))
+                  process-field     (fn [[k v]]
+                                      (let [str-keys (str/split (name k) #"\.")
+                                            [str-keys array-lookup?] (if (-> str-keys last (str/ends-with? "$"))
+                                                                       (let [last-str (last str-keys)]
+                                                                         [`[~@(butlast str-keys) ~(-> last-str (subs 0 (-> last-str count dec)))] true])
+                                                                       [str-keys false])
+                                            field    (vec (map keyword str-keys))
+                                            field    (if (= 1 (count field)) (first field) field)]
+                                        [field (if array-lookup? :? :eq) (parse-val v)]))
+                  limit             (:limit fields)
+                  field-constraints (vec (map vec (map process-field (dissoc fields :limit))))]
+              (map run-result (find-runs field-constraints :limit limit)))))
+
+        (GET "/:id" []
+          :path-params [id :- scm/Uuid]
+          :return Run
+          :summary "Gets a run"
+          (ok (let [result (run-result (ensure-cached-connection (get-run id)))]
+                (log/debug (str "/api/runs/" id " =>") result)
+                result)))))
+
     (GET "/hello" []
       (ok {:message "hello world"}))
 
@@ -119,38 +177,6 @@
                     (async/<! (async/timeout 1000))
                     (async/>! ch (stream-msg {:val 100}))
                     (async/close! ch)))))
-
-    (context "/api" []
-      :tags ["api"]
-
-      (context "/runs" []
-        :tags ["runs"]
-
-        (POST "/:flow" []
-          :path-params [flow :- (apply scm/enum (map #(first %) flows))]
-          :return Run
-          :body [args [scm/Any] []]
-          :summary "starts a Run based on the given flow"
-          (ok (let [result (run-result (apply start! (var-get (get flows flow)) args))]
-                (log/debug (str "/api/runs/" flow " =>") result)
-                result)))
-
-        (POST "/:id/continue" []
-          :path-params [id :- scm/Uuid]
-          :return Run
-          :body [event Event]
-          :summary "continues a run"
-          (ok (let [result (run-result (continue! id :input (:input event) :permit (:permit event) :interrupt (:interrupt event)))]
-                (log/debug (str "/" id "/continue =>") result)
-                result)))
-
-        (GET "/:id" []
-          :path-params [id :- scm/Uuid]
-          :return Run
-          :summary "gets a run"
-          (ok (let [result (run-result (ensure-cached-connection (get-run! id)))]
-                (log/debug (str "/api/runs/" id " =>") result)
-                result)))))
 
     ;; fallback
     (GET "/__source_changed" [] (ok "false"))
@@ -168,38 +194,37 @@
      (wrap-jwt request nil nil))
     ([request response-fn raise-fn]
      (if-let [auth-hdr (get-in request [:headers "authorization"])]
-         (let [bearer (subs auth-hdr (.length "Bearer "))]
-           (try
-             (let [request+identity (assoc request
-                                           :identity
-                                           (jwt/unsign bearer (@env :jwt-secret)))]
+       (let [bearer (subs auth-hdr (.length "Bearer "))]
+         (try
+           (let [request+identity (assoc request
+                                    :identity
+                                    (jwt/unsign bearer (@env :jwt-secret)))]
+             (if response-fn
+               (handler request+identity response-fn raise-fn)
+               (handler request+identity)))
+           (catch Exception e
+             (if (= {:type :validation :cause :signature}
+                    (ex-data e))
+               (if (@env :disable-jwt-auth)
+                 (if response-fn
+                   (handler request response-fn raise-fn)
+                   (handler request))
+                 (if response-fn
+                   (response-fn (unauthorized))
+                   (unauthorized)))
                (if response-fn
-                   (handler request+identity response-fn raise-fn)
-                   (handler request+identity)))
-             (catch Exception e
-               (if (= {:type :validation :cause :signature}
-                      (ex-data e))
-                   (if (@env :disable-jwt-auth)
-                       (if response-fn
-                           (handler request response-fn raise-fn)
-                           (handler request))
-                       (if response-fn
-                           (response-fn (unauthorized))
-                           (unauthorized)))
-                   (if response-fn
-                       (response-fn (internal-server-error))
-                       (internal-server-error))))))
-         (if (@env :disable-jwt-auth)
-             (if response-fn
-                 (handler request response-fn raise-fn)
-                 (handler request))
-             (if response-fn
-                 (response-fn (unauthorized))
-                 (unauthorized)))))))
+                 (response-fn (internal-server-error))
+                 (internal-server-error))))))
+       (if (@env :disable-jwt-auth)
+         (if response-fn
+           (handler request response-fn raise-fn)
+           (handler request))
+         (if response-fn
+           (response-fn (unauthorized))
+           (unauthorized)))))))
 
 (def app
   (-> #'base-handler
       logger/wrap-with-logger
       (wrap-cors :access-control-allow-origin [#".*"]
-                 :access-control-allow-methods [:get :post])
-      ))
+                 :access-control-allow-methods [:get :post])))

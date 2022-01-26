@@ -36,7 +36,7 @@
       (is (uuid? lab-tests-id))
       (is (uuid? patient-lab-test-reminders-id))
 
-      (branch [lab-run     (get-run! lab-tests-id)]
+      (branch [lab-run     (get-run lab-tests-id)]
         "Deliver lab tests"
         (keys-match lab-run
           :state :running
