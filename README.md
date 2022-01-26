@@ -87,6 +87,43 @@ With this approach, you will need to stop and restart the server if you change a
 lein ring server
 ```
 
+#### View the API
+Point your browser at `http://localhost:8080` for a peak at the Swagger interface.
+
+### Endpoints
+  The API is available at /api
+
+#### Run endpoint
+
+##### Start a flow (create a run)
+  POST /api/runs/start/{flow} 
+    Body is a JSON array of arguments
+    Returns a run
+
+##### Continue a run
+  POST /api/runs/continue/{uuid}
+    Body is a JSON object with `input` and `permit` keys
+    Returns a run
+
+##### Get a run
+  GET /api/runs/{uuid}
+    Returns a run
+
+##### Find runs
+  GET /api/runs/find
+    Returns an array of Runs
+    * Query one or more keys
+      `/api/runs/find?state=running`
+      - active runs 
+    * Limit results
+      `/api/runs/find?state=running&limit=3`
+    * Query nested keys using dot-separated keys.
+      `/api/runs/find?status.patient-id=123`
+      - all runs involving patient 123
+    * Test for text in a JSON array by appending $ to the key name.
+      `/api/runs/find?status.roles$=doctor&status.patient-id=123&state=running`
+      - the current doctor activities for patient 123
+
 ### Run the tests
 
 `lein test`
