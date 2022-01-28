@@ -229,5 +229,5 @@
 (def app
   (-> #'base-handler
       logger/wrap-with-logger
-      (wrap-cors :access-control-allow-origin [#".*"]
+      (wrap-cors :access-control-allow-origin [(re-pattern (@env :cors-allow))]
                  :access-control-allow-methods [:get :post])))
