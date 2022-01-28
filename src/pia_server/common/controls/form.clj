@@ -165,12 +165,3 @@
    :levels   levels
    :required required
    :schema   [:int {:min 0 :max levels}]})
-
-;
-; (let [user-input (<*form
-;                     (multiple-choice
-;                       :favorite-dog-breed
-;                        [{:id :golden
-;                          :text "Golden Retriever"}]))]
-;    ...)
-)

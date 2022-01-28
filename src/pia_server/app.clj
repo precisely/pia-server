@@ -126,7 +126,7 @@
           :body [args [scm/Any] []]
           :summary "Starts a Run based on the given flow"
           (ok (let [result (run-result (apply start! (var-get (get flows flow)) args))]
-                (log/debug (str "/api/runs/" flow " =>") result)
+                (log/info (str "/api/runs/" flow " =>") result)
                 result)))
 
         (POST "/continue/:id" []
@@ -135,7 +135,7 @@
           :body [args ContinueArgs]
           :summary "Continues a run"
           (ok (let [result (run-result (continue! id :input (:input args) :permit (:permit args) :interrupt (:interrupt args)))]
-                (log/debug (str "/" id "/continue =>") result)
+                (log/info (str "/" id "/continue =>") result)
                 result)))
 
         (GET "/find" [& fields]
@@ -166,7 +166,7 @@
           :return Run
           :summary "Gets a run"
           (ok (let [result (run-result (ensure-cached-connection (get-run id)))]
-                (log/debug (str "/api/runs/" id " =>") result)
+                (log/info (str "/api/runs/" id " =>") result)
                 result)))))
 
     (GET "/hello" []
