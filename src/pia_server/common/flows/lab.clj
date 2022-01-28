@@ -4,6 +4,7 @@
 (ns pia-server.common.flows.lab
   (:require [rapids :refer :all]
             [pia-server.common.roles :refer [require-roles]]
+            [pia-server.common.controls.form :as f]
             [pia-server.db.models.exports :refer :all]))
 
 (defn- send-lab-orders
@@ -15,25 +16,28 @@
             :patient      patient
             :orders       orders}))
 
-(def LabStatus #{"received" "processing" "failed" "success"})
+(defn normalize-lab-order [order]
+  (cond
+    (keyword? order) {:type order}
+    (map? order) (do (assert (keyword? (:type order)) "Lab order ")
+                     order)
+    :else (throw (ex-info "Invalid lab order" {:type :input-error :order order}))))
 
-(defn lab-status-error [status]
-  (throw (ex-info (str "Invalid lab status provided. Continue data should be a map with 'status' and"
-                       " optional 'result' keys. The status key should be one of " (seq LabStatus)) {:type :input-error :status status})))
+(defn orders-to-form-elements [orders]
+  (let [norders (map normalize-lab-order orders)]
+    `[~(f/multiple-choice :status [:waiting :failed :success :received])
+      ~@(map #(f/number (:type %) :label (or (:text %) (name (:type %))))
+             norders)]))
 
-(deflow lab-monitor [lab patient & orders]
+(deflow lab-monitor [lab patient orders]
   (require-roles :lab)
   (set-status! :patient-id (:id patient))
   (send-lab-orders lab patient orders)
   (loop
-    [{status :status result :result} (<*)]
-
-    (if-not (LabStatus status)
-      (lab-status-error status)
-      (set-status! :sample status))
+    [data (f/<*form (orders-to-form-elements orders))]
 
     (cond
-      (#{"failed" "success"} status) result
+      (#{:failed :success} (:status data)) data
       :else (recur (<*)))))
 
 

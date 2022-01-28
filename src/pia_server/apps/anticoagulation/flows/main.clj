@@ -104,7 +104,7 @@
   (require-roles :doctor)
   (set-status! :patient-id patient-id)
   (let [patient (get-patient patient-id)
-        labwork (obtain-labwork patient [:iron :cbc :kidney])]
+        labwork (obtain-labwork patient [{:type :iron} {:type :cbc} {:type :kidney}])]
     (if-let [target-inr (determine-target-inr patient labwork)]
       (let [
             ;; get the initiation phase prescription - 1mg size

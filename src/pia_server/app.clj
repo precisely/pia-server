@@ -16,7 +16,8 @@
             [taoensso.timbre :as log]
             [compojure.api.exception :as ex]
             [ring.util.http-response :as response]
-            [cheshire.core :as cheshire])
+            [cheshire.core :as cheshire]
+            [schema.core :as s])
   (:import (java.sql SQLException)
            (java.util UUID)))
 
@@ -27,6 +28,8 @@
                                      {(scm/cond-pre scm/Str scm/Keyword) (scm/recursive #'JSONK)})))
 
 (scm/defschema QueryArgs (scm/maybe (scm/cond-pre scm/Num scm/Str scm/Bool scm/Keyword scm/Uuid)))
+(scm/defschema MapSchema (scm/maybe {(scm/cond-pre scm/Str scm/Keyword) scm/Str}))
+
 (scm/defschema Run
   {:id                               scm/Uuid
    :state                            (scm/enum :running :complete :error)
@@ -151,11 +154,11 @@
                                                                        (let [last-str (last str-keys)]
                                                                          [`[~@(butlast str-keys) ~(-> last-str (subs 0 (-> last-str count dec)))] true])
                                                                        [str-keys false])
-                                            field    (vec (map keyword str-keys))
+                                            field    (mapv keyword str-keys)
                                             field    (if (= 1 (count field)) (first field) field)]
                                         [field (if array-lookup? :? :eq) (parse-val v)]))
                   limit             (:limit fields)
-                  field-constraints (vec (map vec (map process-field (dissoc fields :limit))))]
+                  field-constraints (mapv process-field (dissoc fields :limit))]
               (map run-result (find-runs field-constraints :limit limit)))))
 
         (GET "/:id" []

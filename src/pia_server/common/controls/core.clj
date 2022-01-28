@@ -9,8 +9,8 @@
 (defn ^:suspending <*control
   "Outputs a control to the response vector, generating a random unique permit value,
    and injecting the permit into the control expr and using that in the listen operation"
-  [expr & {:keys [expires default]}]
-  (let [permit (str (new-uuid))]
+  [expr & {:keys [expires default permit]}]
+  (let [permit (if permit (if (= true permit) (str (new-uuid)) permit))]
     (>* (assoc expr :permit permit))
     (<* :permit permit :expires expires :default default)))
 
@@ -47,7 +47,7 @@
       `([~@args & {:keys [~'expires ~'default]}] ~@body))))
 
 (defn starts-with-<*? [n]
-  (re-find #"^<*" (name n)))
+  (assert (re-find #"^\<\*" (name n)) "Control names must start with <*") true)
 
 (defmacro
   defcontrol
@@ -95,7 +95,7 @@
         attr-map          (dissoc attr-map :validator)
         reified-sigs      (map add-input!-args sigs)
         attr-map          (assoc attr-map
-                            :arglists (vec (map first reified-sigs))
+                            :arglists (mapv first reified-sigs)
                             :doc doc-string)]
     `(do
        (defn ~ctor-name [& args#]

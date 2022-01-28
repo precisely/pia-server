@@ -28,6 +28,7 @@
                           (conj arr (assoc (f val) :id id)))
                         [] (seq obj)))))
 
+;; Constantine - buttons, eg in a bot chat
 (defcontrol <*buttons
   "Presents choices to the user.
 
@@ -40,5 +41,6 @@
     {:buttons norm-bdefs
      :schema [:and :keyword `[:enum ~@(map :id norm-bdefs)]]}))
 
+;; Constantine - this is a text bubble in a chat
 (defn text [& objs]
   {:type :text, :text (apply str objs)})
