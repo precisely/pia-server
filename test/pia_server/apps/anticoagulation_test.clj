@@ -28,7 +28,10 @@
 
 (deftest AntiCoagulationTest
   (let [clock    (mock-clock)
-        advance! (fn [t] (advance-clock! clock t))]
+        advance! (fn [t]
+                   (flush-cache!)
+                   (advance-clock! clock t)
+                   (find-and-expire-runs! 100))]
     (with-clock clock
       (branch [patient                      (make-patient)
                main                         (start! anticoagulation (:id patient))
@@ -85,10 +88,9 @@
                   :state :running
                   :output [{:type :text :text #".*I'll check in tomorrow.*"}])
 
-                (flush-cache!)
-                (advance! (days 1))
-                (find-and-expire-runs! 10)
+                (advance! (hours 25))
 
-                (keys-match init-phase
+                (keys-match (get-run init-phase-id)
                   :state :running
-                  :output [])))))))))
+                  :output [{:text #".*Please use your INR test.*"}
+                           {:type :form :elements [{:id :inr}]}])))))))))
