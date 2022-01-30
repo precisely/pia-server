@@ -49,6 +49,29 @@
 (defn starts-with-<*? [n]
   (assert (re-find #"^\<\*" (name n)) "Control names must start with <*") true)
 
+
+(defn normalize-id-map
+  "Enables compact representation of control arguments.
+
+  Converts an object of the form {:yes {:text \"Yes\"}, :no {:text \"No\"}}
+  => [{:id :yes :text \"Yes\"}, {:id :no {:text \"No\"}}
+
+  Or a transformer function may be provided (fn [k v] ) which must return a map representing
+  the control.
+
+  E.g., (normalize-id-map {:yes \"Yes\", :no \"No\"} #(hash-map :text %2)})
+  => [{:id :yes :text \"Yes\"}, {:id :no {:text \"No\"}}"
+  ([obj]
+   (normalize-id-map obj #(if (map? %)
+                            %
+                            (throw (ex-info "normalize-id-map expected map of ids to maps" {:invalid %})))))
+  ([obj transformer]
+   (cond
+     (vector? obj) obj
+     (map? obj) (reduce (fn [arr [id val]]
+                          (conj arr (assoc (transformer id val) :id id)))
+                        [] (seq obj)))))
+
 (defmacro
   defcontrol
   "Defines a Rapids control. Controls send instructions to output and receive a response from input.

@@ -1,6 +1,6 @@
 (ns pia-server.common.controls.form
   (:require [rapids :refer :all]
-            [pia-server.common.controls.core :refer [defcontrol]]
+            [pia-server.common.controls.core :refer [defcontrol normalize-id-map]]
             [pia-server.util :refer [assoc-if]]))
 
 ;; Constantine - this one
@@ -86,8 +86,11 @@
 
 ;; Constantine - this one
 (defn multiple-choice
-  "Display a multiple choice control
-    with items that look like this: {:id :name :label \"something\"} "
+  "Display a multiple choice control.
+    E.g.,
+     (multiple-choice [{:id :a :label \"choice a\"} {:id :b :label \"choice b\"} ...])
+     (multiple-choice [:a :b]) ;; labels will be automatically generated \"a\" and \"b\"
+     (multiple-choice {:a \"choice a\", :b \"choice b\"})"
   [id items & {:keys [label required randomize show-other multiselect]
                :or   {required false, randomize false, show-other false}}]
   {:pre [(keyword id)
@@ -99,12 +102,14 @@
          (or (nil? multiselect)
              (number? multiselect)
              (and (seq? multiselect) (= (count multiselect) 2)))]}
-  (let [items (mapv #(cond
-                       (keyword? %) {:id %}
-                       (map? %) (do (assert (some-> % :id keyword?) "multiple-choice item :id must be a keyword")
-                                    (assoc % :label (or (:label %) (-> % :id name))))
-                       :else (throw (ex-info "Invalid multiple-choice control choice"
-                                             {:type :fatal-error :choice %}))) items)]
+  (let [items (if (map? items)
+                (normalize-id-map items #(hash-map :label %2))
+                (mapv #(cond
+                         (keyword? %) {:id %}
+                         (map? %) (do (assert (some-> % :id keyword?) "multiple-choice item :id must be a keyword")
+                                      (assoc % :label (or (:label %) (-> % :id name))))
+                         :else (throw (ex-info "Invalid multiple-choice control choice"
+                                               {:type :fatal-error :choice %}))) items))]
     (assoc-if {:type   :multiple-choice
                :id     id
                :items  items

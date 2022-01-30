@@ -15,16 +15,18 @@
   "Asks the patient whether they took their pills,
   Returns :yes | :pills-finished | :forgot"
   [patient day days dosage]
-  {:pre [(number? dosage)]}
+  {:pre  [(number? dosage)]
+   :post [#{:pills-finished :forgot :yes} %]}
   (set-status! :patient-id (:id patient))
   (notify patient (str "Time to take your pills (" dosage " mg)"))
   (>* (text "It's day" day " of " days)
       (text "Time to take your dose of warfarin (" dosage " mg).")
       (text "Please confirm you took your dose."))
-  (case (<*buttons [{:id :yes, :text (str "Yes, I took " dosage " mg")}
-                    {:id :problem, :text "No, there was a problem"}])
-    :problem (<*buttons [{:id :pills-finished, :text "Not enough pills left"}
-                         {:id :forgot, :text "I forgot"}])
+  (case (<*buttons {:yes     (str "Yes, I took " dosage " mg")
+                    :problem "No, there was a problem"})
+    :problem (do (>* (text "Sorry to hear that. What was the issue?")
+                     (<*buttons {:pills-finished "Not enough pills left"
+                                 :forgot         "I forgot"})))
     :yes))
 
 (deflow measure-inr-level []
@@ -77,7 +79,7 @@
        (if (<= day days)
          (do
            (>* (text "Great, we're all done for today. I'll check in tomorrow and we can continue."))
-           (<* :delay (-> 24 hours from-now) :permit "advance") ;; TODO: FIXME 24h
+           (<* :expires (-> 24 hours from-now) :permit "advance")
            (recur inr-levels, pill-confirmations, follow-ups, doses))))))
   ([patient target-inr]
    (initiation-phase patient target-inr 5)))
