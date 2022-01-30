@@ -28,7 +28,6 @@
     :yes))
 
 (deflow measure-inr-level []
-  (set-status! :patient-id (:id patient))
   (>* (text "Please use your INR test and record your INR level here (0-5)."))
   (:inr (<*form [(number :inr :min 0 :max 5)])))
 
