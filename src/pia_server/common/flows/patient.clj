@@ -51,7 +51,6 @@
           (when-not (= delay-result :cancel)
             (recur (inc count))))))))
 
-
 (deflow pick-lab
   "In future, this might launch an interaction with the patient to determine the right lab. This might just request
   a map picker/list control be shown, for example, with labs which provide the appropriate bloodwork.

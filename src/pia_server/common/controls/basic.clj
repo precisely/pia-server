@@ -39,7 +39,7 @@
   [button-defs]
   (let [norm-bdefs (mapv normalize-button-def button-defs)]
     {:buttons norm-bdefs
-     :schema [:and :keyword `[:enum ~@(map :id norm-bdefs)]]}))
+     :schema  [:and :keyword `[:enum ~@(map :id norm-bdefs)]]}))
 
 ;; Constantine - this is a text bubble in a chat
 (defn text [& objs]
