@@ -23,7 +23,7 @@
                                               [(:id elt) schema]))
                                           elements))]]
     {:type     :form
-     :elements (map #(dissoc % :schema) elements)
+     :elements (mapv #(dissoc % :schema) elements)
      :schema   schema}))
 
 (defn group

@@ -40,7 +40,7 @@
                  [envvar "1.1.2"]
 
                  ;; application support
-                 [precisely/rapids "0.8.1"]
+                 [precisely/rapids "0.8.3"]
                  [clojure.java-time "0.3.2"]
                  [org.clojure/core.async "1.3.610"]
                  [camel-snake-kebab "0.4.2"]
@@ -81,7 +81,8 @@
          :refresh-paths ["src"]
          :reload-paths  ["src"]}
   :uberjar-name "pia-server.jar"
-  :profiles {:dev     {:dependencies [[ring/ring-mock "0.4.0"]]
+  :profiles {:dev     {:dependencies [[ring/ring-mock "0.4.0"]
+                                      [org.clojure/core.match "1.0.0"]]
                        :plugins      [[lein-checkouts "1.1.0"]
                                       [lein-ring "0.12.5"]
                                       [lein-cloverage "1.1.2"]

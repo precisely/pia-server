@@ -5,7 +5,9 @@
             [rapids.language.test :refer [with-test-env branch keys-match flush-cache!] :as rt]
             [clojure.test :refer :all]
             [pia-server.apps.anticoagulation.flows.main :refer :all]
-            [pia-server.db.models.patient :as patient-model]))
+            [pia-server.db.models.patient :as patient-model]
+            [rapids.support.debug :as d]
+            [clojure.core.match.regex]))
 
 (defn make-patient []
   (patient-model/update-patient! {:id               999,
@@ -25,23 +27,68 @@
                                   :phone            "1-555-555-5555"}))
 
 (deftest AntiCoagulationTest
-  (let [clock (mock-clock)
+  (let [clock    (mock-clock)
         advance! (fn [t] (advance-clock! clock t))]
-    (branch [patient                       (make-patient)
-             main                          (start! anticoagulation (:id patient))
-             lab-tests-id                  (-> main :status :runs :lab :initial-tests)
-             patient-lab-test-reminders-id (-> main :status :runs :patient :lab-test-reminder)]
-      "Main flow"
-      (is (= :running (:state main)))
-      (is (uuid? lab-tests-id))
-      (is (uuid? patient-lab-test-reminders-id))
+    (with-clock clock
+      (branch [patient                      (make-patient)
+               main                         (start! anticoagulation (:id patient))
+               main-id                      (:id main)
+               lab-tests-id                 (-> main :status :runs :lab :initial-tests)
+               patient-labwork-reminders-id (-> main :status :runs :patient :labwork-reminder)]
+        "Main flow"
+        (is (= :running (:state main)))
+        (is (uuid? lab-tests-id))
+        (is (uuid? patient-labwork-reminders-id))
+        (println "Runs:\n"
+                 {:main-id          main-id
+                  :lab-tests-id     lab-tests-id
+                  :lab-reminders-id patient-labwork-reminders-id})
+        (testing "patient interface shows a cancel button"
+          (keys-match (d/print-result (get-run patient-labwork-reminders-id))
+            :state :running
+            :output [{:type :buttons, :buttons [{:id :cancel}]} & _]))
 
-      (branch [lab-run     (get-run lab-tests-id)]
-        "Deliver lab tests"
-        (keys-match lab-run
-          :state :running
-          :output [[{:type :buttons, :buttons [{:id :cancel}]}]])
+        (branch [lab-run               (get-run lab-tests-id)
+                 lab-run               (continue! lab-tests-id :input {:status :success :kidney 1 :iron 2 :cbc 3}
+                                                  :permit (-> lab-run :output :permit))
+                 main                  (get-run main-id)
+                 pharmacy-prescribe-id (-> main :status :runs :pharmacy :warfarin-prescription)]
+          "Deliver lab test results"
+          (println "Runs:"
+                   {:pharmacy-prescribe-id pharmacy-prescribe-id})
+          (is (= :complete (:state lab-run)))
+          (is (uuid? pharmacy-prescribe-id))
 
-        (branch [lab-run (continue! lab-tests-id :input {:status "success", :result {:kidney 1}})]
-          "Lab produces result"
-          )))))
+          (branch [pharmacy-run  (continue! pharmacy-prescribe-id :input :delivered)
+                   main-run      (get-run main-id)
+                   init-phase-id (-> main-run :status :runs :patient :initiation-phase)
+                   init-phase    (get-run init-phase-id)]
+            "Lab produces result"
+            (println "Runs:"
+                     {:init-phase-id init-phase-id})
+            (is (= :complete (:state pharmacy-run)))
+            (is (uuid? init-phase-id))
+            (keys-match init-phase
+              :state :running
+              :output [_ _ {:type :form :elements [{:type :number :id :inr} & _]}])
+
+            (branch [init-phase-run (continue! init-phase-id :input {:inr 1.5})
+                     init-phase-id  (:id init-phase-run)]
+              "The patient inputs a normal INR level"
+              (keys-match init-phase-run
+                :state :running
+                :output [_ _ _ {:type :buttons :buttons [{:id :yes} {:id :problem} & _]}])
+
+              (branch [init-phase-run (continue! init-phase-id :input :yes)]
+                "The patient responds they did take their dose."
+                (keys-match init-phase-run
+                  :state :running
+                  :output [{:type :text :text #".*I'll check in tomorrow.*"}])
+
+                (flush-cache!)
+                (advance! (days 1))
+                (find-and-expire-runs! 10)
+
+                (keys-match init-phase
+                  :state :running
+                  :output [])))))))))

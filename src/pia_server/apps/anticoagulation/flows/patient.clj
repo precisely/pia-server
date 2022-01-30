@@ -10,12 +10,13 @@
             [pia-server.common.util :refer [range-case round-to-nearest-half]]))
 
 (declare pills-from-dosage calculate-next-initiation-dose-ucsd warfarin-pill-colors)
-(declare-suspending post-measurement-follow-up)
 
 (deflow confirm-pills-taken
   "Asks the patient whether they took their pills,
   Returns :yes | :pills-finished | :forgot"
   [patient day days dosage]
+  {:pre [(number? dosage)]}
+  (set-status! :patient-id (:id patient))
   (notify patient (str "Time to take your pills (" dosage " mg)"))
   (>* (text "It's day" day " of " days)
       (text "Time to take your dose of warfarin (" dosage " mg).")
@@ -27,8 +28,9 @@
     :yes))
 
 (deflow measure-inr-level []
+  (set-status! :patient-id (:id patient))
   (>* (text "Please use your INR test and record your INR level here (0-5)."))
-  (<*form [(number :inr :min 0 :max 5)]))
+  (:inr (<*form [(number :inr :min 0 :max 5)])))
 
 ;; Some ideas for warfarin dosing:
 ;; https://www.uwhealth.org/files/uwhealth/docs/pdf3/Warfarin_Dosing_Protocol.pdf
@@ -36,10 +38,30 @@
 ;; maintenance: https://depts.washington.edu/anticoag/home/content/warfarin-maintenance-dosing-nomogram
 ;; https://health.ucsd.edu/for-health-care-professionals/anticoagulation-guidelines/warfarin/warfarin-initiation/Pages/default.aspx
 
+(deflow post-measurement-follow-up [inr-levels]
+  {:pre [(sequential? inr-levels) (every? number? inr-levels)]}
+  (set-status! :patient-id (:id patient))
+  (let [last-inr-level (last inr-levels)]
+    {:post-measurement-follow-up
+     (range-case last-inr-level
+                 [< 1] (do (>* (text "Your INR level is very low, indicating your blood is clotting too much.")
+                               (text "Vitamin K can interfere with your treatment.")
+                               (text "Did you eat a large amount of any of the following in the last day?")
+                               (text "Kale, Spinach, Brussels sprouts, Collards, Mustard greens, Chard, Broccoli, Asparagus, Green tea"))
+                           {:low-inr-reason (<*buttons [{:id :vitamin-k-foods :text "I did"}
+                                                        {:id :none, :text "I did not"}])})
+                 [< 3] nil
+                 :else (do (>* (text "Your INR level is a bit high, indicating your blood is not clotting.")
+                               (text "Did you drink cranberry juice or alcohol within the last 24 hours?"))
+                           {:high-inr-reason (<*buttons [{:id :alcohol :text "Alcohol"}
+                                                         {:id :cranberry :text "Cranberry Juice"}
+                                                         {:id :none :text "No"}])}))}))
+
 (deflow initiation-phase
   "Attempts to get to a therapeutic dose. Target INR not yet used."
   ([patient target-inr days]
    (require-roles :patient)
+   (set-status! :stage :initiation-phase :patient-id (:id patient))
    (>* (text "Please follow the directions in the order shown."))
    (loop [inr-levels         []
           pill-confirmations []
@@ -56,27 +78,11 @@
        (set-status! :initiation-phase {:day day :dose new-dose :inr-level new-inr-level})
        (if (<= day days)
          (do
-           (<* :delay (-> 24 hours from-now) :permit "timeout") ;; TODO: FIXME 24h
-           (recur inr-levels, pill-confirmations, follow-ups, doses))
-         (set-status! [:initiation-phase :complete] true)))))
+           (>* (text "Great, we're all done for today. I'll check in tomorrow and we can continue."))
+           (<* :delay (-> 24 hours from-now) :permit "advance") ;; TODO: FIXME 24h
+           (recur inr-levels, pill-confirmations, follow-ups, doses))))))
   ([patient target-inr]
    (initiation-phase patient target-inr 5)))
-
-(deflow post-measurement-follow-up [inr-levels]
-  (let [last-inr-level (last inr-levels)]
-    {:post-measurement-follow-up
-     (range-case last-inr-level
-       [> 3] (do (>* (text "Your INR level is a bit high, indicating your blood is not clotting.")
-                     (text "Did you drink cranberry juice or alcohol within the last 24 hours?"))
-                 {:high-inr-reason (<*buttons [{:id :alcohol :text "Alcohol"}
-                                               {:id :cranberry :text "Cranberry Juice"}
-                                               {:id :none :text "No"}])})
-       [< 1] (do (>* (text "Your INR level is very low, indicating your blood is clotting too much.")
-                     (text "Vitamin K can interfere with your treatment.")
-                     (text "Did you eat a large amount of any of the following in the last day?")
-                     (text "Kale, Spinach, Brussels sprouts, Collards, Mustard greens, Chard, Broccoli, Asparagus, Green tea"))
-                 {:low-inr-reason (<*buttons [{:id :vitamin-k-foods :text "I did"}
-                                              {:id :none, :text "I did not"}])}))}))
 
 (deflow maintenance-phase [& rest]
   :TODO)
@@ -88,26 +94,30 @@
 ;; Dr. Brian Gage developed the GIFT algorithm (Genetic InFormatics Trial (GIFT) of Warfarin Therapy to Prevent DVT Trial):
 ;;      https://generalmedicalsciences.wustl.edu/people/brian-f-gage-md-msc/
 (defn calculate-starting-dose [race age sex]
+  {:assert [(#{:black :white :hispanic :asian} race)
+            ()]}
   ;; https://health.ucsd.edu/for-health-care-professionals/anticoagulation-guidelines/warfarin/warfarin-initiation/Pages/default.aspx
   (cond
     (= race :black) (if (< age 70) 7.5 5)
     ((some-fn :white :hispanic) race) (if (< age 70) 5 (if (= sex :male) 5 2.5))
-    (= race :asian) 2.5))
+    (= race :asian) 2.5
+    :else 5))
 
 (defn calculate-next-initiation-dose-ucsd
   ;; https://health.ucsd.edu/for-health-care-professionals/anticoagulation-guidelines/warfarin/warfarin-initiation/Pages/default.aspx
   [patient last-dose inr-levels]
+  {:post [(number? %)]}
   (let [latest-inr (last inr-levels)]
     (if (nil? latest-inr)
       (calculate-starting-dose (:race patient) (:age patient) (:sex patient))
       (min 12 (max
                 0 (round-to-nearest-half (range-case latest-inr
-                                           [< 1.1] (* 2 last-dose)
-                                           [< 1.5] last-dose
-                                           [< 1.9] (* 4/5 last-dose)
-                                           [< 2.5] (* 3/4 last-dose)
-                                           [< 3.5] (* 1/2 last-dose)
-                                           [>= 3.5] 0)))))))
+                                                     [< 1.1] (* 2 last-dose)
+                                                     [< 1.5] last-dose
+                                                     [< 1.9] (* 4/5 last-dose)
+                                                     [< 2.5] (* 3/4 last-dose)
+                                                     [< 3.5] (* 1/2 last-dose)
+                                                     [>= 3.5] 0)))))))
 
 (defn calculate-next-initiation-dose-uwash
   "Based roughly on:  https://depts.washington.edu/anticoag/home/content/warfarin-initiation-dosing"
@@ -117,37 +127,37 @@
     (case day
       0 5
       1 (range-case recent-inr
-          [< 1.5] 5
-          [< 1.9] 2.5
-          [< 2.5] 2                                         ;[1 2.5]
-          [>= 2.5] 0)
+                    [< 1.5] 5
+                    [< 1.9] 2.5
+                    [< 2.5] 2                               ;[1 2.5]
+                    [>= 2.5] 0)
       2 (range-case recent-inr
-          [< 1.5] 7.5                                       ;[5 10]
-          [< 1.9] 2.5                                       ;[2.5, 5]
-          [< 2.5] 0                                         ;[0, 2.5]
-          [< 3] 0                                           ; [0, 2.5]
-          [>= 3] 0)
+                    [< 1.5] 7.5                             ;[5 10]
+                    [< 1.9] 2.5                             ;[2.5, 5]
+                    [< 2.5] 0                               ;[0, 2.5]
+                    [< 3] 0                                 ; [0, 2.5]
+                    [>= 3] 0)
       3 (range-case recent-inr
-          [< 1.5] 7.5
-          [< 1.9] 4
-          [< 2.5] 2
-          [< 3] 1
-          [>= 3] 0)
+                    [< 1.5] 7.5
+                    [< 1.9] 4
+                    [< 2.5] 2
+                    [< 3] 1
+                    [>= 3] 0)
       4 (range-case recent-inr
-          [< 1.5] 10
-          [< 1.9] 6
-          [< 3] 3
-          [>= 3] 0)
+                    [< 1.5] 10
+                    [< 1.9] 6
+                    [< 3] 3
+                    [>= 3] 0)
       5 (range-case recent-inr
-          [< 1.5] 10
-          [< 1.9] 8
-          [< 3] 3
-          [>= 3] 0)
+                    [< 1.5] 10
+                    [< 1.9] 8
+                    [< 3] 3
+                    [>= 3] 0)
       6 (range-case recent-inr
-          [< 1.5] 10
-          [< 1.9] 8
-          [< 3] 5
-          [>= 3] 0))))
+                    [< 1.5] 10
+                    [< 1.9] 8
+                    [< 3] 5
+                    [>= 3] 0))))
 
 (def warfarin-pill-colors
   {1   :pink,

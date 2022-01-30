@@ -1,6 +1,7 @@
 (ns pia-server.common.flows.pharmacy
   (:require [rapids :refer :all]
             [pia-server.common.notifier :refer [notify]]
+            [pia-server.common.controls.basic :refer [<*buttons]]
             [taoensso.truss :refer [have have? have!]]))
 
 ;; For a pharmacist to dispense a controlled substance, the prescription must include specific information to be considered valid:
@@ -17,28 +18,7 @@
 ;; Number of refills
 ;; Signature of prescriber
 
-
-;;
-;;
-;;(defn validate-prescription [drug strength unit dosage frequency dispense refills route]
-;;  (have! string? drug)
-;;  (have! number? strength)
-;;  (have! #{:pills :vials :mls} unit)
-;;  (have! [:or number? #{:as-directed}] dosage)
-;;  (have! [:or
-;;          [:el #{:daily :eod :bid :tid :qid :qhs :qwk}]
-;;          [:and map?
-;;           [:or #(-> % :hours number?)
-;;            [:and #(-> % :hours seq?)
-;;             #(-> % :hours first number?)
-;;             #(-> % :hours second number?)]]]]
-;;         frequency)
-;;  (have! [:el #{:po :pr :im :iv :id :in :tp :sl :bucc :ip}] route)
-;;  (have! number? dispense)
-;;  (have! number? refills))
-
-(defn validate-rx-status [s]
-  (have! [:el #{"ordered" "fulfilled" "delivered"}] s))
+(def PrescriptionStates [:ordered :fulfilled :delivered])
 
 (defn validate-prescription-order [& {:keys [drug strength unit dosage frequency dispense refills route]}]
   (have! string? drug)
@@ -112,9 +92,8 @@
   (println "SENDING PRESCRIPTION TO PHARMACY....." args "  patient" (:id patient))
   (println (str "Pharmacy service should POST \"delivered\" to http://localhost:8080/api/runs/continue/"
                 (current-run :id)))
-  (set-status! :prescription "ordered")
-  (loop [rx-status (<*)]
-    (validate-rx-status rx-status)
+  (set-status! :prescription :ordered :patient-id (:id patient))
+  (loop [rx-status (<*buttons PrescriptionStates)]
     (set-status! :prescription rx-status)
-    (if (not= rx-status "delivered")
-      (recur (<*)))))
+    (if (not= rx-status :delivered)
+      (recur (<*buttons PrescriptionStates)))))

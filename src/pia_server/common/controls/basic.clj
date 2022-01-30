@@ -37,7 +37,7 @@
   shorthand: (<*buttons [:yes :no])
   In shorthand form, the keyword name is capitalized and underscores are turned into spaces)"
   [button-defs]
-  (let [norm-bdefs (map normalize-button-def button-defs)]
+  (let [norm-bdefs (mapv normalize-button-def button-defs)]
     {:buttons norm-bdefs
      :schema [:and :keyword `[:enum ~@(map :id norm-bdefs)]]}))
 

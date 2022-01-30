@@ -21,7 +21,7 @@
         input  (if schema
                  (m/decode schema input default-control-transformer)
                  input)]
-    (if (m/validate schema input)
+    (if (or (not schema) (m/validate schema input))
       input
       (throw (ex-info "Bad input" {:type        :input-error
                                    :explanation (-> schema (m/explain input) me/humanize)})))))
@@ -98,9 +98,13 @@
                             :arglists (mapv first reified-sigs)
                             :doc doc-string)]
     `(do
-       (defn ~ctor-name [& args#]
+       (defn ~ctor-name [default?# & args#]
          (let [ctrl#   (apply (fn ~@reified-sigs) args#)
                ctrl#   (update ctrl# :type #(if % % ~default-type))
+               ctrl#   (if (contains? ctrl# :schema)
+                         (update ctrl# :schema #(if (not= default?# ::no-default)
+                                                  [:or % [:= default?#]]))
+                         ctrl#)
                output# (update ctrl# :schema #(if % (mjs/transform %)))]
            [ctrl# output#]))
 
@@ -109,8 +113,10 @@
        (deflow ~control-name [& args#]
          (let [hashmap-args# (args-to-hashmap args#)
                expires#      (:expires hashmap-args#)
-               default#      (:default hashmap-args#)
-               [ctrl# output#] (apply ~ctor-name args#)
+               default#      (if (contains? hashmap-args# :default)
+                               (:default hashmap-args#)
+                               ::no-default)
+               [ctrl# output#] (apply ~ctor-name default# args#)
                result#       (<*control output# :expires expires# :default default#)]
            (~validator-op ctrl# result#)))
 
