@@ -39,7 +39,6 @@
 
 (deflow post-measurement-follow-up [inr-levels]
   {:pre [(sequential? inr-levels) (every? number? inr-levels)]}
-  (set-status! :patient-id (:id patient))
   (let [last-inr-level (last inr-levels)]
     {:post-measurement-follow-up
      (range-case last-inr-level
