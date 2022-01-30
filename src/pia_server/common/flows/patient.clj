@@ -2,6 +2,7 @@
   (:require [rapids :refer :all]
             [pia-server.common.controls.basic :refer [<*buttons]]
             [pia-server.common.notifier :refer [notify]]
+            [pia-server.db.models.patient :as p]
             [pia-server.common.roles :refer [require-roles]])
   (:import (java.time Period)))
 
@@ -30,7 +31,8 @@
   "
   [patient message & {:keys [cancelable user-delays until max interval]
                       :or   {interval (days 1)}}]
-  {:pre [(or max until)
+  {:pre [(p/patient? patient)
+         (or max until)
          (or (nil? max) (number? max))
          (or (nil? until) (closure? until) (fn? until))]}
   (require-roles :patient)
@@ -63,4 +65,4 @@
   (require-roles :patient)
   (set-status! :patient-id (:id patient))
   ;; for now, just return a default lab...
-  {:id "lc-9876", :name "Labcorp Lab, 123 Main Street"})
+  {:id "lc-9876", :type :lab, :name "Labcorp Lab, 123 Main Street"})

@@ -15,7 +15,8 @@
             [pia-server.common.controls.medical :refer [display-patient-labs]]
             [pia-server.common.roles :refer [require-roles]]
             [pia-server.common.flows.patient :as common-patient]
-            [pia-server.db.models.exports :refer :all]))
+            [pia-server.db.models.exports :refer :all]
+            [pia-server.db.models.patient :as p]))
 
 
 (defn valid-bloodwork? [patient results]
@@ -59,6 +60,7 @@
     :patient {:reminder {:labwork RUNID}}
   }"
   [patient tests]
+  {:pre [(p/patient? patient)]}
   (let [lab              (block! (start! common-patient/pick-lab patient tests))
         _                (println ">>>>>>>>>>\nLab selected: " lab)
         labwork-run      (start! lab-monitor lab patient tests)
@@ -104,6 +106,7 @@
   (require-roles :doctor)
   (set-status! :patient-id patient-id)
   (let [patient (get-patient patient-id)
+        _       (if (not (p/patient? patient)) (throw (ex-info "Patient not found" {:type :input-error :id patient-id})))
         labwork (obtain-labwork patient [{:type :iron} {:type :cbc} {:type :kidney}])]
     (if-let [target-inr (determine-target-inr patient labwork)]
       (let [

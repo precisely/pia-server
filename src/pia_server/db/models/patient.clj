@@ -19,8 +19,12 @@
 (defn get-patient [pid]
   (get @+patients+ pid))
 
+(defn patient? [o]
+  (and (map? o) (-> o :type (= :patient))))
+
 (defn update-patient!
   ([p]
-   (swap! +patients+ assoc (:id p) p))
+   (swap! +patients+ assoc (:id p) p)
+   p)
   ([p k f & args]
    (update-patient! (apply update p k f k args))))
