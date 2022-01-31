@@ -13,6 +13,7 @@
             [clojure.string :as str]
             [ring.logger :as logger]
             [pia-server.apps.anticoagulation.flows.main :refer [anticoagulation]]
+            [pia-server.common.notifier :as pia-notifier]
             [taoensso.timbre :as log]
             [compojure.api.exception :as ex]
             [ring.util.http-response :as response]
@@ -77,14 +78,6 @@
   (fn [^Exception e data request]
     (f (cond-> {:message (.getMessage e), :type type}
          show-data (assoc :data data)))))
-
-(def stream-response
-  (partial assoc {:status 200, :headers {"Content-Type" "text/event-stream"}} :body))
-
-(def EOL "\n")
-
-(defn stream-msg [payload]
-  (str "data:" (json/write-str payload) EOL EOL))
 
 (def base-handler
   (api
@@ -172,14 +165,15 @@
     (GET "/hello" []
       (ok {:message "hello world"}))
 
-    (GET "/async" []
-      (fn [req res raise]
+    (GET "/notifications/:entity-type/:entity-id" []
+      :path-params [entity-type :- scm/Keyword
+                    entity-id :- scm/Int]
+      (fn [request response raise]
         (let [ch (async/chan)]
-          (res (stream-response ch))
-          (async/go (async/>! ch (stream-msg {:val 42}))
-                    (async/<! (async/timeout 1000))
-                    (async/>! ch (stream-msg {:val 100}))
-                    (async/close! ch)))))
+          (response {:status 200
+                     :headers {"Content-Type" "text/event-stream"}
+                     :body ch})
+          (pia-notifier/sse-register entity-type entity-id ch))))
 
     ;; fallback
     (GET "/__source_changed" [] (ok "false"))

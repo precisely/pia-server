@@ -1,6 +1,5 @@
 (ns main
   (:require [ring.adapter.jetty :as jetty]
-            [ring.core.protocols :refer [StreamableResponseBody]]
             [clojure.java.io :as io]
             [clojure.core.async :as async]
             [envvar.core :refer [env]]
@@ -15,13 +14,20 @@
 
 ;;; Bootstrap core.async SSE support:
 (extend-type clojure.core.async.impl.channels.ManyToManyChannel
-  StreamableResponseBody
+  ring.core.protocols/StreamableResponseBody
   (write-body-to-stream [channel response output-stream]
-    (async/go (with-open [writer (io/writer output-stream)]
-                (async/loop []
-                  (when-let [msg (async/<! channel)]
-                    (doto writer (.write msg) (.flush))
-                    (recur)))))))
+    (let [writer (io/writer output-stream)]
+      (async/go
+        (try
+          (loop []
+            (when-let [value (async/<! channel)]
+              (doto writer (.write value) (.flush))
+              (recur)))
+          (catch java.io.IOException ex
+            (log/debug ex))
+          (finally
+            (async/close! channel)
+            (.close output-stream)))))))
 
 ;;; TODO: Consider using the Component framework. Things which need to be
 ;;; managed:
