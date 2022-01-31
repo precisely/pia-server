@@ -7,7 +7,8 @@
             [pia-server.common.controls.form :refer :all]
             [pia-server.common.roles :refer [require-roles]]
             [pia-server.common.notifier :refer :all]
-            [pia-server.common.util :refer [range-case round-to-nearest-half]]))
+            [pia-server.common.util :refer [range-case round-to-nearest-half]]
+            [pia-server.db.models.patient :as p]))
 
 (declare pills-from-dosage calculate-next-initiation-dose-ucsd warfarin-pill-colors)
 
@@ -60,6 +61,7 @@
 (deflow initiation-phase
   "Attempts to get to a therapeutic dose. Target INR not yet used."
   ([patient target-inr days]
+   {:pre [(p/patient? patient)]}
    (require-roles :patient)
    (set-status! :stage :initiation-phase :patient-id (:id patient))
    (>* (text "Please follow the directions in the order shown."))
