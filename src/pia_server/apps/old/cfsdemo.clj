@@ -50,18 +50,7 @@
   (>* (str "Your final results were:\n" final-results)))
 
 (deflow timeout [at-time]
-  (<* :expires at-time))
-;(deflow repeating-checkin
-;        "Keeps running checkin-flow until until-date with a delay of delay.
-;        checkin-flow should return nil if the checkin should continue, otherwise, it returns a value
-;        which will be returned by repeating-checkin"
-;        [delay until-date checkin-flow]
-;        (loop []
-;          (when (< (now) until-date) ;; haven't reached until-date
-;            (<! (start! (timeout (java-time/plus (now) delay))))
-;            (ifit [result (fcall checkin-flow)]
-;                  result
-;                  (recur)))))
+  (<* :expires at-time :permit (rapids.support.util/new-uuid)))
 
 ;;Vector that contains the ordered fatigue modules
 ;(def fatigue-flows [general iof six-months])

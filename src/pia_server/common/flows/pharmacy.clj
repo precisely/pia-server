@@ -92,7 +92,9 @@
   (println "SENDING PRESCRIPTION TO PHARMACY....." args "  patient" (:id patient))
   (println (str "Pharmacy service should POST \"delivered\" to http://localhost:8080/api/runs/continue/"
                 (current-run :id)))
-  (set-status! :prescription :ordered :patient-id (:id patient))
+  (set-status! :prescription :ordered,
+               :patient-id (:id patient),
+               :title (str "Prescribing " drug))
   (loop [rx-status (<*buttons PrescriptionStates)]
     (set-status! :prescription rx-status)
     (if (not= rx-status :delivered)

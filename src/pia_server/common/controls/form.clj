@@ -93,19 +93,20 @@
      (multiple-choice {:a \"choice a\", :b \"choice b\"})"
   [id items & {:keys [label required randomize show-other multiselect]
                :or   {required false, randomize false, show-other false}}]
-  {:pre [(keyword id)
-         (sequential? items)
-         (not (empty? items))
-         (boolean? required)
-         (boolean? randomize)
-         (boolean? show-other)
-         (or (nil? multiselect)
-             (number? multiselect)
-             (and (seq? multiselect) (= (count multiselect) 2)))]}
+  {:pre  [(keyword id)
+          (sequential? items)
+          (not (empty? items))
+          (boolean? required)
+          (boolean? randomize)
+          (boolean? show-other)
+          (or (nil? multiselect)
+              (number? multiselect)
+              (and (seq? multiselect) (= (count multiselect) 2)))]
+   :post [(:schema %) (-> % :id keyword?) (-> % :items sequential?)]}
   (let [items (if (map? items)
                 (normalize-id-map items #(hash-map :label %2))
                 (mapv #(cond
-                         (keyword? %) {:id %}
+                         (keyword? %) {:id % :label (name %)}
                          (map? %) (do (assert (some-> % :id keyword?) "multiple-choice item :id must be a keyword")
                                       (assoc % :label (or (:label %) (-> % :id name))))
                          :else (throw (ex-info "Invalid multiple-choice control choice"

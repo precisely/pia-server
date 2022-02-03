@@ -1,7 +1,8 @@
 (ns pia-server.common.notifier
   (:require [clojure.core.async :as async]
             [clojure.data.json :as json]
-            [rapids :refer :all]))
+            [rapids :refer :all]
+            [taoensso.timbre :as log]))
 
 
 ;;; --- SSE channel registry
@@ -23,15 +24,14 @@
 ;;; --- main interface function
 
 (defn notify [entity message & {:keys [run-id]
-                                ;;:or   {run-id (current-run :id)}
+                                :or   {run-id (try (current-run :id) (catch Exception e) (catch AssertionError e))}
                                 }]
   {:pre [(map? entity) (contains? entity :id) (contains? entity :type)]}
   (let [payload (str "data:" (json/write-str message) "\n\n")
-        msg (str {:message message, :run-id run-id})]
-    (when-let [ch (get-in @sse-registry [(:type entity) (:id entity)])]
+        {type :type id :id} entity]
+    (when-let [ch (get-in @sse-registry [type id])]
       (async/go
         ;; try to send the message; if the channel was closed, clean up
         (when-not (async/>! ch payload)
-          (sse-unregister (:type entity) (:id entity)))))
-    (println ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
-    (println "SENDING NOTIFICATION => " (:type entity) (:id entity) msg)))
+          (sse-unregister type id))))
+    (log/info "Sending notification" {:type type :id id :message message :run-id run-id})))

@@ -118,7 +118,7 @@
           :return Run
           :body [args [scm/Any] []]
           :summary "Starts a Run based on the given flow"
-          (ok (let [result (run-result (apply start! (var-get (get flows flow)) args))]
+          (ok (let [result (run-result (start! (var-get (get flows flow)) args))]
                 (log/info (str "/api/runs/" flow " =>") result)
                 result)))
 

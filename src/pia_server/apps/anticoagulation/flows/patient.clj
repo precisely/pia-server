@@ -18,7 +18,7 @@
   [patient day days dosage]
   {:pre  [(number? dosage)]
    :post [#{:pills-finished :forgot :yes} %]}
-  (set-status! :patient-id (:id patient))
+  (set-status! :patient-id (:id patient) :title "Confirm warfarin dose")
   (notify patient (str "Time to take your pills (" dosage " mg)"))
   (>* (text "It's day" day " of " days)
       (text "Time to take your dose of warfarin (" dosage " mg).")
@@ -63,7 +63,7 @@
   ([patient target-inr days]
    {:pre [(p/patient? patient)]}
    (require-roles :patient)
-   (set-status! :stage :initiation-phase :patient-id (:id patient))
+   (set-status! :stage :initiation-phase, :patient-id (:id patient))
    (>* (text "Please follow the directions in the order shown."))
    (loop [inr-levels         []
           pill-confirmations []
