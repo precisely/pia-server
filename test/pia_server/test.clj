@@ -42,7 +42,7 @@
   (test/use-fixtures :once fixture-test-db)
   (test/use-fixtures :each fixture-reset))
 
-(defmacro deftest [name & body]
+(defmacro defdbtest [name & body]
   `(do
      (use-test-db)
      (test/deftest ~name ~@body)))

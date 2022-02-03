@@ -1,6 +1,5 @@
 (ns pia-server.app-test
-  (:require [clojure.test :as test]
-            [pia-server.app :refer :all]
+  (:require [pia-server.app :refer :all]
             [pia-server.test :refer :all]
             [cheshire.core :refer [generate-string parse-string]]
             [ring.mock.request :as mock]
@@ -13,7 +12,8 @@
                    (-> (mock/request method resource)
                        (mock/content-type "application/json")
                        (mock/body (generate-string body))))]
-    (update response :body #(-> % slurp (parse-string keyword)))))
+    (update response :body #(try (some-> % slurp (parse-string keyword))
+                                 (catch Exception e)))))
 
 (deflow simple-flow []
   (>* "hi")
@@ -23,24 +23,24 @@
 (deflow error-flow []
   (ex-info "Ooops!" {:type :oops}))
 
-(deftest AppExceptionTest
+(defdbtest AppExceptionTest
   (binding [flows {:simple-flow #'simple-flow
                    :error-flow  #'error-flow}]
     (testing "input error while starting a flow"
-      (let [{status :status, body :body} (json-request :post "/api/runs/simple-flow" :body "not-an-array")]
+      (let [{status :status, body :body} (json-request :post "/api/runs/start/simple-flow" :body "not-an-array")]
         (is (= status 400))
         (is (= (:type body) "input"))))
 
     (testing "starting a flow"
       (let [{status :status, {id :id, state :state} :body}
-            (json-request :post "/api/runs/simple-flow" :body [])]
+            (json-request :post "/api/runs/start/simple-flow" :body [])]
         (is (= status 200))
         (is (string? id))
         (is (= state "running"))
 
         (testing "continuing a flow"
           (let [{status :status, {id :id, state :state, :as body} :body}
-                (json-request :post (str "/api/runs/" id "/continue")
+                (json-request :post (str "/api/runs/continue/" id)
                               :body {:input "FOO"})]
             (is (= status 200))
             (is (= state "complete"))

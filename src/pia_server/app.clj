@@ -66,9 +66,9 @@
 
 (defn run-result [run]
   (let [raw-run (.rawData run)
-        run     (reduce-kv #(assoc %1 (keyword (str/replace (name %2) "-" "_")) %3) {}
-                           (select-keys raw-run
-                                        [:id :output :result :state :status :parent-run-id]))]
+        run (reduce-kv #(assoc %1 (keyword (str/replace (name %2) "-" "_")) %3) {}
+                       (select-keys raw-run
+                                    [:id :output :result :state :status :parent-run-id]))]
     (if (-> run :state (not= :complete))
       (dissoc run :result)
       run)))
@@ -76,36 +76,35 @@
 
 (defn custom-handler [f type show-data]
   (fn [^Exception e data request]
-    (f (cond-> {:message (.getMessage e), :type type}
-         show-data (assoc :data data)))))
+    (f {:message (.getMessage e), :type type})))
 
 (def base-handler
   (api
     {:swagger
-               {:ui      "/"
-                :spec    "/swagger.json"
-                :options {:ui {:doc-expansion :full}}
-                #_#_:ignore-missing-mappings? true
-                :data    {:info {:title       "pia-server"
-                                 :description "Precisely Intelligent Agent Server API"}
-                          :tags [{:name "Precisely API", :description "For starting flows and continuing runs"}]}}
+     {:ui      "/"
+      :spec    "/swagger.json"
+      :options {:ui {:doc-expansion :full}}
+      #_#_:ignore-missing-mappings? true
+      :data    {:info {:title       "pia-server"
+                       :description "Precisely Intelligent Agent Server API"}
+                :tags [{:name "Precisely API", :description "For starting flows and continuing runs"}]}}
      :coercion :schema
 
      :exceptions
-               {:handlers
-                {:input-error                                (custom-handler response/bad-request :input true)
-                 :fatal-error                                (custom-handler response/internal-server-error :server false)
+     {:handlers
+      {:input-error                                (custom-handler response/bad-request :input true)
+       :fatal-error                                (custom-handler response/internal-server-error :server false)
 
-                 :compojure.api.exception/request-validation (custom-handler response/bad-request :input true)
+       :compojure.api.exception/request-validation (custom-handler response/bad-request :input true)
 
-                 ;; catches all SQLExceptions (and its subclasses)
-                 SQLException                                ex/safe-handler
-                 ;(ex/safe-handler)
-                 ;(response/internal-server-error {:message "Server error" :type :db})
-                 ;:info)
+       ;; catches all SQLExceptions (and its subclasses)
+       SQLException                                ex/safe-handler
+       ;(ex/safe-handler)
+       ;(response/internal-server-error {:message "Server error" :type :db})
+       ;:info)
 
-                 ;; everything else
-                 ::ex/default                                ex/safe-handler #_(ex/with-logging response/internal-server-error :error)}}}
+       ;; everything else
+       ::ex/default                                ex/safe-handler #_(ex/with-logging response/internal-server-error :error)}}}
 
     (context "/api" []
       :tags ["api"]
@@ -135,22 +134,22 @@
           :summary "Retrieves multiple runs"
           :return scm/Any
           (ok
-            (let [uuid-shaped?      (fn [v] (re-find #"^[0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12}$" v))
-                  parse-val         (fn [v]
-                                      (try (if (uuid-shaped? v)
-                                             (UUID/fromString v)
-                                             (cheshire/parse-string v))
-                                           (catch Exception _ v)))
-                  process-field     (fn [[k v]]
-                                      (let [str-keys (str/split (name k) #"\.")
-                                            [str-keys array-lookup?] (if (-> str-keys last (str/ends-with? "$"))
-                                                                       (let [last-str (last str-keys)]
-                                                                         [`[~@(butlast str-keys) ~(-> last-str (subs 0 (-> last-str count dec)))] true])
-                                                                       [str-keys false])
-                                            field    (mapv keyword str-keys)
-                                            field    (if (= 1 (count field)) (first field) field)]
-                                        [field (if array-lookup? :? :eq) (parse-val v)]))
-                  limit             (:limit fields)
+            (let [uuid-shaped? (fn [v] (re-find #"^[0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12}$" v))
+                  parse-val (fn [v]
+                              (try (if (uuid-shaped? v)
+                                     (UUID/fromString v)
+                                     (cheshire/parse-string v))
+                                   (catch Exception _ v)))
+                  process-field (fn [[k v]]
+                                  (let [str-keys (str/split (name k) #"\.")
+                                        [str-keys array-lookup?] (if (-> str-keys last (str/ends-with? "$"))
+                                                                   (let [last-str (last str-keys)]
+                                                                     [`[~@(butlast str-keys) ~(-> last-str (subs 0 (-> last-str count dec)))] true])
+                                                                   [str-keys false])
+                                        field (mapv keyword str-keys)
+                                        field (if (= 1 (count field)) (first field) field)]
+                                    [field (if array-lookup? :? :eq) (parse-val v)]))
+                  limit (:limit fields)
                   field-constraints (mapv process-field (dissoc fields :limit))]
               (map run-result (find-runs field-constraints :limit limit)))))
 
@@ -170,9 +169,9 @@
                     entity-id :- scm/Int]
       (fn [request response raise]
         (let [ch (async/chan)]
-          (response {:status 200
+          (response {:status  200
                      :headers {"Content-Type" "text/event-stream"}
-                     :body ch})
+                     :body    ch})
           (pia-notifier/sse-register entity-type entity-id ch))))
 
     ;; fallback
