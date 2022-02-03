@@ -71,7 +71,8 @@
         patient-reminder (start! common-patient/send-reminders
                                  [patient "Please go get your labwork done"
                                   :until #(not= (-> labwork-run :status :sample) "waiting")
-                                  :cancelable true])]
+                                  :cancelable true]
+                                 :status {:title "Labwork"})]
     (set-status!
       [:runs :lab :initial-tests] (:id labwork-run)
       [:runs :patient :labwork-reminder] (:id patient-reminder))
