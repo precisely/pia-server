@@ -104,7 +104,7 @@
 (deflow obtain-maintenance-dosage [patient target-inr]
   (let [run (start! patient/initiation-phase
                     [patient target-inr]
-                    :status {:text       "Anticoagulation initiation phase"
+                    :status {:title       "Anticoagulation initiation phase"
                              :patient-id (:id patient)})]
     (set-status! [:runs :patient :initiation-phase] (:id run))
     (block! run)))
@@ -112,7 +112,7 @@
 (defn start-maintenance-phase [patient maintenance-dosage]
   (let [run (start! patient/maintenance-phase
                     [patient maintenance-dosage]
-                    :status {:text       "Anticoagulation maintenance phase"
+                    :status {:title       "Anticoagulation maintenance phase"
                              :patient-id (:id patient)})]
     (set-status! [:runs :patient :maintenance-phase] (:id run))))
 

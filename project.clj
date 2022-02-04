@@ -50,6 +50,9 @@
                  [com.taoensso/truss "1.6.0"]               ; have/have!/have?
                  [metosin/malli "0.8.0"]
 
+                 ;; fake
+                 [eigenhombre/namejen "0.1.23"]
+
                  ;; web server stuff
                  [javax.servlet/javax.servlet-api "4.0.1"]
                  [ring-server "0.5.0"]

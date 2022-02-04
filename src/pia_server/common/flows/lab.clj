@@ -4,7 +4,7 @@
 (ns pia-server.common.flows.lab
   (:require [rapids :refer :all]
             [pia-server.common.roles :refer [require-roles]]
-            [pia-server.common.controls.form :as f]
+            [pia-server.common.controls.form :as f :refer [<*form]]
             [pia-server.db.models.exports :refer :all]))
 
 (defn- send-lab-orders
@@ -31,10 +31,11 @@
 
 (deflow lab-monitor [lab patient orders]
   (require-roles :lab)
-  (set-status! :patient-id (:id patient))
+  (set-status! :patient-id (:id patient) :sample :waiting)
   (send-lab-orders lab patient orders)
+
   (loop
-    [data (f/<*form (orders-to-form-elements orders))]
+    [data (<*form (orders-to-form-elements orders))]
 
     (cond
       (#{:failed :success} (:status data)) data

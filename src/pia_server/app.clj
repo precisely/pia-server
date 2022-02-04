@@ -2,7 +2,6 @@
   (:require [compojure.api.sweet :refer :all]
             [clojure.set :refer [rename-keys]]
             [clojure.core.async :as async]
-            [clojure.data.json :as json]
             [buddy.sign.jwt :as jwt]
             [envvar.core :refer [env]]
             [ring.util.http-response :refer :all]
@@ -17,8 +16,7 @@
             [taoensso.timbre :as log]
             [compojure.api.exception :as ex]
             [ring.util.http-response :as response]
-            [cheshire.core :as cheshire]
-            [schema.core :as s])
+            [cheshire.core :as cheshire])
   (:import (java.sql SQLException)
            (java.util UUID)))
 
@@ -108,6 +106,14 @@
 
     (context "/api" []
       :tags ["api"]
+
+      (context "/patients" []
+        (GET "/:id" [id]
+          :path-params [id :- scm/Int]
+          (let [patient (pia-server.db.models.patient/get-patient id)]
+            (if patient
+              (ok patient)
+              (not-found)))))
 
       (context "/runs" []
         :tags ["runs"]

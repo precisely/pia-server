@@ -1,6 +1,6 @@
 (ns pia-server.common.flows.patient
   (:require [rapids :refer :all]
-            [pia-server.common.controls.basic :refer [<*buttons]]
+            [pia-server.common.controls.basic :refer [<*buttons text]]
             [pia-server.common.notifier :refer [notify]]
             [pia-server.db.models.patient :as p]
             [pia-server.common.roles :refer [require-roles]])
@@ -46,6 +46,7 @@
       (when (and (or (nil? until) (until))
                  (or (nil? max) (< count max)))
         (notify patient message)
+        (>* (text message))
         (let [delay-result (if (empty? cancel-buttons)
                              (<* :expires (-> interval from-now) :default interval)
                              (<*buttons cancel-buttons
