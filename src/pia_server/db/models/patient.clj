@@ -25,7 +25,7 @@
      :name  (str first-name " " last-name)
      :email (str first-name last-name "@gmail.com")
      :sex   sex
-     :race  (rand-nth [:white :black :asian])}))
+     :race  (rand-nth [:white :black :asian :hispanic])}))
 
 (dotimes [id 20]
   (update-patient! (generate-patient id)))
