@@ -27,7 +27,7 @@
                                 :or   {run-id (try (current-run :id) (catch Exception e) (catch AssertionError e))}
                                 }]
   {:pre [(map? entity) (contains? entity :id) (contains? entity :type)]}
-  (let [payload (str "data:" (json/write-str message) "\n\n")
+  (let [payload (str "data:" (json/write-str {:message message, :run-id (str run-id)}) "\n\n")
         {type :type id :id} entity]
     (when-let [ch (get-in @sse-registry [type id])]
       (async/go
