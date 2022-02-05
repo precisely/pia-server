@@ -22,10 +22,11 @@
         first-name (if (= sex :male) (nj/male-name) (nj/female-name))
         last-name (nj/generic-name)]
     {:id    (inc id)
+     :type :patient
      :name  (str first-name " " last-name)
      :email (str first-name last-name "@gmail.com")
      :sex   sex
      :race  (rand-nth [:white :black :asian :hispanic])}))
 
-(dotimes [id 20]
+(dotimes [id 1000]
   (update-patient! (generate-patient id)))
