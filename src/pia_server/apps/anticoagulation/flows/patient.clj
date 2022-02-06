@@ -60,7 +60,7 @@
 
 (deflow initiation-phase
   "Attempts to get to a therapeutic dose. Target INR not yet used."
-  ([patient target-inr days]
+  ([patient dosage-pool target-inr days]
    {:pre [(p/patient? patient)]}
    (require-roles :patient)
    (set-status! :stage :initiation-phase, :patient-id (:id patient))
@@ -72,6 +72,7 @@
      (notify patient "Time to measure your INR levels and take your warfarin.")
      (let [day                (count inr-levels)
            new-dose           (calculate-next-initiation-dose-ucsd patient (last doses) inr-levels)
+           _                  (put-in! dosage-pool new-dose)
            new-inr-level      (measure-inr-level)
            inr-levels         (conj inr-levels new-inr-level)
            pill-confirmations (conj pill-confirmations (confirm-pills-taken patient day days new-dose))
@@ -82,8 +83,11 @@
          (do
            (>* (text "Great, we're all done for today. I'll check in tomorrow and we can continue."))
            (<* :expires (-> 24 hours from-now) :permit "advance")
-           (recur inr-levels, pill-confirmations, follow-ups, doses))))))
-  ([patient target-inr]
+           (recur inr-levels, pill-confirmations, follow-ups, doses))
+
+         ;; signal that we're done using the dosage pool
+         (put-in! dosage-pool nil)))))
+  ([patient dosage-pool target-inr]
    (initiation-phase patient target-inr 5)))
 
 (deflow maintenance-phase [& rest]
