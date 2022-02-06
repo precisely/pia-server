@@ -1,6 +1,7 @@
 <component name="ProjectCodeStyleConfiguration">
   <code_scheme name="Project" version="173">
     <ClojureCodeStyleSettings>
+      <option name="alignBindingForms" value="true" />
       <option name="indentCustomisations">
         <map>
           <entry key="pia-server.common.roles/with-roles" value="1" />

@@ -64,9 +64,9 @@
 
 (defn run-result [run]
   (let [raw-run (.rawData run)
-        run (reduce-kv #(assoc %1 (keyword (str/replace (name %2) "-" "_")) %3) {}
-                       (select-keys raw-run
-                                    [:id :output :result :state :status :parent-run-id]))]
+        run     (reduce-kv #(assoc %1 (keyword (str/replace (name %2) "-" "_")) %3) {}
+                           (select-keys raw-run
+                                        [:id :output :result :state :status :parent-run-id]))]
     (if (-> run :state (not= :complete))
       (dissoc run :result)
       run)))
@@ -140,23 +140,29 @@
           :summary "Retrieves multiple runs"
           :return scm/Any
           (ok
-            (let [uuid-shaped? (fn [v] (re-find #"^[0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12}$" v))
-                  parse-val (fn [v]
-                              (try (if (uuid-shaped? v)
-                                     (UUID/fromString v)
-                                     (cheshire/parse-string v))
-                                   (catch Exception _ v)))
-                  process-field (fn [[k v]]
-                                  (let [str-keys (str/split (name k) #"\.")
-                                        [str-keys array-lookup?] (if (-> str-keys last (str/ends-with? "$"))
-                                                                   (let [last-str (last str-keys)]
-                                                                     [`[~@(butlast str-keys) ~(-> last-str (subs 0 (-> last-str count dec)))] true])
-                                                                   [str-keys false])
-                                        field (mapv keyword str-keys)
-                                        field (if (= 1 (count field)) (first field) field)]
-                                    [field (if array-lookup? :? :eq) (parse-val v)]))
-                  limit (:limit fields)
-                  field-constraints (mapv process-field (dissoc fields :limit))]
+            (let [uuid-shaped?        (fn [v] (re-find #"^[0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12}$" v))
+                  parse-val           (fn [v]
+                                        (try (if (uuid-shaped? v)
+                                               (UUID/fromString v)
+                                               (cheshire/parse-string v))
+                                             (catch Exception _ v)))
+                  process-final-field (fn [k]
+                                        (let [str-keys (str/split (name k) #"\.")
+                                              [butlast-keys last-key]   [(butlast str-keys) (last str-keys)]
+                                              [last op] (str/split last-key #"\$")
+                                              kop (if op (keyword op) :eq)]
+                                          (if (#{:eq :not-eq :contains :in :gt :lt :lte :gte :not-in} kop)
+                                            [`[~@butlast-keys ~last] kop]
+                                            (throw (ex-info "Invalid operator"
+                                                            {:type :input-error,
+                                                             :op op})))))
+                  process-field       (fn [[k v]]
+                                        (let [[str-keys operator] (process-final-field k)
+                                              field    (mapv keyword str-keys)
+                                              field    (if (= 1 (count field)) (first field) field)]
+                                          [field operator (parse-val v)]))
+                  limit               (:limit fields)
+                  field-constraints   (mapv process-field (dissoc fields :limit))]
               (map run-result (find-runs field-constraints :limit limit)))))
 
         (GET "/:id" []
