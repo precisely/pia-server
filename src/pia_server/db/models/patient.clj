@@ -22,8 +22,9 @@
         first-name (if (= sex :male) (nj/male-name) (nj/female-name))
         last-name (nj/generic-name)]
     {:id    (inc id)
-     :type :patient
+     :type  :patient
      :name  (str first-name " " last-name)
+     :age   (+ 15 (rand-int 50))
      :email (str first-name last-name "@gmail.com")
      :sex   sex
      :race  (rand-nth [:white :black :asian :hispanic])}))
