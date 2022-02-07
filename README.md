@@ -84,7 +84,7 @@ Recommended for development. Allows hot reloading code with your development env
 With this approach, you will need to stop and restart the server if you change any files in pia-server, but you avoid having to start a REPL. This might be useful if you want to start pia-server from a script.
 
 ```bash
-lein ring server
+lein run
 ```
 
 #### View the API
