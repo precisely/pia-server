@@ -7,7 +7,8 @@
             [pia-server.db.core :refer [jdbc-url]]
             [taoensso.timbre :as log]
             [rapids.implementations.postgres-storage :as rapids-pg]
-            [rapids :refer :all :as rapids])
+            [rapids :refer :all :as rapids]
+            [clojure.string :as str])
   ;[pia-server.db.runs :as db-runs]
   ;[pia-server.db.hl7 :as db-hl7]
   (:gen-class))
@@ -39,10 +40,17 @@
 
 (defonce ^:dynamic *server* (atom nil))
 
+(defn env-read
+  ([key default reader]
+   (-> (get @env key default) reader)))
+
 (defn start
   ([& {:keys [port join? expiry-seconds level app]
-       :or   {app #'pia/app,
-                  port 8080, join? false, expiry-seconds 60, level :info}}]
+       :or   {app            #'pia/app,
+              port           8080,
+              join?          false,
+              expiry-seconds 60,
+              level          (env-read :log-level "info" #(-> % str/lower-case keyword))}}]
    (log/set-level! level)
    (log/info (str "Starting pia-server at http://localhost:" port))
    (rapids-pg/postgres-storage-migrate!)
