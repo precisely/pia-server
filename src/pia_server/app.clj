@@ -161,7 +161,9 @@
                                           [field operator (parse-val v)]))
                   limit               (:limit fields)
                   field-constraints   (mapv process-field (dissoc fields :limit))]
-              (log/debug "/api/runs/find" fields)
+              (log/info "Received GET /api/runs/find" {:raw-params fields
+                                                       :field-constraints field-constraints
+                                                       :limit limit})
               (map run-result (find-runs field-constraints :limit limit)))))
 
         (GET "/:id" []
