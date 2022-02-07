@@ -230,7 +230,9 @@
            (unauthorized)))))))
 
 (def app
-  (-> #'base-handler
-      logger/wrap-with-logger
-      (wrap-cors :access-control-allow-origin [(re-pattern (@env :cors-allow))]
-                 :access-control-allow-methods [:get :post])))
+  (let [cors-pattern (@env :cors-allow)
+        cors-pattern (if (= "*") #".*" (re-pattern cors-pattern))]
+    (-> #'base-handler
+        logger/wrap-with-logger
+        (wrap-cors :access-control-allow-origin [cors-pattern]
+                   :access-control-allow-methods [:get :post]))))
