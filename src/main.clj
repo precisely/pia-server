@@ -36,15 +36,9 @@
 ;;; - application server
 ;;; - database connection pool
 
-(let [db-url (jdbc-url :rapids-storage)]
-  (log/info ">>>>>>>>>>>>>>>>>>>>>>> POSTGRES URL" db-url)
-  (rapids/set-storage! (rapids-pg/->postgres-storage {:jdbcUrl db-url})))
+(rapids/set-storage! (rapids-pg/->postgres-storage {:jdbcUrl (jdbc-url :rapids-storage)}))
 
 (defonce ^:dynamic *server* (atom nil))
-
-(defn env-read
-  ([key default reader]
-   (-> (get @env key default) reader)))
 
 (defn start
   ([& {:keys [port join? expiry-seconds level app]
@@ -52,7 +46,7 @@
               port           8080,
               join?          false,
               expiry-seconds 60,
-              level          (env-read :log-level "info" #(-> % str/lower-case keyword))}}]
+              level          :info}}]
    (log/set-level! level)
    (log/info (str "Starting pia-server at http://localhost:" port))
    (rapids-pg/postgres-storage-migrate!)
@@ -66,6 +60,16 @@
     (reset! *server* nil))
   (stop-expiry-monitor!))
 
+(defn env-read
+  ([key default reader]
+   (-> (get @env key default) reader)))
+
 (defn -main [& args]
-  (let [port (read-string (get @env :port 8080))]
-    (start #'pia/app :port port, :join? true)))
+  (let [port      (env-read :port "8080" read-string)
+        log-level (env-read :log-level "info" #(-> % str/lower-case keyword))
+        expiry-seconds (env-read :expiry-seconds "10" read-string)]
+    (start :app #'pia/app
+           :port port
+           :join? true
+           :level log-level
+           :expiry-seconds expiry-seconds)))
