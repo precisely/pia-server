@@ -177,7 +177,7 @@
     (GET "/hello" []
       (ok {:message "hello world"}))
 
-    (GET "/notifications/:entity-type/:entity-id" []
+    (GET "/notifications/:entity-type/:entity-id" [entity-type entity-id]
       :path-params [entity-type :- scm/Keyword
                     entity-id :- scm/Int]
       (fn [request response raise]

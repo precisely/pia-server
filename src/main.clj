@@ -36,7 +36,9 @@
 ;;; - application server
 ;;; - database connection pool
 
-(rapids/set-storage! (rapids-pg/->postgres-storage {:jdbcUrl (jdbc-url :rapids-storage)}))
+(let [db-url (jdbc-url :rapids-storage)]
+  (log/info ">>>>>>>>>>>>>>>>>>>>>>> POSTGRES URL" db-url)
+  (rapids/set-storage! (rapids-pg/->postgres-storage {:jdbcUrl db-url})))
 
 (defonce ^:dynamic *server* (atom nil))
 
