@@ -140,7 +140,7 @@
 
 (deflow anticoagulation [patient-id]
   (require-roles :doctor)
-  (set-index! :patient-id patient-id, :title "Anticoagulation therapy")
+    (set-index! :patient-id patient-id, :title "Anticoagulation therapy")
   (check-for-existing-anticoagulation-run patient-id)
   (let [patient (get-patient patient-id)
         _       (if (not (p/patient? patient)) (throw (ex-info "Patient not found" {:type :input-error :id patient-id})))

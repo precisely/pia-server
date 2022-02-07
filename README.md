@@ -31,7 +31,7 @@ git clone git+ssh://git@github.com/precisely/pia-server.git```
 #### Install Postgres
 
 ```shell
-brew install postgres
+brew install postgresql
 ```
 
 #### Create dbs
