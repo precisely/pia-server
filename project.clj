@@ -35,6 +35,7 @@
 
 (defproject pia-server "0.1.3-SNAPSHOT"
   :description "Precisely Intelligent Agent"
+  :min-lein-version "2.9.7"
   :dependencies [[org.clojure/clojure "1.10.3"]
 
                  [envvar "1.1.2"]
