@@ -32,7 +32,7 @@
    :state                            (scm/enum :running :complete :error)
    (scm/optional-key :result)        JSONK
    :output                           [JSONK]
-   :index                           JSONK
+   :index                            JSONK
    (scm/optional-key :parent_run_id) (scm/maybe scm/Uuid)})
 
 (scm/defschema ContinueArgs
@@ -146,21 +146,22 @@
                                              (catch Exception _ v)))
                   process-final-field (fn [k]
                                         (let [str-keys (str/split (name k) #"\.")
-                                              [butlast-keys last-key]   [(butlast str-keys) (last str-keys)]
+                                              [butlast-keys last-key] [(butlast str-keys) (last str-keys)]
                                               [last op] (str/split last-key #"\$")
-                                              kop (if op (keyword op) :eq)]
+                                              kop      (if op (keyword op) :eq)]
                                           (if (#{:eq :not-eq :contains :in :gt :lt :lte :gte :not-in} kop)
                                             [`[~@butlast-keys ~last] kop]
                                             (throw (ex-info "Invalid operator"
                                                             {:type :input-error,
-                                                             :op op})))))
+                                                             :op   op})))))
                   process-field       (fn [[k v]]
                                         (let [[str-keys operator] (process-final-field k)
-                                              field    (mapv keyword str-keys)
-                                              field    (if (= 1 (count field)) (first field) field)]
+                                              field (mapv keyword str-keys)
+                                              field (if (= 1 (count field)) (first field) field)]
                                           [field operator (parse-val v)]))
                   limit               (:limit fields)
                   field-constraints   (mapv process-field (dissoc fields :limit))]
+              (log/debug "/api/runs/find" fields)
               (map run-result (find-runs field-constraints :limit limit)))))
 
         (GET "/:id" []
