@@ -40,7 +40,7 @@
 (deflow order-prescription
   "Orders a prescription
 
-  sets :status
+  sets :index
      :prescription - state of the Rx
        => ordered
        => fulfilled (prescription available)
@@ -92,10 +92,10 @@
   (println "SENDING PRESCRIPTION TO PHARMACY....." args "  patient" (:id patient))
   (println (str "Pharmacy service should POST \"delivered\" to http://localhost:8080/api/runs/continue/"
                 (current-run :id)))
-  (set-status! :prescription :ordered,
+  (set-index! :prescription :ordered,
                :patient-id (:id patient),
                :title (str "Prescribing " drug))
   (loop [rx-status (<*buttons PrescriptionStates)]
-    (set-status! :prescription rx-status)
+    (set-index! :prescription rx-status)
     (if (not= rx-status :delivered)
       (recur (<*buttons PrescriptionStates)))))

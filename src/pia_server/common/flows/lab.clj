@@ -31,7 +31,7 @@
 
 (deflow lab-monitor [lab patient orders]
   (require-roles :lab)
-  (set-status! :patient-id (:id patient) :sample :waiting)
+  (set-index! :patient-id (:id patient) :sample :waiting)
   (send-lab-orders lab patient orders)
 
   (loop

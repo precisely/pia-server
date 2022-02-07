@@ -37,8 +37,8 @@
       (branch [patient (make-patient)
                main (start! anticoagulation [(:id patient)])
                main-id (:id main)
-               lab-tests-id (-> main :status :runs :lab :initial-tests)
-               patient-labwork-reminders-id (-> main :status :runs :patient :labwork-reminder)]
+               lab-tests-id (-> main :index :runs :lab :initial-tests)
+               patient-labwork-reminders-id (-> main :index :runs :patient :labwork-reminder)]
         "Main flow"
         (is (= :running (:state main)))
         (is (uuid? lab-tests-id))
@@ -56,7 +56,7 @@
                  lab-run (continue! lab-tests-id :input {:status :success :kidney 1 :iron 2 :cbc 3}
                                     :permit (-> lab-run :output :permit))
                  main (get-run main-id)
-                 pharmacy-prescribe-id (-> main :status :runs :pharmacy :warfarin-prescription)]
+                 pharmacy-prescribe-id (-> main :index :runs :pharmacy :warfarin-prescription)]
           "Deliver lab test results"
           (println "Runs:"
                    {:pharmacy-prescribe-id pharmacy-prescribe-id})
@@ -65,7 +65,7 @@
 
           (branch [pharmacy-run (continue! pharmacy-prescribe-id :input :delivered)
                    main-run (get-run main-id)
-                   init-phase-id (-> main-run :status :runs :patient :initiation-phase)
+                   init-phase-id (-> main-run :index :runs :patient :initiation-phase)
                    init-phase (get-run init-phase-id)]
             "Lab produces result"
             (println "Runs:"

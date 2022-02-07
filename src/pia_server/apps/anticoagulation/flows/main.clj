@@ -55,7 +55,7 @@
   "Obtains results for the patient for the given tests. Reminds the patient until the labwork is complete.
   Returns the results.
 
-  Sets :status => {
+  Sets :index => {
     :lab {:initial-tests RUNID}
     :patient {:reminder {:labwork RUNID}}
   }"
@@ -64,17 +64,17 @@
   ;; TODO: start the lab monitor from within the patient run
   (let [lab              (block! (start! common-patient/pick-lab
                                          [patient tests]
-                                         :status {:patient-id (:id patient)
+                                         :index {:patient-id (:id patient)
                                                   :title      "Choose lab for anticoagulation bloodwork"}))
         _                (println ">>>>>>>>>>\nLab selected: " lab)
-        labwork-run      (start! lab-monitor [lab patient tests] :status {:title      "Anticoagulation lab monitor"
+        labwork-run      (start! lab-monitor [lab patient tests] :index {:title      "Anticoagulation lab monitor"
                                                                           :patient-id (:id patient)})
         patient-reminder (start! common-patient/send-reminders
                                  [patient "Please go get your labwork done"
-                                  :until #(not= (-> labwork-run :status :sample) "waiting")
+                                  :until #(not= (-> labwork-run :index :sample) "waiting")
                                   :cancelable true]
-                                 :status {:title "Anticoagulation labwork"})]
-    (set-status!
+                                 :index {:title "Anticoagulation labwork"})]
+    (set-index!
       [:overview :phase] "Labwork"
       [:runs :lab :initial-tests] (:id labwork-run)
       [:runs :patient :labwork-reminder] (:id patient-reminder))
@@ -82,7 +82,7 @@
 
 (defn start-run! [role action flow & args]
   (let [run (start! flow args)]
-    (set-status! [:runs role action] (:id run))
+    (set-index! [:runs role action] (:id run))
     run))
 
 (deflow obtain-warfarin-prescription
@@ -97,9 +97,9 @@
                                     :dispense 100,
                                     :route :po,
                                     :dosage :as-directed]
-                                   :status {:title      "Anticoagulation prescription"
+                                   :index {:title      "Anticoagulation prescription"
                                             :patient-id (:id patient)})]
-    (set-status!
+    (set-index!
       [:overview :phase] "Prescription"
       [:runs :pharmacy :warfarin-prescription] (:id prescription-phase))
     (block! prescription-phase)))
@@ -108,30 +108,30 @@
   (let [dosage-pool (->pool)
         run         (start! patient/initiation-phase
                             [patient target-inr dosage-pool]
-                            :status {:title      "Anticoagulation initiation phase"
+                            :index {:title      "Anticoagulation initiation phase"
                                      :patient-id (:id patient)})]
-    (set-status!
+    (set-index!
       [:overview :phase] "Initiation"
       [:runs :patient :initiation-phase] (:id run))
 
     ;; retrieve dosage until the dosage-pool returns nil
     (loop [dosage (take-out! dosage-pool)]
       (when dosage
-        (set-status! [:overview :dosage] dosage)
+        (set-index! [:overview :dosage] dosage)
         (recur (take-out! dosage-pool))))))
 
 (defn start-maintenance-phase [patient maintenance-dosage]
   (let [run (start! patient/maintenance-phase
                     [patient maintenance-dosage]
-                    :status {:title      "Anticoagulation maintenance phase"
+                    :index {:title      "Anticoagulation maintenance phase"
                              :patient-id (:id patient)})]
-    (set-status! [:runs :patient :maintenance-phase] (:id run))))
+    (set-index! [:runs :patient :maintenance-phase] (:id run))))
 
 (defn check-for-existing-anticoagulation-run [patient-id]
   (let [[run] (find-runs [[:state :eq :running]
-                          [[:status :patient-id] :eq patient-id]
+                          [[:index :patient-id] :eq patient-id]
                           [:id :not-eq (current-run :id)]
-                          [[:status :roles] :? "doctor"]] :limit 2)]
+                          [[:index :roles] :? "doctor"]] :limit 2)]
     (if run
       (throw (ex-info "Anticoagulation therapy already in progress for patient"
                       {:type :input-error
@@ -140,7 +140,7 @@
 
 (deflow anticoagulation [patient-id]
   (require-roles :doctor)
-  (set-status! :patient-id patient-id, :title "Anticoagulation therapy")
+  (set-index! :patient-id patient-id, :title "Anticoagulation therapy")
   (check-for-existing-anticoagulation-run patient-id)
   (let [patient (get-patient patient-id)
         _       (if (not (p/patient? patient)) (throw (ex-info "Patient not found" {:type :input-error :id patient-id})))
@@ -162,7 +162,7 @@
 ;;   - patient notified
 ;;   - patient nagged
 ;; doctor escalation (steps)
-;; clinic interface monitors patient status
+;; clinic interface monitors patient index
 ;; initiation loop
 ;; maintenance loop
 ;; interrupt the flow

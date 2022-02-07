@@ -118,10 +118,10 @@ Point your browser at `http://localhost:8080` for a peak at the Swagger interfac
     * Limit results
       `/api/runs/find?state=running&limit=3`
     * Query nested keys using dot-separated keys.
-      `/api/runs/find?status.patient-id=123`
+      `/api/runs/find?index.patient-id=123`
       - all runs involving patient 123
     * Test for text in a JSON array by appending $ to the key name.
-      `/api/runs/find?status.roles$=doctor&status.patient-id=123&state=running`
+      `/api/runs/find?index.roles$=doctor&index.patient-id=123&state=running`
       - the current doctor activities for patient 123
 
 ### Run the tests

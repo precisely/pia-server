@@ -36,7 +36,7 @@
          (or (nil? max) (number? max))
          (or (nil? until) (closure? until) (fn? until))]}
   (require-roles :patient)
-  (set-status! :patient-id (:id patient))
+  (set-index! :patient-id (:id patient))
   (let [cancel-text    (if (string? cancelable) cancelable "Stop reminding me")
         cancel-buttons (cond-> []
                                cancelable (conj {:id   :cancel,
@@ -64,6 +64,6 @@
   ;; in future, initiate the interaction:
   #_(notify patient "Please pick a lab")
   (require-roles :patient)
-  (set-status! :patient-id (:id patient))
+  (set-index! :patient-id (:id patient))
   ;; for now, just return a default lab...
   {:id "lc-9876", :type :lab, :name "Labcorp Lab, 123 Main Street"})

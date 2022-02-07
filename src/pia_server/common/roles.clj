@@ -16,11 +16,11 @@
   for the current user. It is expected this happens when a run is started."
   [& roles]
   (if (-> roles first run?)
-    (set-status! (first roles) :roles (rest roles))
+    (set-index! (first roles) :roles (rest roles))
     (do
       ;; TODO: enable this when we have roles enabled
       #_ (check-roles roles)
-      (set-status! :roles roles))))
+      (set-index! :roles roles))))
 
 (defn check-roles [roles]
   (if-not (every? #(*current-roles* %) roles)

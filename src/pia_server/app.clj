@@ -1,11 +1,9 @@
 (ns pia-server.app
   (:require [compojure.api.sweet :refer :all]
-            [clojure.set :refer [rename-keys]]
             [clojure.core.async :as async]
             [buddy.sign.jwt :as jwt]
             [envvar.core :refer [env]]
             [ring.util.http-response :refer :all]
-            [ring.middleware.conditional :refer [if-url-starts-with]]
             [ring.middleware.cors :refer [wrap-cors]]
             [rapids :refer :all]
             [schema.core :as scm]
@@ -34,7 +32,7 @@
    :state                            (scm/enum :running :complete :error)
    (scm/optional-key :result)        JSONK
    :output                           [JSONK]
-   :status                           JSONK
+   :index                           JSONK
    (scm/optional-key :parent_run_id) (scm/maybe scm/Uuid)})
 
 (scm/defschema ContinueArgs
@@ -45,17 +43,17 @@
 ;; Simple example flow
 ;;
 (deflow foo
-  "This flow demonstrates status variables and an expiring listen operation.
+  "This flow demonstrates index variables and an expiring listen operation.
   The initial response is 'hello' and the second response is the continue! :input
   appended to 'world'."
   []
-  (set-status! :bar "initial" :baz "unchanging")
+  (set-index! :bar "initial" :baz "unchanging")
   (>* "hello")
   (let [value (<* :permit "the-permit"                      ; must be provided as :permit argument to continue!
                   :expires (-> 30 minutes from-now)         ; auto expire this list operation after 30min
                   :default "default-suspend-value")]        ;             with this value
     (>* (str value " world!"))
-    (set-status! :bar "updated")
+    (set-index! :bar "updated")
     "some result"))
 
 ;; marking flows as dynamic to enable tests
@@ -66,7 +64,7 @@
   (let [raw-run (.rawData run)
         run     (reduce-kv #(assoc %1 (keyword (str/replace (name %2) "-" "_")) %3) {}
                            (select-keys raw-run
-                                        [:id :output :result :state :status :parent-run-id]))]
+                                        [:id :output :result :state :index :parent-run-id]))]
     (if (-> run :state (not= :complete))
       (dissoc run :result)
       run)))
