@@ -27,19 +27,20 @@
                                   :phone            "1-555-555-5555"}))
 
 (deftest AntiCoagulationTest
-  (let [clock (mock-clock)
+  (let [clock    (mock-clock)
         advance! (fn [t]
                    (flush-cache!)
                    (advance-clock! clock t)
                    (find-and-expire-runs! 100)
                    true)]
     (with-clock clock
-      (branch [patient (make-patient)
-               main (start! anticoagulation [(:id patient)])
-               main-id (:id main)
-               lab-tests-id (-> main :index :runs :lab :initial-tests)
+      (branch [patient                      (make-patient)
+               main                         (start! anticoagulation [(:id patient)])
+               main-id                      (:id main)
+               lab-tests-id                 (-> main :index :runs :lab :initial-tests)
                patient-labwork-reminders-id (-> main :index :runs :patient :labwork-reminder)]
         "Main flow"
+        (println "1. STORAGE=" rapids.storage.globals/*storage*)
         (is (= :running (:state main)))
         (is (uuid? lab-tests-id))
         (is (uuid? patient-labwork-reminders-id))
@@ -47,15 +48,15 @@
                  {:main-id          main-id
                   :lab-tests-id     lab-tests-id
                   :lab-reminders-id patient-labwork-reminders-id})
-       #_ (testing "patient interface shows a cancel button"
-          (keys-match (d/print-result (get-run patient-labwork-reminders-id))
-            :state :running
-            :output [{:type :buttons, :buttons [{:id :cancel}]} & _]))
+        #_(testing "patient interface shows a cancel button"
+            (keys-match (d/print-result (get-run patient-labwork-reminders-id))
+              :state :running
+              :output [{:type :buttons, :buttons [{:id :cancel}]} & _]))
 
-        (branch [lab-run (get-run lab-tests-id)
-                 lab-run (continue! lab-tests-id :input {:status :success :kidney 1 :iron 2 :cbc 3}
-                                    :permit (-> lab-run :output :permit))
-                 main (get-run main-id)
+        (branch [lab-run               (get-run lab-tests-id)
+                 lab-run               (continue! lab-tests-id :input {:status :success :kidney 1 :iron 2 :cbc 3}
+                                                  :permit (-> lab-run :output :permit))
+                 main                  (get-run main-id)
                  pharmacy-prescribe-id (-> main :index :runs :pharmacy :warfarin-prescription)]
           "Deliver lab test results"
           (println "Runs:"
@@ -63,10 +64,10 @@
           (is (= :complete (:state lab-run)))
           (is (uuid? pharmacy-prescribe-id))
 
-          (branch [pharmacy-run (continue! pharmacy-prescribe-id :input :delivered)
-                   main-run (get-run main-id)
+          (branch [pharmacy-run  (continue! pharmacy-prescribe-id :input :delivered)
+                   main-run      (get-run main-id)
                    init-phase-id (-> main-run :index :runs :patient :initiation-phase)
-                   init-phase (get-run init-phase-id)]
+                   init-phase    (get-run init-phase-id)]
             "Lab produces result"
             (println "Runs:"
                      {:init-phase-id init-phase-id})
@@ -74,10 +75,10 @@
             (is (uuid? init-phase-id))
             (keys-match init-phase
               :state :running
-              :output [_ _ {:type :form :elements [{:type :number :id :inr} & _]}])
+              :output [_ {:type :form :elements [{:type :number :id :inr} & _]}])
 
             (branch [init-phase-run (continue! init-phase-id :input {:inr 1.5})
-                     init-phase-id (:id init-phase-run)]
+                     init-phase-id  (:id init-phase-run)]
               "The patient inputs a normal INR level"
               (keys-match init-phase-run
                 :state :running

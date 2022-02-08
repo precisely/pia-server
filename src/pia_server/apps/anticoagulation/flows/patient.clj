@@ -61,7 +61,7 @@
 (deflow initiation-phase
   "Attempts to get to a therapeutic dose. Target INR not yet used."
   ([patient dosage-pool target-inr days]
-   {:pre [(p/patient? patient)]}
+   {:pre [(p/patient? patient) (pool? dosage-pool) (number? target-inr) (number? days)]}
    (require-roles :patient)
    (set-index! :stage :initiation-phase, :patient-id (:id patient))
    (>* (text "Please follow the directions in the order shown."))
@@ -88,7 +88,7 @@
          ;; signal that we're done using the dosage pool
          (put-in! dosage-pool nil)))))
   ([patient dosage-pool target-inr]
-   (initiation-phase patient target-inr 5)))
+   (initiation-phase patient dosage-pool target-inr 5)))
 
 (deflow maintenance-phase [& rest]
   :TODO)

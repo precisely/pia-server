@@ -107,7 +107,7 @@
 (deflow obtain-maintenance-dosage [patient target-inr]
   (let [dosage-pool (->pool)
         run         (start! patient/initiation-phase
-                            [patient target-inr dosage-pool]
+                            [patient dosage-pool target-inr]
                             :index {:title      "Anticoagulation initiation phase"
                                      :patient-id (:id patient)})]
     (set-index!
