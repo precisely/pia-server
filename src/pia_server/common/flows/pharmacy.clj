@@ -93,8 +93,8 @@
   (println (str "Pharmacy service should POST \"delivered\" to http://localhost:8080/api/runs/continue/"
                 (current-run :id)))
   (set-index! :prescription :ordered,
-               :patient-id (:id patient),
-               :title (str "Prescribing " drug))
+              :patient-id (:id patient),
+              :title (str "Prescribing " drug))
   (loop [rx-status (<*buttons PrescriptionStates)]
     (set-index! :prescription rx-status)
     (if (not= rx-status :delivered)

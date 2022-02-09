@@ -9,12 +9,19 @@
 
 (defonce sse-registry (atom {}))
 
-;; TODO: This currently only supports one client connection per entity-id.
 (defn sse-register [entity-type entity-id channel]
-  (swap! sse-registry assoc-in [entity-type entity-id] channel))
+  (swap! sse-registry update-in [entity-type entity-id]
+         (fn [channels]
+           (conj (if (empty? channels) #{} channels) channel))))
 
-(defn sse-unregister [entity-type entity-id]
-  (swap! sse-registry update entity-type dissoc entity-id))
+(defn sse-unregister [entity-type entity-id channel]
+  (swap! sse-registry update-in [entity-type entity-id]
+         (fn [channels]
+           (remove #{channel} channels)))
+  ;; remove the entry altogether if all channels are closed
+  (when (empty? (get-in @sse-registry [entity-type entity-id]))
+    (swap! sse-registry update entity-type dissoc entity-id))
+  @sse-registry)
 
 ;; TODO: There should be a thread sending heartbeats to every client registered
 ;; with SSE every 30 seconds. This solves potential Heroku disconnects, and can
@@ -29,9 +36,10 @@
   {:pre [(map? entity) (contains? entity :id) (contains? entity :type)]}
   (let [payload (str "data:" (json/write-str {:message message, :run-id (str run-id)}) "\n\n")
         {type :type id :id} entity]
-    (when-let [ch (get-in @sse-registry [type id])]
+    (when-let [channels (get-in @sse-registry [type id])]
       (async/go
-        ;; try to send the message; if the channel was closed, clean up
-        (when-not (async/>! ch payload)
-          (sse-unregister type id))))
+        ;; try to send the message to all channels; if the channel was closed, clean up
+        (doseq [ch channels]
+          (when-not (async/>! ch payload)
+            (sse-unregister type id ch)))))
     (log/info "Sending notification" {:type type :id id :message message :run-id run-id})))
