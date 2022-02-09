@@ -23,19 +23,16 @@
                      order)
     :else (throw (ex-info "Invalid lab order" {:type :input-error :order order}))))
 
-(defn orders-to-form-elements [orders]
-  (let [norders (map normalize-lab-order orders)]
-    `[~(f/multiple-choice :status [:waiting :failed :success :received])
-      ~@(map #(f/number (:type %) :label (or (:text %) (name (:type %))))
-             norders)]))
-
 (deflow lab-monitor [lab patient orders]
   (require-roles :lab)
-  (set-index! :patient-id (:id patient) :sample :waiting)
+  (set-index! :patient-id (:id patient)
+              :lab-id (:id lab)
+              :sample :waiting)
   (send-lab-orders lab patient orders)
 
   (loop
-    [data (<*form (orders-to-form-elements orders))]
+    [data (<*form `[~(f/multiple-choice :status [:waiting :failed :success :received])
+                    ~@orders])]
 
     (cond
       (#{:failed :success} (:status data)) data

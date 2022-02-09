@@ -16,7 +16,9 @@
             [pia-server.common.roles :refer [require-roles]]
             [pia-server.common.flows.patient :as common-patient]
             [pia-server.db.models.exports :refer :all]
-            [pia-server.db.models.patient :as p]))
+            [pia-server.common.rapids-ext :refer [wait-for]]
+            [pia-server.db.models.patient :as p]
+            [pia-server.common.controls.form :as f]))
 
 
 (defn valid-bloodwork? [patient results]
@@ -51,6 +53,15 @@
   ;; in future, this analyzes the patient (possibly the genetics and other things to determine a target therapeutic range
   2)
 
+(def liver-function-tests (f/multiple-choice :liver-function-tests [:high :normal :low]))
+(def anemia-test (f/multiple-choice :anemia [:abnormal :normal]))
+(def VKORC1-test (f/multiple-choice :vkorc1 [:normal :sensitive :insensitive]))
+(def CYP2C9-test (f/multiple-choice :cyp2c9 [:normal :sensitive :insensitive]))
+
+(defn stop! [run]
+  (if (-> run :state (= :running))
+    (interrupt! (:id run) :stop)))
+
 (deflow obtain-labwork
   "Obtains results for the patient for the given tests. Reminds the patient until the labwork is complete.
   Returns the results.
@@ -59,26 +70,35 @@
     :lab {:initial-tests RUNID}
     :patient {:reminder {:labwork RUNID}}
   }"
-  [patient tests]
+  [patient]
   {:pre [(p/patient? patient)]}
   ;; TODO: start the lab monitor from within the patient run
-  (let [lab              (block! (start! common-patient/pick-lab
-                                         [patient tests]
-                                         :index {:patient-id (:id patient)
-                                                  :title      "Choose lab for anticoagulation bloodwork"}))
-        _                (println ">>>>>>>>>>\nLab selected: " lab)
-        labwork-run      (start! lab-monitor [lab patient tests] :index {:title      "Anticoagulation lab monitor"
-                                                                          :patient-id (:id patient)})
-        patient-reminder (start! common-patient/send-reminders
-                                 [patient "Please go get your labwork done"
-                                  :until #(not= (-> labwork-run :index :sample) "waiting")
-                                  :cancelable true]
-                                 :index {:title "Anticoagulation labwork"})]
+  (let [labwork-run       (start! lab-monitor [common-patient/default-lab patient [liver-function-tests anemia-test]]
+                                  :index {:title      "Anticoagulation bloodwork monitor"
+                                          :patient-id (:id patient)})
+        labwork-reminder  (start! common-patient/send-reminders
+                                  [patient (str "Please go get your labwork done at " (:name common-patient/default-lab))
+                                   :cancelable true]
+                                  :index {:title "Anticoagulation labwork"})
+        genetics-reminder (start! common-patient/send-reminders
+                                  [patient (str "Please remember to mail your saliva sample to the lab at " (:name common-patient/genetics-lab))
+                                   :cancelable true]
+                                  :index {:title "Anticoagulation labwork"})
+         genetics-run      (start! lab-monitor [common-patient/genetics-lab patient [VKORC1-test CYP2C9-test]]
+                                  :index {:title      "Anticoagulation genetics tests monitor"
+                                          :patient-id (:id patient)})
+       ]
     (set-index!
-      [:overview :phase] "Labwork"
+      [:overview :phase] "Initial labwork"
       [:runs :lab :initial-tests] (:id labwork-run)
-      [:runs :patient :labwork-reminder] (:id patient-reminder))
-    (block! labwork-run)))
+      [:runs :genetics-lab :initial-tests] (:id genetics-run)
+      [:runs :patient :labwork-reminder] (:id labwork-reminder)
+      [:runs :patient :genetics-reminder] (:id genetics-reminder))
+
+    (let [result (wait-for labwork-run genetics-run)]
+      (stop! labwork-reminder)
+      (stop! genetics-reminder)
+      result)))
 
 (defn start-run! [role action flow & args]
   (let [run (start! flow args)]
@@ -98,7 +118,7 @@
                                     :route :po,
                                     :dosage :as-directed]
                                    :index {:title      "Anticoagulation prescription"
-                                            :patient-id (:id patient)})]
+                                           :patient-id (:id patient)})]
     (set-index!
       [:overview :phase] "Prescription"
       [:runs :pharmacy :warfarin-prescription] (:id prescription-phase))
@@ -109,7 +129,7 @@
         run         (start! patient/initiation-phase
                             [patient dosage-pool target-inr]
                             :index {:title      "Anticoagulation initiation phase"
-                                     :patient-id (:id patient)})]
+                                    :patient-id (:id patient)})]
     (set-index!
       [:overview :phase] "Initiation"
       [:runs :patient :initiation-phase] (:id run))
@@ -124,7 +144,7 @@
   (let [run (start! patient/maintenance-phase
                     [patient maintenance-dosage]
                     :index {:title      "Anticoagulation maintenance phase"
-                             :patient-id (:id patient)})]
+                            :patient-id (:id patient)})]
     (set-index! [:runs :patient :maintenance-phase] (:id run))))
 
 (defn check-for-existing-anticoagulation-run [patient-id]
@@ -134,13 +154,13 @@
                           [[:index :roles] :? "doctor"]] :limit 2)]
     (if run
       (throw (ex-info "Anticoagulation therapy already in progress for patient"
-                      {:type :input-error
+                      {:type       :input-error
                        :patient-id patient-id
-                       :run-id (:id run)})))))
+                       :run-id     (:id run)})))))
 
 (deflow anticoagulation [patient-id]
   (require-roles :doctor)
-    (set-index! :patient-id patient-id, :title "Anticoagulation therapy")
+  (set-index! :patient-id patient-id, :title "Anticoagulation therapy")
   (check-for-existing-anticoagulation-run patient-id)
   (let [patient (get-patient patient-id)
         _       (if (not (p/patient? patient)) (throw (ex-info "Patient not found" {:type :input-error :id patient-id})))

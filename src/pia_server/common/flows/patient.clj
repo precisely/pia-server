@@ -54,6 +54,9 @@
           (when-not (= delay-result :cancel)
             (recur (inc count))))))))
 
+(def default-lab {:id 1, :type :lab, :name "Labcorp Lab, 123 Old Industry Road"})
+(def genetics-lab {:id 2, :type :lab, :name "Akesogen Corp, 999 Mark Way"})
+
 (deflow pick-lab
   "In future, this might launch an interaction with the patient to determine the right lab. This might just request
   a map picker/list control be shown, for example, with labs which provide the appropriate bloodwork.
@@ -66,4 +69,5 @@
   (require-roles :patient)
   (set-index! :patient-id (:id patient))
   ;; for now, just return a default lab...
-  {:id "lc-9876", :type :lab, :name "Labcorp Lab, 123 Main Street"})
+  default-lab)
+

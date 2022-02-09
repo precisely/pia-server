@@ -38,9 +38,9 @@
                main                         (start! anticoagulation [(:id patient)])
                main-id                      (:id main)
                lab-tests-id                 (-> main :index :runs :lab :initial-tests)
+               genetic-tests-id             (-> main :index :runs :lab :initial-tests)
                patient-labwork-reminders-id (-> main :index :runs :patient :labwork-reminder)]
         "Main flow"
-        (println "1. STORAGE=" rapids.storage.globals/*storage*)
         (is (= :running (:state main)))
         (is (uuid? lab-tests-id))
         (is (uuid? patient-labwork-reminders-id))
@@ -54,7 +54,9 @@
               :output [{:type :buttons, :buttons [{:id :cancel}]} & _]))
 
         (branch [lab-run               (get-run lab-tests-id)
-                 lab-run               (continue! lab-tests-id :input {:status :success :kidney 1 :iron 2 :cbc 3}
+                 lab-run               (continue! lab-tests-id :input {:status               :success
+                                                                       :anemia               :normal
+                                                                       :liver-function-tests :normal}
                                                   :permit (-> lab-run :output :permit))
                  main                  (get-run main-id)
                  pharmacy-prescribe-id (-> main :index :runs :pharmacy :warfarin-prescription)]
