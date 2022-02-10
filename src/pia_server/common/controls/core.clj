@@ -4,7 +4,8 @@
             [malli.transform :as mt]
             [malli.json-schema :as mjs]
             [malli.error :as me]
-            [rapids.support.util :refer [new-uuid]]))
+            [rapids.support.util :refer [new-uuid]]
+            [clojure.string :as str]))
 
 (defn ^:suspending <*control
   "Outputs a control to the response vector, generating a random unique permit value,
@@ -124,6 +125,8 @@
 (defn starts-with-<*? [n]
   (assert (re-find #"^\<\*" (name n)) "Control names must start with <*") true)
 
+(defn keyword-to-label [k]
+  (str/join " " (map str/capitalize (str/split (name k) #"[_\-]"))))
 
 (defn normalize-id-map
   "Enables compact representation of control arguments.

@@ -1,6 +1,6 @@
 (ns pia-server.common.controls.form
   (:require [rapids :refer :all]
-            [pia-server.common.controls.core :refer [defcontrol normalize-id-map]]
+            [pia-server.common.controls.core :refer [defcontrol keyword-to-label normalize-id-map]]
             [pia-server.util :refer [assoc-if]]))
 
 ;; Constantine - this one
@@ -117,7 +117,7 @@
                :schema [:and :keyword `[:enum ~@(map :id items)]]}
               :required required
               :randomize randomize                          ; don't bother
-              :label label
+              :label (or label (keyword-to-label id))
               :show-other show-other                        ; don't bother
               :multiselect multiselect)))                   ; don't bother
 

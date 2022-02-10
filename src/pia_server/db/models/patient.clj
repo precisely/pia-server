@@ -31,3 +31,4 @@
 
 (dotimes [id 1000]
   (update-patient! (generate-patient id)))
+
