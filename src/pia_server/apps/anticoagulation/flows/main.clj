@@ -76,26 +76,33 @@
   [patient]
   {:pre [(p/patient? patient)]}
   ;; TODO: start the lab monitor from within the patient run
-  (let [labwork-run       (start! lab-monitor [common-patient/default-lab patient [liver-function-tests anemia-test]]
+  (let [labwork-pool (->pool)
+        labwork-run       (start! lab-monitor [common-patient/default-lab patient [liver-function-tests anemia-test]
+                                               :output-pool labwork-pool]
                                   :index {:title      "Anticoagulation bloodwork"
                                           :patient-id (:id patient)})
         labwork-reminder  (start! common-patient/send-reminders
                                   [patient
                                    (str "Please go get your labwork done at " (:name common-patient/default-lab))
                                    :cancelable true
+                                   :input-pool labwork-pool
                                    :max 10]
                                   :index {:title    "Anticoagulation bloodwork"
                                           :subtitle "Go get your blood work done"})
+        genetics-pool     (->pool)
+        genetics-run      (start! lab-monitor [common-patient/genetics-lab patient [vkorc1-test cyp2c9-test]
+                                               :output-pool genetics-pool]
+                                  :index {:title      "Anticoagulation genetics tests"
+                                          :patient-id (:id patient)})
         genetics-reminder (start! common-patient/send-reminders
                                   [patient
                                    (str "Please remember to mail your saliva sample to the lab at " (:name common-patient/genetics-lab))
                                    :max 5
+                                   :input-pool genetics-pool
                                    :cancelable true]
                                   :index {:title    "Anticoagulation genetics panel"
                                           :subtitle "Send your saliva sample"})
-        genetics-run      (start! lab-monitor [common-patient/genetics-lab patient [vkorc1-test cyp2c9-test]]
-                                  :index {:title      "Anticoagulation genetics tests"
-                                          :patient-id (:id patient)})]
+        ]
     (set-index!
       [:overview :phase] "Initial labwork"
       [:runs :lab :initial-tests] (:id labwork-run)
@@ -103,13 +110,9 @@
       [:runs :patient :labwork-reminder] (:id labwork-reminder)
       [:runs :patient :genetics-reminder] (:id genetics-reminder))
 
-    (block! labwork-run)
-   #_ (let [results (wait-for
-                   labwork-run
-                   [genetics-run :expires (-> 2 days) :default nil])]
-      (stop! labwork-reminder)
-      (stop! genetics-reminder)
-      results)))
+    (wait-for
+      labwork-run
+      [genetics-run :expires (-> 2 days from-now) :default nil])))
 
 (defn start-run! [role action flow & args]
   (let [run (start! flow args)]
