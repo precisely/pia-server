@@ -28,11 +28,12 @@
   (set-index! :patient-id (:id patient)
               :lab-id (:id lab)
               :sample :waiting)
+
   (send-lab-orders lab patient orders)
 
   (<*form `[~(f/multiple-choice :status [:failed :success])
             ~@orders]
-          (fn [constraints]
+          #_(fn [constraints]
             `[:or
               [:map [:status [:= :failed]]]
               [:map [:status [:= :success]]

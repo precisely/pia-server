@@ -17,7 +17,7 @@
 ;; defcontrol helpers
 (declare default-control-transformer default-control-validator args-to-hashmap
          add-input!-args starts-with-<*? general-control-ctor extract-<*control-args
-         longest-arg)
+         index-of-longest-sequence)
 
 (defmacro
   defcontrol
@@ -47,8 +47,8 @@
    The default validator function is default-control-validator."
   [control-name & cdecl]
   {:pre [(symbol? control-name) (starts-with-<*? control-name)]}
-  (let [name-str (name control-name)
-        default-type (keyword (subs name-str 2))
+  (let [name-str          (name control-name)
+        default-type      (keyword (subs name-str 2))
         [doc-string? attr-map? & sigs?] cdecl
         [doc-string attr-map sigs] (if (string? doc-string?)
                                      (if (map? attr-map?)
@@ -57,17 +57,16 @@
                                      (if (map? doc-string?)
                                        [nil doc-string? `(~attr-map? ~@sigs?)]
                                        [nil {} `(~doc-string? ~attr-map? ~@sigs?)]))
-        sigs (if (-> sigs first vector?) [sigs] sigs)
-        ctor-name (symbol (str name-str "-ctor"))
-        validator-fn-def (:validator attr-map)
+        sigs              (if (-> sigs first vector?) [sigs] sigs)
+        ctor-name         (symbol (str name-str "-ctor"))
+        validator-fn-def  (:validator attr-map)
         validator-fn-name (symbol (str name-str "-validator"))
-        validator-op (if validator-fn-def validator-fn-name `default-control-validator)
-        attr-map (dissoc attr-map :validator)
-        longest-sig (index-of )
-        reified-sigs (map add-input!-args sigs)
-        attr-map (assoc attr-map
-                   :arglists (mapv first reified-sigs)
-                   :doc doc-string)]
+        validator-op      (if validator-fn-def validator-fn-name `default-control-validator)
+        attr-map          (dissoc attr-map :validator)
+        reified-sigs      (map add-input!-args sigs)
+        attr-map          (assoc attr-map
+                            :arglists (mapv first reified-sigs)
+                            :doc doc-string)]
     `(do
        (defn ~ctor-name [expires?# default# & args#]
          (general-control-ctor ~default-type expires?# default# (fn ~@reified-sigs) args#))
@@ -89,17 +88,22 @@
 ;;
 ;; HELPERS
 ;;
+(defn index-of [x coll]
+  (let [idx? (fn [i a] (when (= x a) i))]
+    (first (keep-indexed idx? coll))))
+
 (defn index-of-longest-sequence [seqs]
-  (let [counts (map count seqs)
-        max-count (apply max counts)
-        .indexOf]))
+  (let [counts    (map count seqs)
+        max-count (apply max counts)]
+    (index-of max-count counts)))
+
 (def default-control-transformer (mt/transformer mt/string-transformer mt/default-value-transformer))
 
 (defn default-control-validator [ctrl input]
   (let [schema (:schema ctrl)
-        input (if schema
-                (m/decode schema input default-control-transformer)
-                input)]
+        input  (if schema
+                 (m/decode schema input default-control-transformer)
+                 input)]
     (if (or (not schema) (m/validate schema input))
       input
       (throw (ex-info "Bad input" {:type        :input-error
@@ -111,17 +115,17 @@
   (apply hash-map (if (-> args count odd?) (conj args nil) args)))
 
 (defn add-input!-args [sig]
-  (let [args (first sig)
-        body (rest sig)
-        _    (assert (vector? args))
+  (let [args          (first sig)
+        body          (rest sig)
+        _             (assert (vector? args))
         has-ampersand ((set args) '&)
-        last-arg (last args)
-        kw-args (if (map? last-arg)
-                  (:keys last-arg))
-        _ (if (and has-ampersand
-                   (not kw-args))
-            (throw (ex-info "Invalid defcontrol signature. Varargs not permitted."
-                            {:signature sig})))]
+        last-arg      (last args)
+        kw-args       (if (map? last-arg)
+                        (:keys last-arg))
+        _             (if (and has-ampersand
+                               (not kw-args))
+                        (throw (ex-info "Invalid defcontrol signature. Varargs not permitted."
+                                        {:signature sig})))]
 
     (if kw-args
       `([~@(butlast args) ~(update last-arg :keys (comp vec #(clojure.set/union % #{'expires 'default}) set))] ~@body)
@@ -154,15 +158,15 @@
                         [] (seq obj)))))
 
 (defn general-control-ctor [default-type expiring? default ctrl-fn args]
-  (let [ctrl (apply ctrl-fn args)
-        ctrl (update ctrl :type #(if % % default-type))
-        ctrl (if (contains? ctrl :schema)
-               (update ctrl :schema #(if expiring?
-                                       (if default
-                                         [:or % [:= default]]
-                                         [:maybe %])
-                                       %))
-               ctrl)
+  (let [ctrl   (apply ctrl-fn args)
+        ctrl   (update ctrl :type #(if % % default-type))
+        ctrl   (if (contains? ctrl :schema)
+                 (update ctrl :schema #(if expiring?
+                                         (if default
+                                           [:or % [:= default]]
+                                           [:maybe %])
+                                         %))
+                 ctrl)
         output (update ctrl :schema #(if % (mjs/transform %)))]
     [ctrl output]))
 
@@ -170,7 +174,7 @@
   "Plucks out extra control arguments :default and :expires, then calls the control ctor"
   [ctor args]
   (let [hashmap-args (args-to-hashmap args)                 ; nil => non-kw args, rest of keys are kw args
-        expires (:expires hashmap-args)
-        default (:default hashmap-args)
+        expires      (:expires hashmap-args)
+        default      (:default hashmap-args)
         [ctrl output] (apply ctor expires default args)]
     [ctrl output expires default]))

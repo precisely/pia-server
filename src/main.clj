@@ -65,8 +65,8 @@
    (-> (get @env key default) reader)))
 
 (defn -main [& args]
-  (let [port      (env-read :port "8080" read-string)
-        log-level (env-read :log-level "info" #(-> % str/lower-case keyword))
+  (let [port           (env-read :port "8080" read-string)
+        log-level      (env-read :log-level "info" #(-> % str/lower-case keyword))
         expiry-seconds (env-read :expiry-seconds "10" read-string)]
     (start :app #'pia/app
            :port port

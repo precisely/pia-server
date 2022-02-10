@@ -30,16 +30,15 @@
                 `[:map [:success [:= :yes]]
                       ~@constraints]])
   "
-  ([elements] `(<*form ~elements nil))
-  ([elements schema-fn]
-   (let [schema `[:map ~@(remove nil? (map (fn [elt]
-                                             (if-let [schema (:schema elt)]
-                                               [(:id elt) schema]))
-                                           elements))]
-         schema (if schema-fn (schema-fn (rest schema)) schema)]
-     {:type     :form
-      :elements (mapv #(dissoc % :schema) elements)
-      :schema   schema})))
+  [elements & {:keys [schema-fn]}]
+  (let [schema `[:map ~@(remove nil? (map (fn [elt]
+                                            (if-let [schema (:schema elt)]
+                                              [(:id elt) schema]))
+                                          elements))]
+        schema (if schema-fn (schema-fn (rest schema)) schema)]
+    {:type     :form
+     :elements (mapv #(dissoc % :schema) elements)
+     :schema   schema}))
 
 (defn group
   [id elements]
