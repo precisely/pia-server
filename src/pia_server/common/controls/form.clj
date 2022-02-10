@@ -16,15 +16,30 @@
            { \"type\": }
          ]
       }
+
+   A custom schema can be created by passing a second argument, schema-fn.
+
+   (schema-fn constraints) where
+      constraints - a sequence of malli constraints representing the keys of a map.
+         For example, in
+         `(<*form [(multiple-choice :success [:yes :no]) (long-text :data ...)] my-schema-fn)`
+         `my-schema-fn` will receive [[:success ...] [:data ...]].
+         If data should not be checked when :success = :no, then my-schema-fn would be:
+         (defn my-schema-fn [constraints]
+           [:or [:map [:success [:= :no]]]
+                `[:map [:success [:= :yes]]
+                      ~@constraints]])
   "
-  [elements]
-  (let [schema `[:map ~@(remove nil? (map (fn [elt]
-                                            (if-let [schema (:schema elt)]
-                                              [(:id elt) schema]))
-                                          elements))]]
-    {:type     :form
-     :elements (mapv #(dissoc % :schema) elements)
-     :schema   schema}))
+  ([elements] `(<*form ~elements nil))
+  ([elements schema-fn]
+   (let [schema `[:map ~@(remove nil? (map (fn [elt]
+                                             (if-let [schema (:schema elt)]
+                                               [(:id elt) schema]))
+                                           elements))]
+         schema (if schema-fn (schema-fn (rest schema)) schema)]
+     {:type     :form
+      :elements (mapv #(dissoc % :schema) elements)
+      :schema   schema})))
 
 (defn group
   [id elements]

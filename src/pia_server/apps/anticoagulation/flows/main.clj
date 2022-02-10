@@ -55,8 +55,8 @@
 
 (def liver-function-tests (f/multiple-choice :liver-function-tests [:high :normal :low]))
 (def anemia-test (f/multiple-choice :anemia [:abnormal :normal]))
-(def VKORC1-test (f/multiple-choice :vkorc1 [:normal :sensitive :insensitive]))
-(def CYP2C9-test (f/multiple-choice :cyp2c9 [:normal :sensitive :insensitive]))
+(def vkorc1-test (f/multiple-choice :vkorc1 [:normal :sensitive :insensitive]))
+(def cyp2c9-test (f/multiple-choice :cyp2c9 [:normal :sensitive :insensitive]))
 
 (defn stop! [run]
   (if (-> run :state (= :running))
@@ -64,7 +64,10 @@
 
 (deflow obtain-labwork
   "Obtains results for the patient for the given tests. Reminds the patient until the labwork is complete.
-  Returns the results.
+  Returns the [lab-result, genetics-result]
+  lab-result = {
+    :liver-function-tests: :high | :normal | :low
+
 
   Sets :index => {
     :lab {:initial-tests RUNID}
@@ -74,20 +77,25 @@
   {:pre [(p/patient? patient)]}
   ;; TODO: start the lab monitor from within the patient run
   (let [labwork-run       (start! lab-monitor [common-patient/default-lab patient [liver-function-tests anemia-test]]
-                                  :index {:title      "Anticoagulation bloodwork monitor"
+                                  :index {:title      "Anticoagulation bloodwork"
                                           :patient-id (:id patient)})
         labwork-reminder  (start! common-patient/send-reminders
-                                  [patient (str "Please go get your labwork done at " (:name common-patient/default-lab))
-                                   :cancelable true]
-                                  :index {:title "Anticoagulation labwork"})
+                                  [patient
+                                   (str "Please go get your labwork done at " (:name common-patient/default-lab))
+                                   :cancelable true
+                                   :max 10]
+                                  :index {:title    "Anticoagulation bloodwork"
+                                          :subtitle "Go get your blood work done"})
         genetics-reminder (start! common-patient/send-reminders
-                                  [patient (str "Please remember to mail your saliva sample to the lab at " (:name common-patient/genetics-lab))
+                                  [patient
+                                   (str "Please remember to mail your saliva sample to the lab at " (:name common-patient/genetics-lab))
+                                   :max 5
                                    :cancelable true]
-                                  :index {:title "Anticoagulation labwork"})
-         genetics-run      (start! lab-monitor [common-patient/genetics-lab patient [VKORC1-test CYP2C9-test]]
-                                  :index {:title      "Anticoagulation genetics tests monitor"
-                                          :patient-id (:id patient)})
-       ]
+                                  :index {:title    "Anticoagulation genetics panel"
+                                          :subtitle "Send your saliva sample"})
+        genetics-run      (start! lab-monitor [common-patient/genetics-lab patient [vkorc1-test cyp2c9-test]]
+                                  :index {:title      "Anticoagulation genetics tests"
+                                          :patient-id (:id patient)})]
     (set-index!
       [:overview :phase] "Initial labwork"
       [:runs :lab :initial-tests] (:id labwork-run)
@@ -95,10 +103,12 @@
       [:runs :patient :labwork-reminder] (:id labwork-reminder)
       [:runs :patient :genetics-reminder] (:id genetics-reminder))
 
-    (let [result (wait-for labwork-run genetics-run)]
+    (let [results (wait-for
+                   labwork-run
+                   [genetics-run :expires (-> 2 days) :default nil])]
       (stop! labwork-reminder)
       (stop! genetics-reminder)
-      result)))
+      results)))
 
 (defn start-run! [role action flow & args]
   (let [run (start! flow args)]
@@ -164,7 +174,7 @@
   (check-for-existing-anticoagulation-run patient-id)
   (let [patient (get-patient patient-id)
         _       (if (not (p/patient? patient)) (throw (ex-info "Patient not found" {:type :input-error :id patient-id})))
-        labwork (obtain-labwork patient [{:type :iron} {:type :cbc} {:type :kidney}])]
+        [labwork, genetics] (obtain-labwork patient)]
     (if-let [target-inr (determine-target-inr patient labwork)]
       (let [
             ;; get the initiation phase prescription - 1mg size

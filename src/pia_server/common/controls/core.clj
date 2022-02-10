@@ -16,7 +16,9 @@
 
 ;; defcontrol helpers
 (declare default-control-transformer default-control-validator args-to-hashmap
-         add-input!-args starts-with-<*? general-control-ctor extract-<*control-args)
+         add-input!-args starts-with-<*? general-control-ctor extract-<*control-args
+         longest-arg)
+
 (defmacro
   defcontrol
   "Defines a Rapids control. Controls send instructions to output and receive a response from input.
@@ -61,6 +63,7 @@
         validator-fn-name (symbol (str name-str "-validator"))
         validator-op (if validator-fn-def validator-fn-name `default-control-validator)
         attr-map (dissoc attr-map :validator)
+        longest-sig (index-of )
         reified-sigs (map add-input!-args sigs)
         attr-map (assoc attr-map
                    :arglists (mapv first reified-sigs)
@@ -86,7 +89,10 @@
 ;;
 ;; HELPERS
 ;;
-
+(defn index-of-longest-sequence [seqs]
+  (let [counts (map count seqs)
+        max-count (apply max counts)
+        .indexOf]))
 (def default-control-transformer (mt/transformer mt/string-transformer mt/default-value-transformer))
 
 (defn default-control-validator [ctrl input]
@@ -107,7 +113,7 @@
 (defn add-input!-args [sig]
   (let [args (first sig)
         body (rest sig)
-        valid-args (vector? args)
+        _    (assert (vector? args))
         has-ampersand ((set args) '&)
         last-arg (last args)
         kw-args (if (map? last-arg)

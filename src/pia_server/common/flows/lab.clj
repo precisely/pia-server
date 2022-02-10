@@ -30,13 +30,13 @@
               :sample :waiting)
   (send-lab-orders lab patient orders)
 
-  (loop
-    [data (<*form `[~(f/multiple-choice :status [:waiting :failed :success :received])
-                    ~@orders])]
-
-    (cond
-      (#{:failed :success} (:status data)) data
-      :else (recur (<*)))))
+  (<*form `[~(f/multiple-choice :status [:failed :success])
+            ~@orders]
+          (fn [constraints]
+            `[:or
+              [:map [:status [:= :failed]]]
+              [:map [:status [:= :success]]
+               ~@(remove #(-> % first (= :status)) constraints)]])))
 
 
 ;; send order to lab
