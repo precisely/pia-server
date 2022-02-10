@@ -2,9 +2,9 @@
   (:require [clojure.string :as s]
             [pia-server.common.controls.core :refer [defcontrol normalize-id-map]]))
 
-(defn- normalize-button-def [bdef]
+(defn normalize-button-def [bdef]
   (letfn [(keyword-to-nice-string [k]
-            (s/join (map s/capitalize (s/split (name k) #"_")) " "))
+            (s/join " " (map s/capitalize (s/split (name k) #"[_\-]"))))
           (button-def-error [] (throw (ex-info "Invalid button def" bdef)))]
     (cond
       (keyword? bdef) {:id bdef :text (keyword-to-nice-string bdef)}
