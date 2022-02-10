@@ -66,4 +66,4 @@
   (require-roles :patient)
   (set-index! :patient-id (:id patient))
   ;; for now, just return a default lab...
-  {:id "lc-9876", :type :lab, :name "Labcorp Lab, 123 Main Street"})
+  {:id 1, :type :lab, :name "Labcorp Lab, 123 Main Street"})
