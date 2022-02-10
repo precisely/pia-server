@@ -68,13 +68,13 @@
                             :arglists (mapv first reified-sigs)
                             :doc doc-string)]
     `(do
-       (defn ~ctor-name [expires?# default# & args#]
-         (general-control-ctor ~default-type expires?# default# (fn ~@reified-sigs) args#))
+       (defn ~ctor-name [~'expires? ~'default & ~'args]
+         (general-control-ctor ~default-type ~'expires? ~'default (fn ~@reified-sigs) ~'args))
 
        ~@(if validator-fn-def `((defn ~validator-fn-name ~@validator-fn-def)))
 
-       (deflow ~control-name [& args#]
-         (let [[ctrl# output# expires# default#] (extract-<*control-args ~ctor-name args#)
+       (deflow ~control-name [& ~'args]
+         (let [[ctrl# output# expires# default#] (extract-<*control-args ~ctor-name ~'args)
                result# (<*control output# :expires expires# :default default#)]
            (~validator-op ctrl# result#)))
 

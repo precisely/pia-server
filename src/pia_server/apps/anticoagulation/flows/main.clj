@@ -103,7 +103,8 @@
       [:runs :patient :labwork-reminder] (:id labwork-reminder)
       [:runs :patient :genetics-reminder] (:id genetics-reminder))
 
-    (let [results (wait-for
+    (block! labwork-run)
+   #_ (let [results (wait-for
                    labwork-run
                    [genetics-run :expires (-> 2 days) :default nil])]
       (stop! labwork-reminder)
@@ -174,7 +175,7 @@
   (check-for-existing-anticoagulation-run patient-id)
   (let [patient (get-patient patient-id)
         _       (if (not (p/patient? patient)) (throw (ex-info "Patient not found" {:type :input-error :id patient-id})))
-        [labwork, genetics] (obtain-labwork patient)]
+        labwork (obtain-labwork patient)]
     (if-let [target-inr (determine-target-inr patient labwork)]
       (let [
             ;; get the initiation phase prescription - 1mg size
