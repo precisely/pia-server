@@ -2,6 +2,7 @@
   (:require [rapids :refer :all]
             [pia-server.common.notifier :refer [notify]]
             [pia-server.common.controls.basic :refer [<*buttons]]
+            [pia-server.common.roles :refer [require-roles]]
             [taoensso.truss :refer [have have? have!]]))
 
 ;; For a pharmacist to dispense a controlled substance, the prescription must include specific information to be considered valid:
@@ -92,7 +93,9 @@
   (println "SENDING PRESCRIPTION TO PHARMACY....." args "  patient" (:id patient))
   (println (str "Pharmacy service should POST \"delivered\" to http://localhost:8080/api/runs/continue/"
                 (current-run :id)))
+  (require-roles :pharmacy)
   (set-index! :prescription :ordered,
+              :pharmacy-id 1,
               :patient-id (:id patient),
               :title (str "Prescribing " drug))
   (loop [rx-status (<*buttons PrescriptionStates)]
