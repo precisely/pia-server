@@ -25,7 +25,7 @@
 
 (defn orders-to-form-elements [orders]
   (let [norders (map normalize-lab-order orders)]
-    `[~(f/multiple-choice :status [:waiting :failed :success :received])
+    `[~(f/multiple-choice :status [:received :failed :success ])
       ~@(map #(f/number (:type %) :label (or (:text %) (name (:type %))))
              norders)]))
 
