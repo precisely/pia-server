@@ -8,7 +8,8 @@
 ;;
 (ns pia-server.apps.anticoagulation.flows.main
   (:require [rapids :refer :all]
-            [pia-server.common.flows.lab :refer [lab-monitor]]
+            [pia-server.common.flows.lab :refer [lab-monitor] :as lab]
+            [pia-server.db.models.lab :as lab-db]
             [pia-server.apps.anticoagulation.flows.patient :as patient]
             [pia-server.common.controls.form :refer :all]
             [pia-server.common.flows.pharmacy :as common-pharmacy]
@@ -19,7 +20,6 @@
             [pia-server.common.rapids-ext :refer [wait-for]]
             [pia-server.db.models.patient :as p]
             [pia-server.common.controls.form :as f]))
-
 
 (defn valid-bloodwork? [patient results]
   (let [{baseline-inr     :baseline-inr,
@@ -53,11 +53,6 @@
   ;; in future, this analyzes the patient (possibly the genetics and other things to determine a target therapeutic range
   2)
 
-(def liver-function-tests (f/multiple-choice :liver-function-tests [:high :normal :low]))
-(def anemia-test (f/multiple-choice :anemia [:abnormal :normal]))
-(def vkorc1-test (f/multiple-choice :vkorc1 [:normal :sensitive :insensitive]))
-(def cyp2c9-test (f/multiple-choice :cyp2c9 [:normal :sensitive :insensitive]))
-
 (defn stop! [run]
   (if (-> run :state (= :running))
     (interrupt! (:id run) :stop)))
@@ -76,33 +71,28 @@
   [patient]
   {:pre [(p/patient? patient)]}
   ;; TODO: start the lab monitor from within the patient run
-  (let [labwork-pool (->pool)
-        labwork-run       (start! lab-monitor [common-patient/default-lab patient [liver-function-tests anemia-test]
-                                               :output-pool labwork-pool]
-                                  :index {:title      "Anticoagulation bloodwork"
-                                          :patient-id (:id patient)})
-        labwork-reminder  (start! common-patient/send-reminders
+  (let [labwork-reminder  (start! common-patient/send-reminders
                                   [patient
-                                   (str "Please go get your labwork done at " (:name common-patient/default-lab))
-                                   :cancelable true
-                                   :input-pool labwork-pool
-                                   :max 10]
+                                   (str "Please go get your labwork done at " (:name lab-db/default-lab))
+                                   :cancelable true]
                                   :index {:title    "Anticoagulation bloodwork"
                                           :subtitle "Go get your blood work done"})
-        genetics-pool     (->pool)
-        genetics-run      (start! lab-monitor [common-patient/genetics-lab patient [vkorc1-test cyp2c9-test]
-                                               :output-pool genetics-pool]
-                                  :index {:title      "Anticoagulation genetics tests"
+        labwork-run       (start! lab-monitor [lab-db/default-lab patient
+                                               [lab/liver-function-test lab/anemia-test]
+                                               (flow [_] (stop! labwork-reminder))]
+                                  :index {:title      "Anticoagulation bloodwork"
                                           :patient-id (:id patient)})
         genetics-reminder (start! common-patient/send-reminders
                                   [patient
-                                   (str "Please remember to mail your saliva sample to the lab at " (:name common-patient/genetics-lab))
-                                   :max 5
-                                   :input-pool genetics-pool
+                                   (str "Please remember to mail your saliva sample to the lab at " (:name lab-db/genetics-lab))
                                    :cancelable true]
                                   :index {:title    "Anticoagulation genetics panel"
                                           :subtitle "Send your saliva sample"})
-        ]
+        genetics-run      (start! lab-monitor [lab-db/genetics-lab patient
+                                               [lab/vkorc1-test lab/cyp2c9-test]
+                                               (flow [_] (stop! genetics-reminder))]
+                                  :index {:title      "Anticoagulation genetics tests"
+                                          :patient-id (:id patient)})]
     (set-index!
       [:overview :phase] "Initial labwork"
       [:runs :lab :initial-tests] (:id labwork-run)

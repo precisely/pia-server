@@ -23,23 +23,37 @@
                      order)
     :else (throw (ex-info "Invalid lab order" {:type :input-error :order order}))))
 
-(deflow lab-monitor [lab patient orders]
-  (require-roles :lab)
-  (set-index! :patient-id (:id patient)
-              :lab-id (:id lab)
-              :sample :waiting)
 
-  (send-lab-orders lab patient orders)
+(def liver-function-test (f/multiple-choice :liver-function-tests [:high :normal :low]))
+(def anemia-test (f/multiple-choice :anemia [:abnormal :normal]))
+(def vkorc1-test (f/multiple-choice :vkorc1 [:normal :sensitive :insensitive]))
+(def cyp2c9-test (f/multiple-choice :cyp2c9 [:normal :sensitive :insensitive]))
 
-  (<*form `[~(f/multiple-choice :status [:failed :success])
-            ~@orders]
-          #_(fn [constraints]
-            `[:or
-              [:map [:status [:= :failed]]]
-              [:map [:status [:= :success]]
-               ~@(remove #(-> % first (= :status)) constraints)]])))
+(deflow lab-monitor
+  "Waits for results for lab for patient for the given orders.
 
+  A final flow may be provided. This can "
+  ([lab patient orders] (lab-monitor lab patient orders nil))
+  ([lab patient orders final-flow]
+   (require-roles :lab)
+   (set-index! :patient-id (:id patient)
+               :lab-id (:id lab)
+               :sample :waiting)
 
+   (send-lab-orders lab patient orders)
+
+   (let [result (<*form `[~(f/multiple-choice :status [:failed :success])
+                          ~@orders])]
+     (if final-flow (fcall final-flow result))
+     result)))
+
+;; idea for how to set more precise / dependent constraints
+;; problem: partitioner treats closures as suspending expressions
+#_(fn [constraints]
+    `[:or
+      [:map [:status [:= :failed]]]
+      [:map [:status [:= :success]]
+       ~@(remove #(-> % first (= :status)) constraints)]])
 ;; send order to lab
 ;; notify patient
 ;; remind patient
