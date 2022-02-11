@@ -1,0 +1,5 @@
+#!/bin/bash
+dropdb rapids_storage
+createdb rapids_storage
+echo "rapids_storage database reset complete"
+
