@@ -25,7 +25,7 @@
 
 (defn orders-to-form-elements [orders]
   (let [norders (map normalize-lab-order orders)]
-    `[~(f/multiple-choice :status [:received :failed :success ])
+    `[~(f/multiple-choice :status [:failed :success ])
       ~@(map #(f/number (:type %) :label (or (:text %) (name (:type %))))
              norders)]))
 
@@ -36,12 +36,7 @@
               :lab-id (:id lab))
   (send-lab-orders lab patient orders)
 
-  (loop
-    [data (<*form (orders-to-form-elements orders))]
-
-    (cond
-      (#{:failed :success} (:status data)) data
-      :else (recur (<*)))))
+  (<*form (orders-to-form-elements orders)))
 
 
 ;; send order to lab

@@ -78,6 +78,7 @@
       [:overview :phase] "Labwork"
       [:runs :lab :initial-tests] (:id labwork-run)
       [:runs :patient :labwork-reminder] (:id patient-reminder))
+
     (block! labwork-run)))
 
 (defn start-run! [role action flow & args]
