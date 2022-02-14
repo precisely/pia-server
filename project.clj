@@ -41,7 +41,7 @@
                  [envvar "1.1.2"]
 
                  ;; application support
-                 [precisely/rapids "0.9.2-SNAPSHOT"]
+                 [precisely/rapids "0.9.3"]
                  [clojure.java-time "0.3.2"]
                  [org.clojure/core.async "1.3.610"]
                  [camel-snake-kebab "0.4.2"]
