@@ -27,6 +27,11 @@
     {:buttons norm-bdefs
      :schema  [:and :keyword `[:enum ~@(map :id norm-bdefs)]]}))
 
-;; Constantine - this is a text bubble in a chat
-(defn text [& objs]
+(defn text
+  "Request the user to present text to the user"
+  [& objs]
   {:type :text, :text (apply str objs)})
+
+(defn >*text
+  [& objs]
+  (>* {:type :text, :text (apply str objs)}))

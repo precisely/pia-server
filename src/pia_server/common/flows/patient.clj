@@ -47,7 +47,7 @@
         (when (and (or (nil? until) (until))
                    (or (nil? max) (< count max)))
           (notify patient message)
-          (>* (text message))
+          (>*text  message)
           (let [delay-result (if (empty? cancel-buttons)
                                (<* :expires (-> interval from-now) :default interval)
                                (<*buttons cancel-buttons
