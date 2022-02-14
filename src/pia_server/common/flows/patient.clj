@@ -1,6 +1,6 @@
 (ns pia-server.common.flows.patient
   (:require [rapids :refer :all]
-            [pia-server.common.controls.basic :refer [<*buttons text]]
+            [pia-server.common.controls.basic :refer [<*buttons >*text]]
             [pia-server.common.notifier :refer [notify]]
             [pia-server.db.models.patient :as p]
             [pia-server.db.models.lab :as lab]
@@ -17,7 +17,7 @@
   [uds]
   {:pre [(every? valid-user-delay uds)]}
   (map-indexed (fn [idx ud]
-                 [{:id idx :text (first ud)}
+                 [{:id idx :label (first ud)}
                   (second ud)])))
 
 (deflow send-reminders
@@ -40,7 +40,7 @@
   (let [cancel-text    (if (string? cancelable) cancelable "Stop reminding me")
         cancel-buttons (cond-> []
                          cancelable (conj {:id   :cancel,
-                                           :text cancel-text})
+                                           :label cancel-text})
                          user-delays (conj (make-user-delay-buttons user-delays)))]
     (attempt
       (loop [count 0]

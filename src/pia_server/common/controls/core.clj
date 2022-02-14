@@ -127,7 +127,6 @@
                                (not kw-args))
                         (throw (ex-info "Invalid defcontrol signature. Varargs not permitted."
                                         {:signature sig})))]
-
     (if kw-args
       `([~@(butlast args) ~(update last-arg :keys (comp vec #(clojure.set/union % #{'expires 'default}) set))] ~@body)
       `([~@args & {:keys [~'expires ~'default]}] ~@body))))
@@ -141,14 +140,14 @@
 (defn normalize-id-map
   "Enables compact representation of control arguments.
 
-  Converts an object of the form {:yes {:text \"Yes\"}, :no {:text \"No\"}}
-  => [{:id :yes :text \"Yes\"}, {:id :no {:text \"No\"}}
+  Converts an object of the form {:yes {:label \"Yes\"}, :no {:label \"No\"}}
+  => [{:id :yes :label \"Yes\"}, {:id :no {:label \"No\"}}
 
   Or a transformer function may be provided (fn [k v] ) which must return a map representing
   the control.
 
-  E.g., (normalize-id-map {:yes \"Yes\", :no \"No\"} #(hash-map :text %2)})
-  => [{:id :yes :text \"Yes\"}, {:id :no {:text \"No\"}}"
+  E.g., (normalize-id-map {:yes \"Yes\", :no \"No\"} #(hash-map :label %2)})
+  => [{:id :yes :label \"Yes\"}, {:id :no {:label \"No\"}}"
   ([obj]
    (normalize-id-map obj #(if (map? %)
                             %
