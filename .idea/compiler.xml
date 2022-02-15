@@ -14,5 +14,8 @@
       <entry name="!?*.clj" />
       <entry name="!?*.aj" />
     </wildcardResourcePatterns>
+    <bytecodeTargetLevel>
+      <module name="pia-server" target="1.5" />
+    </bytecodeTargetLevel>
   </component>
 </project>

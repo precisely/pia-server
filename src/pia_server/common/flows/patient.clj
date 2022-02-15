@@ -1,8 +1,9 @@
 (ns pia-server.common.flows.patient
   (:require [rapids :refer :all]
-            [pia-server.common.controls.basic :refer [<*buttons text]]
+            [pia-server.common.controls.basic :refer [<*buttons >*text]]
             [pia-server.common.notifier :refer [notify]]
             [pia-server.db.models.patient :as p]
+            [pia-server.db.models.lab :as lab]
             [pia-server.common.roles :refer [require-roles]])
   (:import (java.time Period)))
 
@@ -16,7 +17,7 @@
   [uds]
   {:pre [(every? valid-user-delay uds)]}
   (map-indexed (fn [idx ud]
-                 [{:id idx :text (first ud)}
+                 [{:id idx :label (first ud)}
                   (second ud)])))
 
 (deflow send-reminders
@@ -32,27 +33,28 @@
   [patient message & {:keys [cancelable user-delays until max interval]
                       :or   {interval (days 1)}}]
   {:pre [(p/patient? patient)
-         (or max until)
          (or (nil? max) (number? max))
          (or (nil? until) (closure? until) (fn? until))]}
   (require-roles :patient)
   (set-index! :patient-id (:id patient))
   (let [cancel-text    (if (string? cancelable) cancelable "Stop reminding me")
         cancel-buttons (cond-> []
-                               cancelable (conj {:id   :cancel,
-                                                 :text cancel-text})
-                               user-delays (conj (make-user-delay-buttons user-delays)))]
-    (loop [count 0]
-      (when (and (or (nil? until) (until))
-                 (or (nil? max) (< count max)))
-        (notify patient message)
-        (>* (text message))
-        (let [delay-result (if (empty? cancel-buttons)
-                             (<* :expires (-> interval from-now) :default interval)
-                             (<*buttons cancel-buttons
-                                        :expires (-> interval from-now)))]
-          (when-not (= delay-result :cancel)
-            (recur (inc count))))))))
+                         cancelable (conj {:id   :cancel,
+                                           :label cancel-text})
+                         user-delays (conj (make-user-delay-buttons user-delays)))]
+    (attempt
+      (loop [count 0]
+        (when (and (or (nil? until) (until))
+                   (or (nil? max) (< count max)))
+          (notify patient message)
+          (>*text  message)
+          (let [delay-result (if (empty? cancel-buttons)
+                               (<* :expires (-> interval from-now) :default interval)
+                               (<*buttons cancel-buttons
+                                          :expires (-> interval from-now)))]
+            (when-not (= delay-result :cancel)
+              (recur (inc count))))))
+      (handle :stop i))))
 
 (deflow pick-lab
   "In future, this might launch an interaction with the patient to determine the right lab. This might just request
@@ -66,4 +68,5 @@
   (require-roles :patient)
   (set-index! :patient-id (:id patient))
   ;; for now, just return a default lab...
-  {:id 1, :type :lab, :name "Labcorp Lab, 123 Main Street"})
+  lab/default-lab)
+
