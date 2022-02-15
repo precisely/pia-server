@@ -25,13 +25,13 @@
       (text "Please confirm you took your dose."))
   (case (<*buttons {:yes     (str "Yes, I took " dosage " mg")
                     :problem "No, there was a problem"})
-    :problem (do (>* (text "Sorry to hear that. What was the issue?")
-                     (<*buttons {:pills-finished "Not enough pills left"
-                                 :forgot         "I forgot"})))
+    :problem (do (>*text  "Sorry to hear that. What was the issue?")
+                 (<*buttons {:pills-finished "Not enough pills left"
+                             :forgot         "I forgot"}))
     :yes))
 
 (deflow measure-inr-level []
-  (>* (text "Please use your INR test and record your INR level here (0-5)."))
+  (>*text  "Please use your INR test and record your INR level here (0-5).")
   (:inr (<*form [(number :inr :min 0 :max 5)])))
 
 ;; Some ideas for warfarin dosing:
@@ -49,22 +49,23 @@
                                (text "Vitamin K can interfere with your treatment.")
                                (text "Did you eat a large amount of any of the following in the last day?")
                                (text "Kale, Spinach, Brussels sprouts, Collards, Mustard greens, Chard, Broccoli, Asparagus, Green tea"))
-                           {:low-inr-reason (<*buttons [{:id :vitamin-k-foods :text "I did"}
-                                                        {:id :none, :text "I did not"}])})
+                           {:low-inr-reason (<*buttons [{:id :vitamin-k-foods :label "I did"}
+                                                        {:id :none, :label "I did not"}])})
                  [< 3] nil
                  :else (do (>* (text "Your INR level is a bit high, indicating your blood is not clotting.")
                                (text "Did you drink cranberry juice or alcohol within the last 24 hours?"))
-                           {:high-inr-reason (<*buttons [{:id :alcohol :text "Alcohol"}
-                                                         {:id :cranberry :text "Cranberry Juice"}
-                                                         {:id :none :text "No"}])}))}))
+                           {:high-inr-reason (<*buttons [{:id :alcohol :label "Alcohol"}
+                                                         {:id :cranberry :label "Cranberry Juice"}
+                                                         {:id :none :label "No"}])}))}))
 
 (deflow initiation-phase
   "Attempts to get to a therapeutic dose. Target INR not yet used."
   ([patient dosage-pool target-inr days]
    {:pre [(p/patient? patient) (pool? dosage-pool) (number? target-inr) (number? days)]}
    (require-roles :patient)
-   (set-index! :stage :initiation-phase, :patient-id (:id patient))
-   (>* (text "Please follow the directions in the order shown."))
+   (set-index! :stage :initiation-phase,
+               :patient-id (:id patient))
+   (>*text  "Please follow the directions in the order shown.")
    (loop [inr-levels         []
           pill-confirmations []
           follow-ups         []
@@ -81,8 +82,8 @@
        (set-index! :initiation-phase {:day day :dose new-dose :inr-level new-inr-level})
        (if (<= day days)
          (do
-           (>* (text "Great, we're all done for today. I'll check in tomorrow and we can continue."))
-           (<* :expires (-> 24 hours from-now) :permit "advance")
+           (>*text  "Great, we're all done for today. I'll check in tomorrow and we can continue.")
+           (<*buttons {:next-day "Advance demo to next day"} :expires (-> 24 hours from-now))
            (recur inr-levels, pill-confirmations, follow-ups, doses))
 
          ;; signal that we're done using the dosage pool

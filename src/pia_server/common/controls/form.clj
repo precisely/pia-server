@@ -3,7 +3,6 @@
             [pia-server.common.controls.core :refer [defcontrol keyword-to-label normalize-id-map]]
             [pia-server.util :refer [assoc-if]]))
 
-;; Constantine - this one
 (defcontrol <*form
   "E.g., (<*form [
             (number :age :label \"your age\" :min 0 :max 140)
@@ -16,12 +15,26 @@
            { \"type\": }
          ]
       }
+
+   A custom schema can be created by passing a second argument, schema-fn.
+
+   (schema-fn constraints) where
+      constraints - a sequence of malli constraints representing the keys of a map.
+         For example, in
+         `(<*form [(multiple-choice :success [:yes :no]) (long-text :data ...)] my-schema-fn)`
+         `my-schema-fn` will receive [[:success ...] [:data ...]].
+         If data should not be checked when :success = :no, then my-schema-fn would be:
+         (defn my-schema-fn [constraints]
+           [:or [:map [:success [:= :no]]]
+                `[:map [:success [:= :yes]]
+                      ~@constraints]])
   "
-  [elements]
+  [elements & {:keys [schema-fn]}]
   (let [schema `[:map ~@(remove nil? (map (fn [elt]
                                             (if-let [schema (:schema elt)]
                                               [(:id elt) schema]))
-                                          elements))]]
+                                          elements))]
+        schema (if schema-fn (schema-fn (rest schema)) schema)]
     {:type     :form
      :elements (mapv #(dissoc % :schema) elements)
      :schema   schema}))
@@ -31,7 +44,6 @@
   "Used to group elements "
   {:id id :type :group :elements elements})
 
-;; Constantine - this one
 (defn label
   ([title] (label title nil))
   ([title subtitle]
@@ -39,7 +51,6 @@
     :title    title
     :subtitle subtitle}))
 
-;; Constantine - this one
 (defn number [id & {:keys [label units min max required integer-only]}]
   (let [num-opts (assoc-if {} :min min :max max)]
     (assoc-if
@@ -66,7 +77,6 @@
    ;; I decided against a fancier version: #"^(?:(?:31(\/|-|\.)(?:0?[13578]|1[02]|(?:Jan|Mar|May|Jul|Aug|Oct|Dec)))\1|(?:(?:29|30)(\/|-|\.)(?:0?[1,3-9]|1[0-2]|(?:Jan|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec))\2))(?:(?:1[6-9]|[2-9]\d)?\d{2})$|^(?:29(\/|-|\.)(?:0?2|(?:Feb))\3(?:(?:(?:1[6-9]|[2-9]\d)?(?:0[48]|[2468][048]|[13579][26])|(?:(?:16|[2468][048]|[3579][26])00))))$|^(?:0?[1-9]|1\d|2[0-8])(\/|-|\.)(?:(?:0?[1-9]|(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep))|(?:1[0-2]|(?:Oct|Nov|Dec)))\4(?:(?:1[6-9]|[2-9]\d)?\d{2})$"
    :schema   [:string {:re #"^(0?[1-9]|[12][0-9]|3[01])[\/\-](0?[1-9]|1[012])[\/\-]\d{4}$"}]})
 
-;; Constantine - this one
 (defn short-text [id label & {:keys [hint required min-length max-length]}]
   {:type       :short-text
    :id         id
