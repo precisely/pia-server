@@ -135,7 +135,7 @@
     {
      :eval     :positive
      :score    final-score
-     :severity (condp > final-score
+     :severity (condp <= final-score
                  20 :severe
                  15 :moderately-severe
                  10 :moderate

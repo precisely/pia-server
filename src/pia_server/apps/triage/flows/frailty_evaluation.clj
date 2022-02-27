@@ -35,7 +35,7 @@
 (deflow self-rated-questions
   "Frailty self rated questions.
 
-  Returns
+  Returns [health, frequency]
   {
     :health     :poor | :fair | :good | :very-good | :excellent
     :frequency  :rarely | :sometimes | :occasionally | :always
@@ -57,6 +57,18 @@
                     :without-help "I'm able to do this on my own without help"
                     :needs-help   "I need help from another person"
                     })
+
+(defn get-score
+  "Gets the frailty score from a list of questions"
+  [ctrl-groups]
+  {:pre (list? ctrl-groups)}
+  (->>
+    (fmap (flow [ctrl-group] (form-value (<*form [ctrl-group]))) ctrl-groups)
+    (map #(case %
+            :without-help 0
+            :needs-help 1))
+    (reduce +))
+  )
 
 (def badl-q1 (multiple-choice
                :badl-q1
@@ -97,6 +109,7 @@
   }"
   [patient]
   (set-index! :patient-id (:id patient) :title "CFS BADL Questions")
+  (get-score [badl-q1 badl-q2 badl-q3 badl-q4 badl-q5])
   )
 
 (def iadl-q1 (multiple-choice
@@ -144,6 +157,7 @@
   }"
   [patient]
   (set-index! :patient-id (:id patient) :title "CFS IADL Questions")
+  (get-score [iadl-q1 iadl-q2 iadl-q3 iadl-q4 iadl-q5 iadl-q6])
   )
 
 (deflow frailty-assessment
@@ -155,5 +169,49 @@
   }"
   [patient]
   (set-index! :patient-id (:id patient) :title "Frailty Assessment")
-  
+  ; get patient past medical history
+  (let [chronic-conditions 0
+        chronic-medications 0
+        age 0
+        has-strenuous-activity false
+        {health    :health
+         frequency :frequency} (self-rated-questions patient)
+        ]
+    (or (if (or (>= chronic-conditions 2)
+                (>= chronic-medications 5)
+                (>= age 65)
+                (contains? #{:poor :fair} health)
+                (= :always frequency))
+          (let [badl-score (:score (badl-questions patient))]
+            (condp <= badl-score
+              3 :cfs-7
+              1 :cfs-6
+              0 (let [iadl-score (:score (iadl-questions patient))]
+                  (condp <= iadl-score
+                    5 :cfs-6
+                    1 :cfs-5
+                    0 nil
+                    )))) nil)                               ;need to escalate to clinical frailty evaluation
+        (if (>= chronic-conditions 10)
+          :cfs-4
+          (case health
+            (:poor :fair) :cfs-4
+            (:very-good :good) (case frequency
+                                 :always :cfs-4
+                                 (:rarely :sometimes :occasionally) (if has-strenuous-activity
+                                                                      :cfs-2
+                                                                      :cfs-3))
+            (:excellent) (case frequency
+                           :always :cfs-4
+                           (:sometimes :occasionally) (if has-strenuous-activity
+                                                        :cfs-2
+                                                        :cfs-3)
+                           :rarely (if has-strenuous-activity
+                                     :cfs-1
+                                     :cfs-2)
+                           )
+            )
+          )
+        )
+    )
   )
