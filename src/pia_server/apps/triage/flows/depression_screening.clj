@@ -8,7 +8,8 @@
             [pia-server.common.roles :refer [require-roles]]
             [pia-server.common.notifier :refer :all]
             [pia-server.common.util :refer [range-case round-to-nearest-half]]
-            [pia-server.db.models.patient :as p]))
+            [pia-server.db.models.patient :as p]
+            [pia-server.apps.triage.flows.common :refer :all]))
 
 (def freq-responses [:not-at-all "Not at all"
                      :several "Several days"
@@ -24,20 +25,12 @@
     :more-than-half 2
     :nearly-every 3))
 
-(deflow fmap [f s]
-  (if-not (empty? s)
-    (loop [[head & rest] s
-           results []]
-      (let [results (conj results (fcall f head))]
-        (if (empty? rest) results
-                          (recur rest results))))))
-
 (defn get-score
   "Gets the depression score from a list of questions"
   [ctrl-groups]
   {:pre (list? ctrl-groups)}
   (->>
-    (fmap (flow [ctrl-group] (<*form [ctrl-group])) ctrl-groups)
+    (fmap (flow [ctrl-group] (form-value (<*form [ctrl-group]))) ctrl-groups)
     (map freq-to-score)
     (reduce +))
   )
