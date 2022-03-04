@@ -1,7 +1,7 @@
 ;;
 ;; Flows for patient depression screening
 ;;
-(ns pia-server.apps.triage.flows.depression_screening
+(ns pia-server.apps.triage.flows.depression
   (:require [rapids :refer :all]
             [pia-server.common.controls.basic :refer :all]
             [pia-server.common.controls.form :refer :all]
@@ -11,10 +11,10 @@
             [pia-server.db.models.patient :as p]
             [pia-server.apps.triage.flows.common :refer :all]))
 
-(def freq-responses [:not-at-all "Not at all"
-                     :several "Several days"
+(def freq-responses {:not-at-all     "Not at all"
+                     :several        "Several days"
                      :more-than-half "More than half the days"
-                     :nearly-every "Nearly every day"])
+                     :nearly-every   "Nearly every day"})
 
 (defn freq-to-score
   "Converts frequency response value to integer score"
@@ -25,15 +25,14 @@
     :more-than-half 2
     :nearly-every 3))
 
-(defn get-score
+(deflow get-score
   "Gets the depression score from a list of questions"
-  [ctrl-groups]
-  {:pre (list? ctrl-groups)}
-  (->>
-    (fmap (flow [ctrl-group] (form-value (<*form [ctrl-group]))) ctrl-groups)
-    (map freq-to-score)
-    (reduce +))
-  )
+  [responses]
+  {:pre (map? responses)}
+  (->> responses
+       (vals)
+       (map freq-to-score)
+       (reduce +)))
 
 (def phq2-q1 (multiple-choice
                :phq2-q1
@@ -42,7 +41,7 @@
                :label "Little interest or pleasure in doing things"))
 
 (def phq2-q2 (multiple-choice
-               :phq-q2
+               :phq2-q2
                freq-responses
                :required true
                :label "Feeling down, depressed, or hopeless"))
@@ -54,15 +53,18 @@
   {
     :eval       :positive | :negative
     :score      integer
+    :responses  map between question id and answer
   }"
   [patient]
   (set-index! :patient-id (:id patient) :title "PHQ-2")
   (>* (text "Over the last 2 weeks, how often have you been bothered by any of the following problems?"))
-  (let [score (get-score [phq2-q1 phq2-q2])]
-    {
-     :eval  (if (<= score 3) :positive :negative)
-     :score score
-     }))
+  (let [result (let [responses (<*form [phq2-q1 phq2-q2])
+                     score (get-score responses)]
+                 {:eval      (if (>= score 3) :positive :negative)
+                  :score     score
+                  :responses responses})]
+    (set-index! [:depression :phq2] result)
+    result))
 
 (def phq9-q3 (multiple-choice
                :phq9-q3
@@ -108,10 +110,10 @@
 
 (def phq9-q10 (multiple-choice
                 :phq9-q10
-                {:not-difficult      "Not difficult at all"
-                 :somewhat-difficult "Somewhat difficult"
-                 :very-difficult     "Very difficult"
-                 :extremely-diffiult "Extremely difficult"}
+                {:not-difficult       "Not difficult at all"
+                 :somewhat-difficult  "Somewhat difficult"
+                 :very-difficult      "Very difficult"
+                 :extremely-difficult "Extremely difficult"}
                 :required true
                 :label "How difficult have these problems made it for you to do your work, take care of things at home, or get along with other people?"))
 
@@ -122,49 +124,61 @@
   {
     :eval           :positive | :negative
     :score          integer
-    :severity       :minimal | :mild | :moderate | :moderately-severe | :severe
+    :difficulty     :not-difficult | :somewhat-difficult | :very-difficult | :extremely-difficult
+    :responses      map between question id and answer
   }"
   [patient score]
   {:pre (integer? score)}
   (set-index! :patient-id (:id patient) :title "PHQ-9")
-  ; Should already be prompted in phq2
-  ;(>* (text "Over the last 2 weeks, how often have you been bothered by any of the following problems?"))
-  (let [final-score (+ score (get-score [phq9-q3 phq9-q4 phq9-q5 phq9-q6 phq9-q7 phq9-q8 phq9-q9]))]
-    (if (> final-score 0) ((>* (text "Thanks from answering all these questions! Just one last question in this section"))
-                           (<*form [phq9-q10])))
-    {
-     :eval     :positive
-     :score    final-score
-     :severity (condp <= final-score
-                 20 :severe
-                 15 :moderately-severe
-                 10 :moderate
-                 5 :mild
-                 1 :minimal)
-     }
-    ))
+  ; Should already be prompted in phq2, ask again
+  (>* (text "Over the last 2 weeks, how often have you been bothered by any of the following problems?"))
+  (let [result (let [responses (<*form [phq9-q3 phq9-q4 phq9-q5 phq9-q6 phq9-q7 phq9-q8 phq9-q9])
+                     final-score (+ score (get-score responses))]
+                 {:eval       :positive
+                  :score      final-score
+                  :difficulty (do
+                                (>* (text "Thanks from answering all these questions! Just one last question in this section"))
+                                (form-value (<*form [phq9-q10])))
+                  :responses  responses})]
+    (set-index! [:depression :phq9] result)
+    result))
 
-(deflow depression-screen
+(deflow depression
   "Patient depression screening.
 
   Returns
   {
-    :eval       :positive | :negative
-    :score      integer sum of all questionaire values
-    :severity   :minimal | :mild | :moderate | :moderately-severe | :severe
+    :score          integer score
+    :severity       nil | :minimal | :mild | :moderate | :moderately-severe | :severe
+    :decision       [1,5]
+    :phq2          output of phq-2
+    :phq9          output of phq-9
   }"
   [patient]
   (require-roles :patient)
   (set-index! :patient-id (:id patient) :title "Depression Screen")
-  (let [result
-        (let [phq2-result (phq2 patient)]
-          (case (:eval phq2-result)
-            :negative phq2-result
-            :positive (phq9 patient (:score phq2-result))
-            )
-          )]
-    (if (>= (:score result) 10) ())                         ;Escalate to clinical evaluation - alert clinic
-    (set-index! :depression-screen result)
-    result
-    )
-  )
+  (let [result (let [phq2-result (phq2 patient)
+                     eval (= (:eval phq2-result) :positive)
+                     phq9-result (when eval (phq9 patient (:score phq2-result)))
+                     score (if eval (:score phq9-result) (:score phq2-result))
+                     severity (condp <= score
+                                20 :severe
+                                15 :moderately-severe
+                                10 :moderate
+                                5 :mild
+                                1 :minimal
+                                0 nil)
+                     decision (condp <= score
+                                10 3
+                                3 2
+                                0 1)]
+                 {:score    score
+                  :severity severity
+                  :decision decision
+                  :phq2    phq2-result
+                  :phq9    phq9-result}
+                 (set-index! [:depression :score] score
+                             [:depression :severity] severity
+                             [:depression :decision] decision))]
+
+    result))

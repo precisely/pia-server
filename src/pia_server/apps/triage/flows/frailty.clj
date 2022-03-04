@@ -1,7 +1,7 @@
 ;;
 ;; Flows for patient frailty evaluation
 ;;
-(ns pia-server.apps.triage.flows.frailty-evaluation
+(ns pia-server.apps.triage.flows.frailty
   (:require [rapids :refer :all]
             [pia-server.common.controls.basic :refer :all]
             [pia-server.common.controls.form :refer :all]
@@ -17,8 +17,7 @@
                       :fair      "Fair"
                       :good      "Good"
                       :very-good "Very Good"
-                      :excellent "Excellent"
-                      }
+                      :excellent "Excellent"}
                      :required true
                      :label "In general, how would you describe your health?"))
 
@@ -27,25 +26,22 @@
                      {:rarely       "Rarely (Less than 1 day)"
                       :sometimes    "Some of the time (1-2 days)"
                       :occasionally "Occasionally (3-4 days)"
-                      :always       "All of the time (5-7 days)"
-                      }
+                      :always       "All of the time (5-7 days)"}
                      :required true
                      :label "In a typical week, how often would you say that everything you do is an effort?"))
 
 (deflow self-rated-questions
   "Frailty self rated questions.
 
-  Returns [health, frequency]
+  Returns
   {
-    :health     :poor | :fair | :good | :very-good | :excellent
-    :frequency  :rarely | :sometimes | :occasionally | :always
+    :responses      map between question id and answer
   }"
   [patient]
   (set-index! :patient-id (:id patient) :title "Self-rated Health Screening Questions")
-  {
-   :health    (form-value (<*form [self-rated-q1]))
-   :frequency (form-value (<*form [self-rated-q2]))
-   })
+  (let [result {:responses (<*form [self-rated-q1 self-rated-q2])}]
+    (set-index! [:frailty :self-rated] result)
+    result))
 
 (defn cfs-template
   "Clinical Frailty Scale activities of daily living question format"
@@ -53,22 +49,20 @@
   {:pre (string? phrase)}
   (str "How easily are you able to " phrase " on your own?"))
 
-(def cfs-responses {
-                    :without-help "I'm able to do this on my own without help"
-                    :needs-help   "I need help from another person"
-                    })
+(def cfs-responses {:without-help "I'm able to do this on my own without help"
+                    :needs-help   "I need help from another person"})
 
-(defn get-score
+(deflow get-score
   "Gets the frailty score from a list of questions"
-  [ctrl-groups]
-  {:pre (list? ctrl-groups)}
+  [responses]
+  {:pre (map? responses)}
   (->>
-    (fmap (flow [ctrl-group] (form-value (<*form [ctrl-group]))) ctrl-groups)
+    responses
+    (vals)
     (map #(case %
             :without-help 0
             :needs-help 1))
-    (reduce +))
-  )
+    (reduce +)))
 
 (def badl-q1 (multiple-choice
                :badl-q1
@@ -105,12 +99,17 @@
 
   Returns
   {
-    :score    integer score
+    :score          integer score
+    :responses      map between question id and answer
   }"
   [patient]
   (set-index! :patient-id (:id patient) :title "CFS BADL Questions")
-  (get-score [badl-q1 badl-q2 badl-q3 badl-q4 badl-q5])
-  )
+  (let [responses (<*form [badl-q1 badl-q2 badl-q3 badl-q4 badl-q5])
+        score (get-score responses)
+        result {:score     score
+                :responses responses}]
+    (set-index! [:frailty :badl] result)
+    result))
 
 (def iadl-q1 (multiple-choice
                :iadl-q1
@@ -153,65 +152,84 @@
 
   Returns
   {
-    :score    integer score
+    :score          integer score
+    :responses      map between question id and answer
   }"
   [patient]
   (set-index! :patient-id (:id patient) :title "CFS IADL Questions")
-  (get-score [iadl-q1 iadl-q2 iadl-q3 iadl-q4 iadl-q5 iadl-q6])
-  )
+  (let [responses (<*form [iadl-q1 iadl-q2 iadl-q3 iadl-q4 iadl-q5 iadl-q6])
+        score (get-score responses)
+        result {:score     score
+                :responses responses}]
+    (set-index! [:frailty :iadl] result)
+    result))
 
-(deflow frailty-assessment
+(defn low-frailty-risk
+  "Scoring for low-frailty risk patients.
+
+  Returns
+  {
+    :cfs            [1,4]
+  }"
+  [chronic-conditions health frequency has-strenuous-activity?]
+  (if (>= chronic-conditions 10)
+    4
+    (case health
+      (:poor :fair) 4
+      (:very-good :good) (case frequency
+                           :always 4
+                           (:rarely :sometimes :occasionally) (if has-strenuous-activity? 2 3))
+      (:excellent) (case frequency
+                     :always 4
+                     (:sometimes :occasionally) (if has-strenuous-activity? 2 3)
+                     :rarely (if has-strenuous-activity? 1 2)))))
+
+(deflow frailty
   "Frailty assessment.
 
   Returns
   {
-    :cfs    :cfs-1 | :cfs-2 | :cfs-3 | :cfs-4 | :cfs-5 | :cfs-6 | :cfs-7
+    :cfs            nil | [1,7]
+    :decision       [0,5]
+    :self-rated     output of self-rated questions
+    :badl           output of badl questions
+    :iadl           output of iadl questions
   }"
   [patient]
   (set-index! :patient-id (:id patient) :title "Frailty Assessment")
-  ; get patient past medical history
-  (let [chronic-conditions 0
-        chronic-medications 0
-        age 0
-        has-strenuous-activity false
-        {health    :health
-         frequency :frequency} (self-rated-questions patient)
-        ]
-    (or (if (or (>= chronic-conditions 2)
-                (>= chronic-medications 5)
-                (>= age 65)
-                (contains? #{:poor :fair} health)
-                (= :always frequency))
-          (let [badl-score (:score (badl-questions patient))]
-            (condp <= badl-score
-              3 :cfs-7
-              1 :cfs-6
-              0 (let [iadl-score (:score (iadl-questions patient))]
-                  (condp <= iadl-score
-                    5 :cfs-6
-                    1 :cfs-5
-                    0 nil
-                    )))) nil)                               ;need to escalate to clinical frailty evaluation
-        (if (>= chronic-conditions 10)
-          :cfs-4
-          (case health
-            (:poor :fair) :cfs-4
-            (:very-good :good) (case frequency
-                                 :always :cfs-4
-                                 (:rarely :sometimes :occasionally) (if has-strenuous-activity
-                                                                      :cfs-2
-                                                                      :cfs-3))
-            (:excellent) (case frequency
-                           :always :cfs-4
-                           (:sometimes :occasionally) (if has-strenuous-activity
-                                                        :cfs-2
-                                                        :cfs-3)
-                           :rarely (if has-strenuous-activity
-                                     :cfs-1
-                                     :cfs-2)
-                           )
-            )
-          )
-        )
-    )
-  )
+  (let [chronic-conditions 0                                ;TODO: add answer
+        chronic-medications 0                               ;TODO: add answer
+        age 0                                               ;TODO: add answer
+        has-strenuous-activity? false                       ;TODO: add answer
+        self-rated-result (self-rated-questions patient)
+        health (:self-rated-q1 (:responses self-rated-result))
+        frequency (:self-rated-q2 (:responses self-rated-result))
+        need-full-screening? (or (>= chronic-conditions 2)
+                                 (>= chronic-medications 5)
+                                 (>= age 65)
+                                 (contains? #{:poor :fair} health)
+                                 (= frequency :always))
+        badl-result (when need-full-screening? (badl-questions patient))
+        badl-score (:score badl-result)
+        iadl-result (when (= badl-score 0) (iadl-questions patient))
+        iadl-score (:score iadl-result)
+        cfs (cond
+              (not need-full-screening?) nil
+              (>= badl-score 3) 7
+              (>= badl-score 1) 6
+              (>= iadl-score 5) 6
+              (>= iadl-score 1) 5
+              :else (low-frailty-risk chronic-conditions health frequency has-strenuous-activity?))
+        decision (condp <= (or cfs 0)
+                   5 3
+                   4 2
+                   1 1
+                   0 0)
+        result {:cfs        cfs
+                :decision   decision
+                :self-rated self-rated-result
+                :badl       badl-result
+                :iadl       iadl-result}]
+    (set-index! [:frailty :cfs] cfs
+                [:frailty :decision] decision)
+    result))

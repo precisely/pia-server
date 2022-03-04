@@ -104,7 +104,7 @@
   [id items & {:keys [label required randomize show-other multiselect]
                :or   {required false, randomize false, show-other false}}]
   {:pre  [(keyword id)
-          (sequential? items)
+          (or (map? items) (sequential? items))
           (not (empty? items))
           (boolean? required)
           (boolean? randomize)

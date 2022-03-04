@@ -109,3 +109,8 @@ out/
 
 # SonarLint plugin
 .idea/sonarlint/
+
+# Calva configuration
+.calva/
+.clj-kondo/
+.lsp/
