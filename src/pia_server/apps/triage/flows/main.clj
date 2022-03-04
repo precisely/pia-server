@@ -19,5 +19,18 @@
             [pia-server.db.models.exports :refer :all]
             [pia-server.common.rapids-ext :refer [wait-for]]
             [pia-server.db.models.patient :as p]
-            [pia-server.common.controls.form :as f]))
+            [pia-server.common.controls.form :as f]
+            [pia-server.apps.triage.flows.depression :refer [depression]]
+            [pia-server.apps.triage.flows.frailty :refer [frailty]]))
 
+(deflow depression-flow [patient-id]
+  (let [patient (get-patient patient-id)
+        _ (if (not (p/patient? patient)) (throw (ex-info "Patient not found" {:type :input-error :id patient-id})))]
+    (depression patient))
+  )
+
+(deflow frailty-flow [patient-id]
+  (let [patient (get-patient patient-id)
+        _ (if (not (p/patient? patient)) (throw (ex-info "Patient not found" {:type :input-error :id patient-id})))]
+    (frailty patient))
+  )

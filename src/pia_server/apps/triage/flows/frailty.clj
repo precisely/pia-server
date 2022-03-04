@@ -196,6 +196,7 @@
     :iadl           output of iadl questions
   }"
   [patient]
+  (require-roles :patient)
   (set-index! :patient-id (:id patient) :title "Frailty Assessment")
   (let [chronic-conditions 0                                ;TODO: add answer
         chronic-medications 0                               ;TODO: add answer

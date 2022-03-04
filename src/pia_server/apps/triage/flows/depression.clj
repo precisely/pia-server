@@ -58,11 +58,12 @@
   [patient]
   (set-index! :patient-id (:id patient) :title "PHQ-2")
   (>* (text "Over the last 2 weeks, how often have you been bothered by any of the following problems?"))
-  (let [result (let [responses (<*form [phq2-q1 phq2-q2])
-                     score (get-score responses)]
-                 {:eval      (if (>= score 3) :positive :negative)
-                  :score     score
-                  :responses responses})]
+  (let [responses (<*form [phq2-q1 phq2-q2])
+        score (get-score responses)
+        result
+        {:eval      (if (>= score 3) :positive :negative)
+         :score     score
+         :responses responses}]
     (set-index! [:depression :phq2] result)
     result))
 
@@ -132,14 +133,15 @@
   (set-index! :patient-id (:id patient) :title "PHQ-9")
   ; Should already be prompted in phq2, ask again
   (>* (text "Over the last 2 weeks, how often have you been bothered by any of the following problems?"))
-  (let [result (let [responses (<*form [phq9-q3 phq9-q4 phq9-q5 phq9-q6 phq9-q7 phq9-q8 phq9-q9])
-                     final-score (+ score (get-score responses))]
-                 {:eval       :positive
-                  :score      final-score
-                  :difficulty (do
-                                (>* (text "Thanks from answering all these questions! Just one last question in this section"))
-                                (form-value (<*form [phq9-q10])))
-                  :responses  responses})]
+  (let [responses (<*form [phq9-q3 phq9-q4 phq9-q5 phq9-q6 phq9-q7 phq9-q8 phq9-q9])
+        final-score (+ score (get-score responses))
+        result
+        {:eval       :positive
+         :score      final-score
+         :difficulty (do
+                       (>* (text "Thanks from answering all these questions! Just one last question in this section"))
+                       (form-value (<*form [phq9-q10])))
+         :responses  responses}]
     (set-index! [:depression :phq9] result)
     result))
 
@@ -157,28 +159,27 @@
   [patient]
   (require-roles :patient)
   (set-index! :patient-id (:id patient) :title "Depression Screen")
-  (let [result (let [phq2-result (phq2 patient)
-                     eval (= (:eval phq2-result) :positive)
-                     phq9-result (when eval (phq9 patient (:score phq2-result)))
-                     score (if eval (:score phq9-result) (:score phq2-result))
-                     severity (condp <= score
-                                20 :severe
-                                15 :moderately-severe
-                                10 :moderate
-                                5 :mild
-                                1 :minimal
-                                0 nil)
-                     decision (condp <= score
-                                10 3
-                                3 2
-                                0 1)]
-                 {:score    score
-                  :severity severity
-                  :decision decision
-                  :phq2    phq2-result
-                  :phq9    phq9-result}
-                 (set-index! [:depression :score] score
-                             [:depression :severity] severity
-                             [:depression :decision] decision))]
-
+  (let [phq2-result (phq2 patient)
+        eval (= (:eval phq2-result) :positive)
+        phq9-result (when eval (phq9 patient (:score phq2-result)))
+        score (if eval (:score phq9-result) (:score phq2-result))
+        severity (condp <= score
+                   20 :severe
+                   15 :moderately-severe
+                   10 :moderate
+                   5 :mild
+                   1 :minimal
+                   0 nil)
+        decision (condp <= score
+                   10 3
+                   3 2
+                   0 1)
+        result {:score    score
+                :severity severity
+                :decision decision
+                :phq2     phq2-result
+                :phq9     phq9-result}]
+    (set-index! [:depression :score] score
+                [:depression :severity] severity
+                [:depression :decision] decision)
     result))

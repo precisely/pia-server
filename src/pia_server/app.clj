@@ -10,8 +10,7 @@
             [clojure.string :as str]
             [ring.logger :as logger]
             [pia-server.apps.anticoagulation.flows.main :refer [anticoagulation]]
-            [pia-server.apps.triage.flows.depression :refer [depression]]
-            [pia-server.apps.triage.flows.frailty :refer [frailty]]
+            [pia-server.apps.triage.flows.main :refer :all]
             [pia-server.common.notifier :as pia-notifier]
             [taoensso.timbre :as log]
             [compojure.api.exception :as ex]
@@ -61,8 +60,8 @@
 ;; marking flows as dynamic to enable tests
 (def ^:dynamic flows {:foo             #'foo
                       :anticoagulation #'anticoagulation
-                      :depression      #'depression
-                      :frailty         #'frailty
+                      :depression      #'depression-flow
+                      :frailty         #'frailty-flow
                       })
 
 (defn run-result [run]
