@@ -155,7 +155,7 @@
                           :or   {country :us}}]
   (throw (ex-info "Not yet implemented" {})))
 
-(defn yesno [id & {:keys [required]}]
+(defn yesno [id & {:keys [label required]}]
   {:type     :yesno
    :id       id
    :label    label

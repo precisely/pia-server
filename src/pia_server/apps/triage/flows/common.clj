@@ -8,14 +8,27 @@
             [pia-server.db.models.patient :as p]))
 
 (deflow fmap [f s]
-        (if-not (empty? s)
-          (loop [[head & rest] s
-                 results []]
-            (let [results (conj results (fcall f head))]
-              (if (empty? rest) results
-                                (recur rest results))))))
+  (if-not (empty? s)
+    (loop [[head & rest] s
+           results []]
+      (let [results (conj results (fcall f head))]
+        (if (empty? rest) results
+                          (recur rest results))))))
 
 (defn form-value
   "Get value from form with one control group"
   [form-output]
   (nth (vals form-output) 0))
+
+
+(defn decision
+  "Enforce schema for module decision value"
+  [level score description]
+  {:pre (number? level)
+   (or (nil? score) (number? score))
+   (or (nil? description) (string? description))}
+  {:level       level
+   :score       score
+   :description description}
+
+  )
