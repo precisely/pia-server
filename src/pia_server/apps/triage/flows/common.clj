@@ -21,7 +21,7 @@
   (nth (vals form-output) 0))
 
 
-(defn decision
+(defn dsc
   "Enforce schema for module decision value"
   [level score description]
   {:pre (number? level)
@@ -29,6 +29,4 @@
    (or (nil? description) (string? description))}
   {:level       level
    :score       score
-   :description description}
-
-  )
+   :description description})

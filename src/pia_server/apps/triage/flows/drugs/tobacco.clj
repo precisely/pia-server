@@ -147,8 +147,7 @@
 
   Returns
   {
-    :decision       [1,5]
-    :decision-info  description of decision
+    :decision       decision value
     :screening      output of screening
     :taps2          output of taps-2
   }"
@@ -157,14 +156,20 @@
   (set-index! :patient-id (:id patient) :title "Tobacco Screen")
   (let [has-used? (initial-screen patient)
         screening-result (when has-used? (screening [patient]))
-        taps2-result (when
-                       (and (:currently? screening-result) (:cigarettes? screening-result))
-                       (taps2 patient))
+        currently? (:currently? screening-result)
+        cigarettes? (:cigarettes? screening-result)
+        less-than-one-year? (:less-than-one-year? screening-result)
+        long-history? (:long-history? screening-result)
+        taps2-result (when (and currently? cigarettes?) (taps2 patient))
         decision (cond
-                   (not has-used?) 1
-                   (or (:long-history? screening-result) (:less-than-one-year? screening-result)) 3
-                   taps2-result 3
-                   :else 2)
+                   (not has-used?) (dsc 1 nil "Lifetime non-smoker")
+                   (not currently?) (if cigarettes? (if (or long-history? less-than-one-year?) (dsc 3 nil "former smoker, moderate risk")
+                                                                                               (dsc 2 nil "former smoker, low risk"))
+                                                    (dsc 2 nil "former non-cigarette tobacco user"))
+                   (not cigarettes?) (dsc 2 nil "non-cigarette tobacco user")
+                   taps2-result (condp <= (:score taps2-result)
+                                  2 (dsc 3 (:score taps2-result) "current smoker, high risk")
+                                  0 (dsc 3 (:score taps2-result) "current smoker")))
         result {:decision  decision
                 :screening screening-result
                 :taps2     taps2-result}]
