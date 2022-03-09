@@ -41,7 +41,7 @@
                  [envvar "1.1.2"]
 
                  ;; application support
-                 [precisely/rapids "0.9.6"]
+                 [precisely/rapids "0.9.7"]
                  [precisely/rapids-active-doc "0.0.1"]
                  [clojure.java-time "0.3.2"]
                  [org.clojure/core.async "1.3.610"]
