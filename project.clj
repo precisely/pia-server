@@ -48,7 +48,7 @@
                  [potemkin "0.4.5"]
                  [org.clojure/data.json "1.0.0"]
                  [luposlip/json-schema "0.2.9"]
-                 [com.taoensso/truss "1.6.0"]               ; have/have!/have?
+                 [com.taoensso/truss "1.6.0"] ; have/have!/have?
                  [metosin/malli "0.8.0"]
 
                  ;; fake
@@ -86,10 +86,12 @@
          :reload-paths  ["src"]}
   :uberjar-name "pia-server.jar"
   :profiles {:dev     {:dependencies [[ring/ring-mock "0.4.0"]
+                                      [philoskim/debux "0.8.2"]
                                       [org.clojure/core.match "1.0.0"]]
                        :plugins      [[lein-checkouts "1.1.0"]
                                       [lein-ring "0.12.5"]
                                       [lein-cloverage "1.1.2"]
                                       [org.clojars.timvisher/lein-checkout "0.4.2"]]}
              :uberjar {:aot :all}}
+  :repl-options {:init-ns pia-server.support.repl}
   :jvm-opts ["-Dclojure.tools.logging.factory=clojure.tools.logging.impl/slf4j-factory"])
