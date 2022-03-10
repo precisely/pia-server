@@ -142,7 +142,7 @@
    :label    label
    :choices  choices
    :required required
-   :schema   [:and :keyword `[:enum ~@(map :id choices)]]})
+   :schema   [:and :keyword `[:enum ~@choices]]})
 
 (defn fileupload [id & {:keys [label required]
                         :or   {required true}}]
