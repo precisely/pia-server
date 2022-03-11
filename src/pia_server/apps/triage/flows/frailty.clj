@@ -11,7 +11,7 @@
             [pia-server.db.models.patient :as p]
             [pia-server.apps.triage.flows.common :refer :all]))
 
-(def self-rated-q1_ (multiple-choice
+(def self-rated-q1 (multiple-choice
                      :self-rated-q1
                      {:poor      "Poor"
                       :fair      "Fair"
@@ -21,7 +21,7 @@
                      :required true
                      :label "In general, how would you describe your health?"))
 
-(def self-rated-q2_ (multiple-choice
+(def self-rated-q2 (multiple-choice
                      :self-rated-q2
                      {:rarely       "Rarely (Less than 1 day)"
                       :sometimes    "Some of the time (1-2 days)"
@@ -39,7 +39,7 @@
   }"
   [patient]
   (set-index! :patient-id (:id patient) :title "Self-rated Health Screening Questions")
-  (let [result {:responses (<*form [self-rated-q1_ self-rated-q2_])}]
+  (let [result {:responses (<*form [self-rated-q1 self-rated-q2])}]
     (set-index! [:frailty :self-rated] result)
     result))
 
@@ -64,31 +64,31 @@
             :needs-help 1))
     (reduce +)))
 
-(def badl-q1_ (multiple-choice
+(def badl-q1 (multiple-choice
                :badl-q1
                cfs-responses
                :required true
                :label (cfs-template "dress and undress yourself (including putting on socks and shoes)")))
 
-(def badl-q2_ (multiple-choice
+(def badl-q2 (multiple-choice
                :badl-q2
                cfs-responses
                :required true
                :label (cfs-template "eat")))
 
-(def badl-q3_ (multiple-choice
+(def badl-q3 (multiple-choice
                :badl-q3
                cfs-responses
                :required true
                :label (cfs-template "walk")))
 
-(def badl-q4_ (multiple-choice
+(def badl-q4 (multiple-choice
                :badl-q4
                cfs-responses
                :required true
                :label (cfs-template "get in and out of bed")))
 
-(def badl-q5_ (multiple-choice
+(def badl-q5 (multiple-choice
                :badl-q5
                cfs-responses
                :required true
@@ -104,44 +104,44 @@
   }"
   [patient]
   (set-index! :patient-id (:id patient) :title "CFS BADL Questions")
-  (let [responses (<*form [badl-q1_ badl-q2_ badl-q3_ badl-q4_ badl-q5_])
+  (let [responses (<*form [badl-q1 badl-q2 badl-q3 badl-q4 badl-q5])
         score (get-score responses)
         result {:score     score
                 :responses responses}]
     (set-index! [:frailty :badl] result)
     result))
 
-(def iadl-q1_ (multiple-choice
+(def iadl-q1 (multiple-choice
                :iadl-q1
                cfs-responses
                :required true
                :label (cfs-template "use the telephone (including looking up numbers and dialing)")))
 
-(def iadl-q2_ (multiple-choice
+(def iadl-q2 (multiple-choice
                :iadl-q2
                cfs-responses
                :required true
                :label (cfs-template "go shopping for groceries or clothes")))
 
-(def iadl-q3_ (multiple-choice
+(def iadl-q3 (multiple-choice
                :iadl-q3
                cfs-responses
                :required true
                :label (cfs-template "prepare your own meals (including planning and cooking full meals)")))
 
-(def iadl-q4_ (multiple-choice
+(def iadl-q4 (multiple-choice
                :iadl-q4
                cfs-responses
                :required true
                :label (cfs-template "do your household chores")))
 
-(def iadl-q5_ (multiple-choice
+(def iadl-q5 (multiple-choice
                :iadl-q5
                cfs-responses
                :required true
                :label (cfs-template "take your own medicine (including preparing it and taking the right dose at the right time)")))
 
-(def iadl-q6_ (multiple-choice
+(def iadl-q6 (multiple-choice
                :iadl-q6
                cfs-responses
                :required true
@@ -157,7 +157,7 @@
   }"
   [patient]
   (set-index! :patient-id (:id patient) :title "CFS IADL Questions")
-  (let [responses (<*form [iadl-q1_ iadl-q2_ iadl-q3_ iadl-q4_ iadl-q5_ iadl-q6_])
+  (let [responses (<*form [iadl-q1 iadl-q2 iadl-q3 iadl-q4 iadl-q5 iadl-q6])
         score (get-score responses)
         result {:score     score
                 :responses responses}]

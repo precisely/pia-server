@@ -68,6 +68,19 @@
                   int-schema
                   [:or int-schema [:double num-opts]])))))
 
+(defn scale [id & {:keys [label min max required add-plus]
+                   :or   {required false, add-plus false}}]
+  {:pre [(boolean? required) (boolean? add-plus)]}
+  (assoc-if
+    {}
+    :type :scale
+    :label label
+    :id id
+    :min min
+    :max max
+    :required required
+    :schema [:int (assoc-if {} :min min :max max)]))
+
 (defn date [id & {:keys [format required]}]
   {:type     :date
    :id       id

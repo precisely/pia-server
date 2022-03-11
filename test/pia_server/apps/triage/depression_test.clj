@@ -11,7 +11,7 @@
 
 (deftest DepressionTest
   (branch [patient (patient-model/generate-patient 0)
-           main (start! depression [(:id patient)])
+           main (start! depression [patient])
            main-id (:id main)]
     "Main flow"
     (is (= :running (:state main)))
@@ -30,8 +30,7 @@
       (is (= 1 decision))
       (is (= :negative (:eval phq2)))
       (is (= nil phq9))
-      (is (= :complete (:state main)))
-      )
+      (is (= :complete (:state main))))
     (branch [main (continue! main-id :input {:phq2-q1 :more-than-half
                                              :phq2-q2 :nearly-every})
              result (-> main :index :depression)

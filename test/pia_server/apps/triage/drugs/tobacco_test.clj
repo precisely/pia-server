@@ -13,7 +13,7 @@
 
 (deftest TobaccoTest
   (branch [patient (patient-model/generate-patient 0)
-           main (start! tobacco [(:id patient)])
+           main (start! tobacco [patient])
            main-id (:id main)]
     "Main flow"
     (is (= :running (:state main)))

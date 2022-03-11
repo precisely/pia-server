@@ -28,12 +28,12 @@
     (set-index! [:drugs :tobacco :has-used] result)
     result))
 
-(def tobacco-q1_ (yesno
+(def tobacco-q1 (yesno
                   :tobacco-q1
                   :required true
                   :label "Do you currently smoke or use tobacco?"))
 
-(defn tobacco-q2_
+(defn tobacco-q2
   [is-currently]
   {:pre [(boolean? is-currently)]}
   (multiple-choice
@@ -45,7 +45,7 @@
     ;:multiselect true                                       ;TODO: add multiselect support
     :label (str "Which of the following " (if is-currently "do you use" "have you used") "?")))
 
-(defn tobacco-q3_
+(defn tobacco-q3
   [is-currently]
   {:pre [(boolean? is-currently)]}
   (number
@@ -53,9 +53,10 @@
     :units "packs"
     :min 0
     :required true
+    :integer-only true
     :label (str "On average, how many packs per day " (if is-currently "do you" "did you") " smoke?")))
 
-(defn tobacco-q4_
+(defn tobacco-q4
   [is-currently packs]
   {:pre [(boolean? is-currently)
          (number? packs)]}
@@ -64,6 +65,7 @@
     :units "years"
     :min 0
     :required true
+    :integer-only true
     :label (str "For how many years " (if is-currently "did" "have") " you " (if is-currently "smoke" "smoked") packs " packs of cigarettes per day?")))
 
 (def tobacco-q5 (dropdown
@@ -84,11 +86,11 @@
   }"
   [patient]
   (set-index! :patient-id (:id patient) :title "Tobacco Screen")
-  (let [is-currently (form-value (<*form [tobacco-q1_]))
-        types (form-value (<*form [(tobacco-q2_ is-currently)]))
+  (let [is-currently (form-value (<*form [tobacco-q1]))
+        types (form-value (<*form [(tobacco-q2 is-currently)]))
         used-cigarettes (= :cigarettes types)                                        ;TODO: add multiselect support (contains? types :cigarettes)
-        packs (when used-cigarettes (form-value (<*form [(tobacco-q3_ is-currently)])))
-        years (when used-cigarettes (form-value (<*form [(tobacco-q4_ is-currently packs)])))
+        packs (when used-cigarettes (form-value (<*form [(tobacco-q3 is-currently)])))
+        years (when used-cigarettes (form-value (<*form [(tobacco-q4 is-currently packs)])))
         pack-year (when used-cigarettes (* packs years))
         quit-year (when (not is-currently) (int (form-value (<*form [tobacco-q5]))))
         current-year (jt/value (jt/year))
@@ -108,22 +110,22 @@
     (set-index! [:drugs :tobacco :screening] result)
     result))
 
-(def taps2-q1_ (yesno
+(def taps2-q1 (yesno
                 :taps2-q1
                 :required true
                 :label "In the past 3 months, did you smoke a cigarette containing tobacco?"))
 
-(def taps2-q2_ (yesno
+(def taps2-q2 (yesno
                 :taps2-q2
                 :required true
                 :label "In the past 3 months, did you usually smoke more than 10 cigarettes each day?"))
 
-(def taps2-q3_ (yesno
+(def taps2-q3 (yesno
                 :taps2-q3
                 :required true
                 :label "In the past 3 months, did you usually smoke within 30 minutes after waking?"))
 
-(deflow taps2-form
+(deflow taps2
   "Asks the patient TAPS-2 tobacco questions.
 
   Returns
@@ -133,7 +135,7 @@
   }"
   [patient]
   (set-index! :patient-id (:id patient) :title "Tobacco TAPS-2")
-  (let [responses (<*form [taps2-q1_ taps2-q2_ taps2-q3_])
+  (let [responses (<*form [taps2-q1 taps2-q2 taps2-q3])
         score (->> responses
                    (vals)
                    (map #(if % 1 0))
@@ -161,7 +163,7 @@
         used-cigarettes (:used-cigarettes screening-result)
         has-quit-recently (:has-quit-recently screening-result)
         has-long-history (:has-long-history screening-result)
-        taps2-result (when (and is-currently used-cigarettes) (taps2-form patient))
+        taps2-result (when (and is-currently used-cigarettes) (taps2 patient))
         decision (cond
                    (not has-used?) (dsc 1 nil "Lifetime non-smoker")
                    (not is-currently) (if used-cigarettes (if (or has-long-history has-quit-recently) (dsc 3 nil "former smoker, moderate risk")

@@ -11,7 +11,7 @@
 
 (deftest FrailtyTest
   (branch [patient (patient-model/generate-patient 0)
-           main (start! frailty [(:id patient)])
+           main (start! frailty [patient])
            main-id (:id main)]
     "Main flow"
     (is (= :running (:state main)))
