@@ -70,7 +70,7 @@
 
 (def tobacco-q5 (dropdown
                   :tobacco-q5
-                  (doall (map #(str (- (jt/value (jt/year)) %)) (range 100)))
+                  (doall (map #(- (jt/value (jt/year)) %) (range 100)))
                   :required true
                   :label "Congratulations on quitting! What year did you quit?"))
 
@@ -88,24 +88,24 @@
   (set-index! :patient-id (:id patient) :title "Tobacco Screen")
   (let [is-currently (form-value (<*form [tobacco-q1]))
         types (form-value (<*form [(tobacco-q2 is-currently)]))
-        used-cigarettes (= :cigarettes types)                                        ;TODO: add multiselect support (contains? types :cigarettes)
+        used-cigarettes (= :cigarettes types)               ;TODO: add multiselect support (contains? types :cigarettes)
         packs (when used-cigarettes (form-value (<*form [(tobacco-q3 is-currently)])))
         years (when used-cigarettes (form-value (<*form [(tobacco-q4 is-currently packs)])))
         pack-year (when used-cigarettes (* packs years))
         quit-year (when (not is-currently) (int (form-value (<*form [tobacco-q5]))))
         current-year (jt/value (jt/year))
         has-quit-recently (when quit-year (<= (- current-year quit-year) 1))
-        has-long-history (when quit-year (>= pack-year))
-        result {:responses           {:tobacco-q1 is-currently
-                                      :tobacco-q2 types
-                                      :tobacco-q3 packs
-                                      :tobacco-q4 years
-                                      :tobacco-q5 quit-year}
-                :pack-year           pack-year
-                :is-currently          is-currently
-                :used-cigarettes         used-cigarettes
+        has-long-history (when (and pack-year quit-year) (>= pack-year 20))
+        result {:responses         {:tobacco-q1 is-currently
+                                    :tobacco-q2 types
+                                    :tobacco-q3 packs
+                                    :tobacco-q4 years
+                                    :tobacco-q5 quit-year}
+                :pack-year         pack-year
+                :is-currently      is-currently
+                :used-cigarettes   used-cigarettes
                 :has-quit-recently has-quit-recently
-                :has-long-history       has-long-history
+                :has-long-history  has-long-history
                 }]
     (set-index! [:drugs :tobacco :screening] result)
     result))
@@ -135,7 +135,9 @@
   }"
   [patient]
   (set-index! :patient-id (:id patient) :title "Tobacco TAPS-2")
-  (let [responses (<*form [taps2-q1 taps2-q2 taps2-q3])
+  (let [q1-result (form-value (<*form [taps2-q1]))
+        _ (println q1-result)
+        responses (conj (if q1-result (<*form [taps2-q2 taps2-q3]) {}) [:taps2-q1 q1-result])
         score (->> responses
                    (vals)
                    (map #(if % 1 0))
@@ -167,8 +169,8 @@
         decision (cond
                    (not has-used?) (dsc 1 nil "Lifetime non-smoker")
                    (not is-currently) (if used-cigarettes (if (or has-long-history has-quit-recently) (dsc 3 nil "former smoker, moderate risk")
-                                                                                               (dsc 2 nil "former smoker, low risk"))
-                                                    (dsc 2 nil "former non-cigarette tobacco user"))
+                                                                                                      (dsc 2 nil "former smoker, low risk"))
+                                                          (dsc 2 nil "former non-cigarette tobacco user"))
                    (not used-cigarettes) (dsc 2 nil "non-cigarette tobacco user")
                    taps2-result (condp <= (:score taps2-result)
                                   2 (dsc 3 (:score taps2-result) "current smoker, high risk")

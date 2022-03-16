@@ -83,12 +83,12 @@
   {:pre [(boolean? skip-q1)]}
   (set-index! :patient-id (:id patient) :title "Alcohol TAPS-2")
   (let [sex (:sex patient)
-        responses (<*form (conj (if skip-q1 [] [taps2-q1])
-                                (taps2-q2 sex) taps2-q3 taps2-q4))
-        score (+ (if skip-q1 1 0) (->> responses
-                                       (vals)
-                                       (map #(if % 1 0))
-                                       (reduce +)))
+        q1-result (if skip-q1 true (form-value (<*form [taps2-q1])))
+        responses (conj (if q1-result (<*form [(taps2-q2 sex) taps2-q3 taps2-q4]) {}) [:taps2-q1 q1-result])
+        score (->> responses
+                   (vals)
+                   (map #(if % 1 0))
+                   (reduce +))
         result {:responses responses
                 :score     score}]
     (set-index! [:drugs :alcohol :taps2] result)
@@ -119,10 +119,10 @@
                    (= days-per-week 0) (dsc 1 nil "No alcohol consumption")
                    (<= drinks-per-day (case sex :male 2 :female 1)) (dsc 1 nil "Low-risk alcohol consumption")
                    (not (nil? taps2-result)) (let [score (:score taps2-result)]
-                                    (condp <= score
-                                      3 (dsc 3 score "High-risk alcohol consumption")
-                                      2 (dsc 2 score "Moderate-risk alcohol consumption")
-                                      0 (dsc 1 score "Low-risk alcohol consumption"))))
+                                               (condp <= score
+                                                 3 (dsc 3 score "High-risk alcohol consumption")
+                                                 2 (dsc 2 score "Moderate-risk alcohol consumption")
+                                                 0 (dsc 1 score "Low-risk alcohol consumption"))))
         result {:decision  decision
                 :screening screening-result
                 :taps2     taps2-result}]

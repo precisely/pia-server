@@ -49,28 +49,29 @@
             (branch [main (continue! main-id :input {:tobacco-q4 2})
                      result (-> main :index :drugs :tobacco)]
               "Smoked 5 packs for 2 years"
+              (branch [main (continue! main-id :input {:taps2-q1 true})
+                       result (-> main :index :drugs :tobacco)]
+                "TAPS-2 q1 - Smoked a cigarette containing tobacco"
 
-              (branch [main (continue! main-id :input {:taps2-q1 false
-                                                       :taps2-q2 true
-                                                       :taps2-q3 false})
-                       result (-> main :index :drugs :tobacco)
-                       decision (:decision result)
-                       pack-year (-> result :screening :pack-year)]
-                "Taps Score 1"
-                (is (= :complete (:state main)))
-                (is (= 10 pack-year))
-                (is (= (dsc 3 1 "current smoker") decision)))
+                (branch [main (continue! main-id :input {:taps2-q2 false
+                                                         :taps2-q3 false})
+                         result (-> main :index :drugs :tobacco)
+                         decision (:decision result)
+                         pack-year (-> result :screening :pack-year)]
+                  "Taps Score 1"
+                  (is (= :complete (:state main)))
+                  (is (= 10 pack-year))
+                  (is (= (dsc 3 1 "current smoker") decision)))
 
-              (branch [main (continue! main-id :input {:taps2-q1 false
-                                                       :taps2-q2 true
-                                                       :taps2-q3 true})
-                       result (-> main :index :drugs :tobacco)
-                       decision (:decision result)
-                       pack-year (-> result :screening :pack-year)]
-                "Taps Score 2"
-                (is (= :complete (:state main)))
-                (is (= 10 pack-year))
-                (is (= (dsc 3 2 "current smoker, high risk") decision))))))
+                (branch [main (continue! main-id :input {:taps2-q2 true
+                                                         :taps2-q3 false})
+                         result (-> main :index :drugs :tobacco)
+                         decision (:decision result)
+                         pack-year (-> result :screening :pack-year)]
+                  "Taps Score 2"
+                  (is (= :complete (:state main)))
+                  (is (= 10 pack-year))
+                  (is (= (dsc 3 2 "current smoker, high risk") decision)))))))
 
         (branch [main (continue! main-id :input {:tobacco-q2 :chewing-tobacco})
                  result (-> main :index :drugs :tobacco)
@@ -95,15 +96,21 @@
                      result (-> main :index :drugs :tobacco)]
               "Smoked 5 packs for 4 years"
 
-              (branch [main (continue! main-id :input {:tobacco-q5 "2000"})
+              (branch [main (continue! main-id :input {:tobacco-q5 2000})
                        result (-> main :index :drugs :tobacco)
                        decision (:decision result)]
                 "Quit in 2000"
+                (is (= (dsc 3 nil "former smoker, moderate risk") decision))))
 
+            (branch [main (continue! main-id :input {:tobacco-q4 3})
+                     result (-> main :index :drugs :tobacco)]
+              "Smoked 5 packs for 3 years"
 
-                (is (= (dsc 3 nil "former smoker, low risk") decision))
-                )
-              )
+              (branch [main (continue! main-id :input {:tobacco-q5 2000})
+                       result (-> main :index :drugs :tobacco)
+                       decision (:decision result)]
+                "Quit in 2000"
+                (is (= (dsc 2 nil "former smoker, low risk") decision))))
 
             (branch [main (continue! main-id :input {:tobacco-q4 1})
                      result (-> main :index :drugs :tobacco)]
@@ -114,28 +121,18 @@
                        decision (:decision result)]
                 "Quit in current year"
                 (is (= :complete (:state main)))
-                (is (= (dsc 3 nil "former smoker, moderate risk") decision))
-
-                )
-              )
-            )
-          )
+                (is (= (dsc 3 nil "former smoker, moderate risk") decision))))))
 
         (branch [main (continue! main-id :input {:tobacco-q2 :pipe})
                  result (-> main :index :drugs :tobacco)]
           "Never used cigarettes"
 
-          (branch [main (continue! main-id :input {:tobacco-q5 "2020"})
+          (branch [main (continue! main-id :input {:tobacco-q5 2020})
                    result (-> main :index :drugs :tobacco)
                    decision (:decision result)]
             "Quit in 2020"
             (is (= :complete (:state main)))
-            (is (= (dsc 2 nil "former non-cigarette tobacco user") decision))
-
-            )
-          )
-        )
-      )))
+            (is (= (dsc 2 nil "former non-cigarette tobacco user") decision))))))))
 
 
 

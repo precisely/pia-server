@@ -148,14 +148,16 @@
 (defn dropdown [id choices & {:keys [label required]
                               :or   {required false}}]
   {:pre [(keyword? id)
-         (every? string? choices)
+         (sequential? choices)
+         (or (every? string? choices) (every? integer? choices))
          (boolean? required)]}
-  {:type     :dropdown
-   :id       id
-   :label    label
-   :choices  choices
-   :required required
-   :schema   [:and :keyword `[:enum ~@choices]]})
+  (let [is-int (every? integer? choices)]
+    {:type     :dropdown
+     :id       id
+     :label    label
+     :choices  choices
+     :required required
+     :schema   [:and (if is-int :int :string) `[:enum ~@choices]]}))
 
 (defn fileupload [id & {:keys [label required]
                         :or   {required true}}]
