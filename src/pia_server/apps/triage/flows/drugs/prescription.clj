@@ -37,18 +37,18 @@
 (def taps2-opioid-q1 (yesno
                 :taps2-opioid-q1
                 :required true
-                :label (str "In the past 3 months, did you use a prescription opiate pain reliever (for example,"
+                :label (str "In the PAST 3 MONTHS, did you use a prescription opiate pain reliever (for example,"
                             " Percocet, Vicodin) not as prescribed or that was not prescribed for you?")))
 
 (def taps2-opioid-q2 (yesno
                 :taps2-opioid-q2
                 :required true
-                :label "In the past 3 months, have you tried and failed to control, cut down or stop using an opiate pain reliever?"))
+                :label "In the PAST 3 MONTHS, have you tried and failed to control, cut down or stop using an opiate pain reliever?"))
 
 (def taps2-opioid-q3 (yesno
                 :taps2-opioid-q3
                 :required true
-                :label "In the past 3 months, has anyone expressed concern about your use of an opiate pain reliever?"))
+                :label "In the PAST 3 MONTHS, has anyone expressed concern about your use of an opiate pain reliever?"))
 
 (deflow taps2-opioid
   "TAPS-2 opioid questions.
@@ -74,17 +74,17 @@
 (def taps2-sedative-q1 (yesno
                 :taps2-sedative-q1
                 :required true
-                :label "In the past 3 months, did you use a medication for anxiety or sleep (for example, Xanax, Ativan, or Klonopin) not as prescribed or that was not prescribed for you?"))
+                :label "In the PAST 3 MONTHS, did you use a medication for anxiety or sleep (for example, Xanax, Ativan, or Klonopin) not as prescribed or that was not prescribed for you?"))
 
 (def taps2-sedative-q2 (yesno
                 :taps2-sedative-q2
                 :required true
-                :label "In the past 3 months, have you had a strong desire or urge to use medications for anxiety or sleep at least once a week or more often?"))
+                :label "In the PAST 3 MONTHS, have you had a strong desire or urge to use medications for anxiety or sleep at least once a week or more often?"))
 
 (def taps2-sedative-q3 (yesno
                 :taps2-sedative-q3
                 :required true
-                :label "In the past 3 months, has anyone expressed concern about your use of medication for anxiety or sleep?"))
+                :label "In the PAST 3 MONTHS, has anyone expressed concern about your use of medication for anxiety or sleep?"))
 
 (deflow taps2-sedative
   "TAPS-2 sedative questions.
@@ -110,17 +110,17 @@
 (def taps2-stimulant-q1 (yesno
                 :taps2-stimulant-q1
                 :required true
-                :label "In the past 3 months, did you use a medication for ADHD (for example, Adderall, Ritalin) not as prescribed or that was not prescribed for you?"))
+                :label "In the PAST 3 MONTHS, did you use a medication for ADHD (for example, Adderall, Ritalin) not as prescribed or that was not prescribed for you?"))
 
 (def taps2-stimulant-q2 (yesno
                 :taps2-stimulant-q2
                 :required true
-                :label "In the past 3 months, did you use a medication for ADHD (for example, Adderall, Ritalin) at least once a week or more often?"))
+                :label "In the PAST 3 MONTHS, did you use a medication for ADHD (for example, Adderall, Ritalin) at least once a week or more often?"))
 
 (def taps2-stimulant-q3 (yesno
                 :taps2-stimulant-q3
                 :required true
-                :label "In the past 3 months, has anyone expressed concern about your use of a medication for ADHD (for example, Adderall or Ritalin)?"))
+                :label "In the PAST 3 MONTHS, has anyone expressed concern about your use of a medication for ADHD (for example, Adderall or Ritalin)?"))
 
 (deflow taps2-stimulant
   "TAPS-2 stimulant questions.

@@ -113,17 +113,17 @@
 (def taps2-q1 (yesno
                 :taps2-q1
                 :required true
-                :label "In the past 3 months, did you smoke a cigarette containing tobacco?"))
+                :label "In the PAST 3 MONTHS, did you smoke a cigarette containing tobacco?"))
 
 (def taps2-q2 (yesno
                 :taps2-q2
                 :required true
-                :label "In the past 3 months, did you usually smoke more than 10 cigarettes each day?"))
+                :label "In the PAST 3 MONTHS, did you usually smoke more than 10 cigarettes each day?"))
 
 (def taps2-q3 (yesno
                 :taps2-q3
                 :required true
-                :label "In the past 3 months, did you usually smoke within 30 minutes after waking?"))
+                :label "In the PAST 3 MONTHS, did you usually smoke within 30 minutes after waking?"))
 
 (deflow taps2
   "Asks the patient TAPS-2 tobacco questions.

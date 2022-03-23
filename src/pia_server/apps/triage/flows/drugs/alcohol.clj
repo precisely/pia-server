@@ -48,7 +48,7 @@
 (def taps2-q1 (yesno
                 :taps2-q1
                 :required true
-                :label "In the past 3 months, did you have a drink containing alcohol?"))
+                :label "In the PAST 3 MONTHS, did you have a drink containing alcohol?"))
 
 (defn taps2-q2
   [sex]
@@ -56,19 +56,19 @@
   (yesno
     :taps2-q2
     :required true
-    :label (str "In the past 3 months, did you have " (case sex
+    :label (str "In the PAST 3 MONTHS, did you have " (case sex
                                                         :male 5
                                                         :female 4) " or more drinks containing alcohol in a day?")))
 
 (def taps2-q3 (yesno
                 :taps2-q3
                 :required true
-                :label "In the past 3 months, have you tried and failed to control, cut down or stop drinking?"))
+                :label "In the PAST 3 MONTHS, have you tried and failed to control, cut down or stop drinking?"))
 
 (def taps2-q4 (yesno
                 :taps2-q4
                 :required true
-                :label "In the past 3 months, has anyone expressed concern about your drinking?"))
+                :label "In the PAST 3 MONTHS, has anyone expressed concern about your drinking?"))
 
 (deflow taps2
   "Asks the patient TAPS-2 alcohol questions.
