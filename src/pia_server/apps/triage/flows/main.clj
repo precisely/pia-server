@@ -34,3 +34,8 @@
         _ (if (not (p/patient? patient)) (throw (ex-info "Patient not found" {:type :input-error :id patient-id})))]
     (frailty patient))
   )
+
+(deflow use-doc [id]
+  (find-runs [[:state :eq :running]
+              [[:index :type] :eq :doc]
+              [[:index :id]] :eq id]))
