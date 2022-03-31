@@ -1,9 +1,10 @@
 (ns pia-server.apps.preop.common
   (:require [rapids :refer :all]
             [rapids.active-doc :as adoc]
-            [pia-server.common.data :refer [retrieve-patient-doc]]
+            [pia-server.common.docs :refer [retrieve-patient-doc]]
             [java-time :as t]
-            [pia-server.common.controls.form :refer :all]))
+            [pia-server.common.controls.form :refer :all]
+            [malli.core :as m]))
 
 ;Defines the schema for questions
 (def question-schema [:map
@@ -19,7 +20,7 @@
            results []]
       (let [results (conj results (fcall f head))]
         (if (empty? rest) results
-                          (recur rest results))))))
+          (recur rest results))))))
 
 
 
@@ -27,14 +28,16 @@
   "Checks if the current time is within a valid timeframe
 
   Args:
-  timestamp       Instant object
+  timestamp       nil or Instant object
   interval        nil or duration"
   [timestamp interval]
-  {:pre [(t/instant? timestamp)
-         ((or (nil? interval) (t/duration? interval)))]}
-  {:post [(boolean? %)]}
-  (if (nil? interval) true
-                      (<= (t/instant) (t/plus timestamp interval))))
+  {:pre  [(or (nil? timestamp) (t/instant? timestamp))
+          (or (nil? interval) (t/period? interval))]
+   :post [(boolean? %)]}
+  (cond
+    (nil? interval) true
+    (nil? timestamp) false
+    :default (t/before? (t/instant) (t/plus timestamp interval))))
 
 (defn get-cached-data
   "Retrieve cached data from an active document if the data is valid
@@ -44,19 +47,28 @@
   key             nil or key of data
   interval        nil or duration"
   [doc key & {:keys [interval]}]
-  {:pre [(or (nil? key) (sequential? key))
-         (or (nil? interval) (t/duration? interval))]}
-  (let [data (adoc/get-data doc key)
-        is-valid (when (and data interval) (valid-time? (t/instant (:timestamp data)) interval))]
+  {:pre [(sequential? key)
+         (or (nil? interval) (t/period? interval))]}
+  (let [data      (adoc/get-data doc key)
+        timestamp (:timestamp data)
+        is-valid  (if data
+                    (if interval
+                      (if timestamp
+                        (valid-time? (t/instant timestamp) interval)
+                        false)
+                      true)
+                    false)]
     (if is-valid data nil)))
 
 
-(deflow update-doc!
+(defn update-doc!
   "Updates the document non-destructively. Adds a timestamp to the updated data. Returns the data that was saved."
   [doc key value]
-  {:pre [(or (nil? key) (sequential? key))]}
+  {:pre [(sequential? key)]}
   (let [current (adoc/get-data doc key)
-        data (merge (or current {}) value {:timestamp (t/to-millis-from-epoch (t/instant))})]
+        data    (if (map? value)
+                  (merge (or current {}) value {:timestamp (t/to-millis-from-epoch (t/instant))})
+                  value)]
     (adoc/set-data! doc key data)
     data))
 
@@ -71,13 +83,13 @@
   query       expression that returns a result that will be saved
   interval    nil or duration for data to be refreshed"
   [doc key query & {:keys [interval]}]
-  {:pre [(or (nil? key) (sequential? key))
-         ((or (nil? interval) (t/duration? interval)))]}
-  (or (get-cached-data doc keys :interval interval)
-      (let [result (eval query)]
-        (update-doc! doc key result))))
+  {:pre [(sequential? key)
+         (or (nil? interval) (t/period? interval))]}
+  (or (get-cached-data doc key :interval interval)
+    (let [result (eval query)]
+      (update-doc! doc key result))))
 
-(deflow get-responses
+(deflow <*ask
   "Requests answers for questions and records answers in a provided document.
 
   If multiple questions are provided, returns a map of question-id to responses.
@@ -88,23 +100,18 @@
   key
   questions       form-ready schemas"
   [doc key questions]
-  {:pre [(sequential? questions)]}
-  {:post [()]}
-  (let [responses (<*form (map :form questions))
-        result (conj {} (map #(let [id (:id %)]
-                                [id {:form % :result (responses id)}])
+  {:pre [(sequential? key)
+         (sequential? questions)]}
+  (let [responses (<*form questions)
+        result    (into {} (map #(let [id (:id %)]
+                                   [id {:form % :result (responses id)}])
                              questions))]
-    (update-doc! doc (conj key :questions) result)
+
     (if (> (count result) 0)
-      result
-      (:result (first result)))))
-
-;; time-wrapper for obtaining results
-;; obtain-value given full index key
-;; check doc location for result
-;; if result exists, make sure it's within the time frame
-;; if expired/doesn't exist, ask questions
-
-
-;; question wrapper
-;; form display, full index key
+      (do
+        (update-doc! doc (conj key :questions) result)
+        responses)
+      (let [[question-id, response] (first result)]
+        (update-doc! doc (conj key :questions question-id) response)
+        (:result response)
+        ))))

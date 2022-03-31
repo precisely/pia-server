@@ -42,7 +42,7 @@
 
                  ;; application support
                  [precisely/rapids "0.9.8"]
-                 [precisely/rapids-active-doc "0.0.1"]
+                 [precisely/rapids-active-doc "0.0.3"]
                  [clojure.java-time "0.3.2"]
                  [org.clojure/core.async "1.3.610"]
                  [camel-snake-kebab "0.4.2"]

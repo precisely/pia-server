@@ -4,12 +4,10 @@
 
 (ns pia-server.apps.preop.eval.depression
   (:require [rapids :refer :all]
-            [rapids.active-doc :as adoc]
             [pia-server.common.docs :refer :all]
             [pia-server.apps.preop.eval.common :refer :all]
             [pia-server.apps.preop.common :refer :all]
             [java-time :as t]
-            [malli.core :as m]
             [pia-server.common.roles :refer [require-roles]]
             [pia-server.common.controls.form :refer :all]
             [pia-server.common.controls.basic :refer :all]))
@@ -54,7 +52,7 @@
   {:pre (map? responses)}
   (->> responses
        (vals)
-       (map #(_freq-to-score (:result %)))
+       (map #(_freq-to-score %))
        (reduce +)))
 
 
@@ -80,7 +78,7 @@
   (module doc :phq-2
           `(do (require-roles :patient)
                (>* (text "Over the last 2 weeks, how often have you been bothered by any of the following problems?"))
-               (let [responses (get-responses doc :phq-2 [_phq2-q1 _phq2-q2])
+               (let [responses (<*ask doc [:depression :phq-2] [_phq2-q1 _phq2-q2])
                      score (_get-score responses)]
                  {:eval  (if (< score 3) :negative :positive)
                   :score score}))
@@ -146,9 +144,10 @@
   [doc]
   (module doc :phq-9
           `(do (require-roles :patient)
-               (let [phq2 (_obtain-phq2 doc)
-                     responses (get-responses doc :phq-9 [_phq9-q3 _phq9-q4 _phq9-q5 _phq9-q6 _phq9-q7 _phq9-q8 _phq9-q9])
-                     difficulty (get-responses doc :phq9 [_phq9-q10])
+               (let [doc ~doc
+                     phq2 (_obtain-phq2 doc)
+                     responses (<*ask doc [:depression :phq-9] [_phq9-q3 _phq9-q4 _phq9-q5 _phq9-q6 _phq9-q7 _phq9-q8 _phq9-q9])
+                     difficulty (<*ask doc [:depression :phq9] [_phq9-q10])
                      score (+ (:score phq2) (_get-score responses))]
                  {:eval       (if (< score 3) :negative :positive)
                   :score      score
@@ -176,7 +175,7 @@
   "Patient depression screening"
   [patient-id]
   (let [doc (retrieve-patient-doc :preop-depression patient-id :schema depression-schema)]
-    (module doc nil
+    (module doc [:depression]
             `(do (require-roles :patient)
                  (set-index! :title "Depression Screen")
                  (let [phq2-result (_obtain-phq2 doc)
