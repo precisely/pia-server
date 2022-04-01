@@ -159,7 +159,7 @@
     (assoc-if {:type   :multiselect
                :id     id
                :items  items
-               :schema [:and :keyword `[:enum ~@(map :id items)]]}
+               :schema [(if required :+ :*) [:and :keyword `[:enum ~@(map :id items)]]]}
       :required required
       :label (or label (keyword-to-label id)))))
 
