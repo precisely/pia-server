@@ -107,6 +107,18 @@
    :max-length max-length
    :schema     [:string (assoc-if {} :max max-length :min-length min-length)]})
 
+(defn convert-items
+  [items]
+  {:pre [(or (map? items) (sequential? items))]}
+  (if (map? items)
+    (normalize-id-map items #(hash-map :label %2))
+    (mapv #(cond
+             (keyword? %) {:id % :label (name %)}
+             (map? %) (do (assert (some-> % :id keyword?) "multiple-choice item :id must be a keyword")
+                        (assoc % :label (or (:label %) (-> % :id name))))
+             :else (throw (ex-info "Invalid multiple-choice control choice"
+                            {:type :fatal-error :choice %}))) items)))
+
 ;; Constantine - this one
 (defn multiple-choice
   "Display a multiple choice control.
@@ -114,26 +126,16 @@
      (multiple-choice [{:id :a :label \"choice a\"} {:id :b :label \"choice b\"} ...])
      (multiple-choice [:a :b]) ;; labels will be automatically generated \"a\" and \"b\"
      (multiple-choice {:a \"choice a\", :b \"choice b\"})"
-  [id items & {:keys [label required randomize show-other multiselect]
+  [id items & {:keys [label required randomize show-other]
                :or   {required false, randomize false, show-other false}}]
   {:pre  [(keyword id)
           (or (map? items) (sequential? items))
           (not (empty? items))
           (boolean? required)
           (boolean? randomize)
-          (boolean? show-other)
-          (or (nil? multiselect)
-              (number? multiselect)
-              (and (seq? multiselect) (= (count multiselect) 2)))]
+          (boolean? show-other)]
    :post [(:schema %) (-> % :id keyword?) (-> % :items sequential?)]}
-  (let [items (if (map? items)
-                (normalize-id-map items #(hash-map :label %2))
-                (mapv #(cond
-                         (keyword? %) {:id % :label (name %)}
-                         (map? %) (do (assert (some-> % :id keyword?) "multiple-choice item :id must be a keyword")
-                                      (assoc % :label (or (:label %) (-> % :id name))))
-                         :else (throw (ex-info "Invalid multiple-choice control choice"
-                                               {:type :fatal-error :choice %}))) items))]
+  (let [items (convert-items items)]
     (assoc-if {:type   :multiple-choice
                :id     id
                :items  items
@@ -141,8 +143,25 @@
               :required required
               :randomize randomize                          ; don't bother
               :label (or label (keyword-to-label id))
-              :show-other show-other                        ; don't bother
-              :multiselect multiselect)))                   ; don't bother
+              :show-other show-other)))                     ; don't bother
+
+(defn multiselect
+  "Display a multiple choice control with multiselect."
+  [id items & {:keys [label required max]
+               :or   {required false}}]
+  {:pre  [(keyword id)
+          (or (map? items) (sequential? items))
+          (not (empty? items))
+          (boolean? required)
+          (or (nil? max) (number? max))]
+   :post [(:schema %) (-> % :id keyword?) (-> % :items sequential?)]}
+  (let [items (convert-items items)]
+    (assoc-if {:type   :multiselect
+               :id     id
+               :items  items
+               :schema [:and :keyword `[:enum ~@(map :id items)]]}
+      :required required
+      :label (or label (keyword-to-label id)))))
 
 
 (defn dropdown [id choices & {:keys [label required]

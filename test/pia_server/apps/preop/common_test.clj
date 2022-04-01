@@ -122,4 +122,6 @@
         (is (= :complete (:state main)))
         (is (contains? data :q1))
         (is (contains? data :q2))
-        (is (contains? data :q3))))))
+        (is (contains? data :q3)))))
+
+  )

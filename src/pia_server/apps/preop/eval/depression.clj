@@ -51,9 +51,9 @@
   [responses]
   {:pre (map? responses)}
   (->> responses
-       (vals)
-       (map #(_freq-to-score %))
-       (reduce +)))
+    (vals)
+    (map #(_freq-to-score %))
+    (reduce +)))
 
 
 ;;
@@ -76,13 +76,13 @@
   "PHQ-2"
   [doc]
   (module doc :phq-2
-          `(do (require-roles :patient)
-               (>* (text "Over the last 2 weeks, how often have you been bothered by any of the following problems?"))
-               (let [responses (<*ask doc [:depression :phq-2] [_phq2-q1 _phq2-q2])
-                     score (_get-score responses)]
-                 {:eval  (if (< score 3) :negative :positive)
-                  :score score}))
-          :interval (t/weeks 2)))
+    `(do (require-roles :patient)
+       (>* (text "Over the last 2 weeks, how often have you been bothered by any of the following problems?"))
+       (let [responses (<*ask doc [:depression :phq-2] [_phq2-q1 _phq2-q2])
+             score     (_get-score responses)]
+         {:eval  (if (< score 3) :negative :positive)
+          :score score}))
+    :interval (t/weeks 2)))
 
 ;;
 ;;  PHQ-9
@@ -143,16 +143,16 @@
   "PHQ-9"
   [doc]
   (module doc :phq-9
-          `(do (require-roles :patient)
-               (let [doc ~doc
-                     phq2 (_obtain-phq2 doc)
-                     responses (<*ask doc [:depression :phq-9] [_phq9-q3 _phq9-q4 _phq9-q5 _phq9-q6 _phq9-q7 _phq9-q8 _phq9-q9])
-                     difficulty (<*ask doc [:depression :phq9] [_phq9-q10])
-                     score (+ (:score phq2) (_get-score responses))]
-                 {:eval       (if (< score 3) :negative :positive)
-                  :score      score
-                  :difficulty difficulty}))
-          :interval (t/weeks 2)))
+    `(do (require-roles :patient)
+       (let [doc        ~doc
+             phq2       (_obtain-phq2 doc)
+             responses  (<*ask doc [:depression :phq-9] [_phq9-q3 _phq9-q4 _phq9-q5 _phq9-q6 _phq9-q7 _phq9-q8 _phq9-q9])
+             difficulty (<*ask doc [:depression :phq9] [_phq9-q10])
+             score      (+ (:score phq2) (_get-score responses))]
+         {:eval       (if (< score 3) :negative :positive)
+          :score      score
+          :difficulty difficulty}))
+    :interval (t/weeks 2)))
 
 ;;
 ;;  Clinic Flows
@@ -176,27 +176,27 @@
   [patient-id]
   (let [doc (retrieve-patient-doc :preop-depression patient-id :schema depression-schema)]
     (module doc [:depression]
-            `(do (require-roles :patient)
-                 (set-index! :title "Depression Screen")
-                 (let [phq2-result (_obtain-phq2 doc)
-                       phq9-result (when (= (:eval phq2-result) :positive) (_obtain-phq9 doc))
-                       score (or (:score phq9-result) (:score phq2-result))]
-                   {:decision (cond
-                                (-> phq9-result :questions :phq-q9 :result) (do (start! clinic-suicide [patient-id])
-                                                                                (start! clinic-depression [patient-id])
-                                                                                (dsn 4 :score score :desc "Positive suicide risk screening"))
-                                :default (condp <= score
-                                           20 (do
-                                                (start! clinic-depression [patient-id])
-                                                (dsn 4 :score score :desc "Severe depression" :comments "Expedited referral to mental health specialist"))
-                                           15 (do
-                                                (start! clinic-depression [patient-id])
-                                                (dsn 3 :score score :desc "Moderately severe depression" :comments "Clinical follow-up recommended"))
-                                           10 (do
-                                                (start! clinic-depression [patient-id])
-                                                (dsn 3 :score score :desc "Moderate depression" :comments "Clinical follow-up recommended"))
-                                           5 (dsn 2 :score score :desc "Mild depression" :comments "Clinical follow-up not indicated")
-                                           3 (dsn 2 :score score :desc "Minimal depression" :comments "Clinical follow-up not indicated")
-                                           0 (dsn 1 :score score :desc "Negative PHQ-2 screen")))}))
-            :interval (t/weeks 2))))
+      `(do (require-roles :patient)
+         (set-index! :title "Depression Screen")
+         (let [phq2-result (_obtain-phq2 doc)
+               phq9-result (when (= (:eval phq2-result) :positive) (_obtain-phq9 doc))
+               score       (or (:score phq9-result) (:score phq2-result))]
+           {:decision (if (-> phq9-result :questions :phq-q9 :result)
+                        (do (start! clinic-suicide [~patient-id])
+                          (start! clinic-depression [~patient-id])
+                          (dsn 4 :score score :desc "Positive suicide risk screening"))
+                        (condp <= score
+                          20 (do
+                               (start! clinic-depression [~patient-id])
+                               (dsn 4 :score score :desc "Severe depression" :comments "Expedited referral to mental health specialist"))
+                          15 (do
+                               (start! clinic-depression [~patient-id])
+                               (dsn 3 :score score :desc "Moderately severe depression" :comments "Clinical follow-up recommended"))
+                          10 (do
+                               (start! clinic-depression [~patient-id])
+                               (dsn 3 :score score :desc "Moderate depression" :comments "Clinical follow-up recommended"))
+                          5 (dsn 2 :score score :desc "Mild depression" :comments "Clinical follow-up not indicated")
+                          3 (dsn 2 :score score :desc "Minimal depression" :comments "Clinical follow-up not indicated")
+                          0 (dsn 1 :score score :desc "Negative PHQ-2 screen")))}))
+      :interval (t/weeks 2))))
 

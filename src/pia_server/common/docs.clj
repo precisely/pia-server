@@ -7,16 +7,17 @@
 ;; Functions to retrieve patient active documents
 ;;
 
-(deflow retrieve-patient-doc
+(defn retrieve-patient-doc
   "Finds an active patient document given a document type and list of filters"
-  [type patient-id & {:keys [schema]}]
+  [type patient-id & {:keys [schema]
+                      :or   {schema :any}}]
   {:pre [(keyword? type)
-         (or (nil? schema) (m/schema? schema))]}
+         (or (= :any schema) (m/schema? schema))]}
   (let [docs (find-runs [[:state :eq :running]
-                                  [[:index :type] :eq type]
-                                  [[:index :patient-id] :eq patient-id]]
-                        {:limit 1})
-        doc (or (peek docs) (adoc/create! :index {:type type
-                                                  :patient-id patient-id}
-                                          :schema schema))]
+                         [[:index :type] :eq type]
+                         [[:index :patient-id] :eq patient-id]]
+               :limit 1)
+        doc  (or (first docs) (adoc/create! :index {:type       type
+                                                    :patient-id patient-id}
+                                :schema schema))]
     doc))
