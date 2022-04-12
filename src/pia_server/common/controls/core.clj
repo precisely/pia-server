@@ -7,18 +7,22 @@
             [rapids.support.util :refer [new-uuid]]
             [clojure.string :as str]))
 
+(def ^:dynamic *ignore-permit* false)
+
 (defn ^:suspending <*control
   "Outputs a control to the response vector, generating a random unique permit value,
    and injecting the permit into the control expr and using that in the listen operation"
-  [expr & {:keys [expires default permit]}]
-  (let [permit (if permit (if (= true permit) (str (new-uuid)) permit))]
+  [expr & {:keys [expires default permit]
+           :or   {permit true}}]
+  (let [permit (if *ignore-permit* nil
+                 (if permit (if (= true permit) (str (new-uuid)) permit)))]
     (>* (assoc expr :permit permit))
     (<* :permit permit :expires expires :default default)))
 
 ;; defcontrol helpers
 (declare default-control-transformer default-control-validator args-to-hashmap
-         add-input!-args starts-with-<*? general-control-ctor extract-<*control-args
-         index-of-longest-sequence)
+  add-input!-args starts-with-<*? general-control-ctor extract-<*control-args
+  index-of-longest-sequence)
 
 (defmacro
   defcontrol
@@ -124,9 +128,9 @@
         kw-args       (if (map? last-arg)
                         (:keys last-arg))
         _             (if (and has-ampersand
-                               (not kw-args))
+                            (not kw-args))
                         (throw (ex-info "Invalid defcontrol signature. Varargs not permitted."
-                                        {:signature sig})))]
+                                 {:signature sig})))]
     (if kw-args
       `([~@(butlast args) ~(update last-arg :keys (comp vec #(clojure.set/union % #{'expires 'default}) set))] ~@body)
       `([~@args & {:keys [~'expires ~'default]}] ~@body))))
@@ -157,7 +161,7 @@
      (vector? obj) obj
      (map? obj) (reduce (fn [arr [id val]]
                           (conj arr (assoc (transformer id val) :id id)))
-                        [] (seq obj)))))
+                  [] (seq obj)))))
 
 (defn general-control-ctor [default-type expiring? default ctrl-fn args]
   (let [ctrl   (apply ctrl-fn args)
@@ -175,7 +179,7 @@
 (defn extract-<*control-args
   "Plucks out extra control arguments :default and :expires, then calls the control ctor"
   [ctor args]
-  (let [hashmap-args (args-to-hashmap args)                 ; nil => non-kw args, rest of keys are kw args
+  (let [hashmap-args (args-to-hashmap args) ; nil => non-kw args, rest of keys are kw args
         expires      (:expires hashmap-args)
         default      (:default hashmap-args)
         [ctrl output] (apply ctor expires default args)]

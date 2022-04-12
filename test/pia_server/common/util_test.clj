@@ -25,3 +25,5 @@
       (is (= (test-range-case 5) :strongly-agree))
       (is (= (test-range-case 42) :the-answer))
       (is (= (test-range-case -1) :do-not-care))))
+
+(deftest )

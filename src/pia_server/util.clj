@@ -6,22 +6,20 @@
 
 (defn nilable [p o] (or (nil? o) (p o)))
 
-(defn ^{:arglists '[[m f & kvs] [m & kvs]]}
+(defn ^{:arglists '[[map f & kvs] [map & kvs]]}
   assoc-if
   "Associates key value pairs with map for selected key value pairs.
-  The second argument is a binary predicate (fn [k v] ...) which returns true
-  to indicate that the k/v pair should be added. If omitted, a default predicate
-  is used which returns v"
-  [m & args]
+
+  Args:
+    f - A function (fn [k v] ...) which returns a boolean value to indicate if the k/v pair should be added.
+        If omitted, a default function is used which returns v"
+  [map & args]
   (let [maybe-fn (first args)
         [f kvs] (if (fn? maybe-fn)
                   [maybe-fn (rest args)]
                   [(fn [_ v] v) args])]
-    (letfn [(internal-assoc-if [m kvs]
-              (if (empty? kvs)
-                m
-                (let [[k v & rest-kvs] kvs]
-                  (if (f k v)
-                    (recur (assoc m k v) rest-kvs)
-                    (recur m rest-kvs)))))]
-      (internal-assoc-if m kvs))))
+    (loop [map map
+           kvs kvs]
+      (if (empty? kvs) map
+        (let [[k v & rest] kvs]
+          (recur (if (f k v) (assoc map k v) map) rest))))))
