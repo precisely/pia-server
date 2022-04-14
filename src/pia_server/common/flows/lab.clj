@@ -23,10 +23,10 @@
                      order)
     :else (throw (ex-info "Invalid lab order" {:type :input-error :order order}))))
 
-(def liver-function-test (f/multiple-choice :liver-function-tests [:high :normal :low]))
-(def anemia-test (f/multiple-choice :anemia [:abnormal :normal]))
-(def vkorc1-test (f/multiple-choice :vkorc1 [:normal :sensitive :insensitive]))
-(def cyp2c9-test (f/multiple-choice :cyp2c9 [:normal :sensitive :insensitive]))
+(def liver-function-test (f/select :liver-function-tests [:high :normal :low]))
+(def anemia-test (f/select :anemia [:abnormal :normal]))
+(def vkorc1-test (f/select :vkorc1 [:normal :sensitive :insensitive]))
+(def cyp2c9-test (f/select :cyp2c9 [:normal :sensitive :insensitive]))
 
 (deflow lab-monitor
   "Waits for results for lab for patient for the given orders.
@@ -41,7 +41,7 @@
 
    (send-lab-orders lab patient orders)
 
-   (let [result (<*form `[~(f/multiple-choice :status [:failed :success])
+   (let [result (<*form `[~(f/select :status [:failed :success])
                           ~@orders])]
      (if final-flow (fcall final-flow result))
      result)))

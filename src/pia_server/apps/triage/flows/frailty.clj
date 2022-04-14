@@ -11,7 +11,7 @@
             [pia-server.db.models.patient :as p]
             [pia-server.apps.triage.flows.common :refer :all]))
 
-(def self-rated-q1 (multiple-choice
+(def self-rated-q1 (select
                      :self-rated-q1
                      {:poor      "Poor"
                       :fair      "Fair"
@@ -21,7 +21,7 @@
                      :required true
                      :label "In general, how would you describe your health?"))
 
-(def self-rated-q2 (multiple-choice
+(def self-rated-q2 (select
                      :self-rated-q2
                      {:rarely       "Rarely (Less than 1 day)"
                       :sometimes    "Some of the time (1-2 days)"
@@ -64,31 +64,31 @@
             :needs-help 1))
     (reduce +)))
 
-(def badl-q1 (multiple-choice
+(def badl-q1 (select
                :badl-q1
                cfs-responses
                :required true
                :label (cfs-template "dress and undress yourself (including putting on socks and shoes)")))
 
-(def badl-q2 (multiple-choice
+(def badl-q2 (select
                :badl-q2
                cfs-responses
                :required true
                :label (cfs-template "eat")))
 
-(def badl-q3 (multiple-choice
+(def badl-q3 (select
                :badl-q3
                cfs-responses
                :required true
                :label (cfs-template "walk")))
 
-(def badl-q4 (multiple-choice
+(def badl-q4 (select
                :badl-q4
                cfs-responses
                :required true
                :label (cfs-template "get in and out of bed")))
 
-(def badl-q5 (multiple-choice
+(def badl-q5 (select
                :badl-q5
                cfs-responses
                :required true
@@ -111,37 +111,37 @@
     (set-index! [:frailty :badl] result)
     result))
 
-(def iadl-q1 (multiple-choice
+(def iadl-q1 (select
                :iadl-q1
                cfs-responses
                :required true
                :label (cfs-template "use the telephone (including looking up numbers and dialing)")))
 
-(def iadl-q2 (multiple-choice
+(def iadl-q2 (select
                :iadl-q2
                cfs-responses
                :required true
                :label (cfs-template "go shopping for groceries or clothes")))
 
-(def iadl-q3 (multiple-choice
+(def iadl-q3 (select
                :iadl-q3
                cfs-responses
                :required true
                :label (cfs-template "prepare your own meals (including planning and cooking full meals)")))
 
-(def iadl-q4 (multiple-choice
+(def iadl-q4 (select
                :iadl-q4
                cfs-responses
                :required true
                :label (cfs-template "do your household chores")))
 
-(def iadl-q5 (multiple-choice
+(def iadl-q5 (select
                :iadl-q5
                cfs-responses
                :required true
                :label (cfs-template "take your own medicine (including preparing it and taking the right dose at the right time)")))
 
-(def iadl-q6 (multiple-choice
+(def iadl-q6 (select
                :iadl-q6
                cfs-responses
                :required true

@@ -34,13 +34,13 @@
        (map freq-to-score)
        (reduce +)))
 
-(def phq2-q1 (multiple-choice
+(def phq2-q1 (select
                :phq2-q1
                freq-responses
                :required true
                :label "Little interest or pleasure in doing things"))
 
-(def phq2-q2 (multiple-choice
+(def phq2-q2 (select
                :phq2-q2
                freq-responses
                :required true
@@ -67,49 +67,49 @@
     (set-index! [:depression :phq2] result)
     result))
 
-(def phq9-q3 (multiple-choice
+(def phq9-q3 (select
                :phq9-q3
                freq-responses
                :required true
                :label "Trouble falling or staying asleep, or sleeping too much"))
 
-(def phq9-q4 (multiple-choice
+(def phq9-q4 (select
                :phq9-q4
                freq-responses
                :required true
                :label "Feeling tired or having little energy"))
 
-(def phq9-q5 (multiple-choice
+(def phq9-q5 (select
                :phq9-q5
                freq-responses
                :required true
                :label "Poor appetite or overeating"))
 
-(def phq9-q6 (multiple-choice
+(def phq9-q6 (select
                :phq9-q6
                freq-responses
                :required true
                :label "Feeling bad about yourself - or that you are a failure or have let yourself or your family down"))
 
-(def phq9-q7 (multiple-choice
+(def phq9-q7 (select
                :phq9-q7
                freq-responses
                :required true
                :label "Trouble concentrating on things, such as reading the newspaper or watching television"))
 
-(def phq9-q8 (multiple-choice
+(def phq9-q8 (select
                :phq9-q8
                freq-responses
                :required true
                :label "Moving or speaking so slowly that other people could have noticed. Or the opposite being so figety or restless that you have been moving around a lot more than usual."))
 
-(def phq9-q9 (multiple-choice
+(def phq9-q9 (select
                :phq9-q9
                freq-responses
                :required true
                :label "Thoughts that you would be better off dead, or of hurting yourself"))
 
-(def phq9-q10 (multiple-choice
+(def phq9-q10 (select
                 :phq9-q10
                 {:not-difficult       "Not difficult at all"
                  :somewhat-difficult  "Somewhat difficult"

@@ -106,7 +106,7 @@
 (deftest <*ask-test
   (branch [doc  (adoc/create!)
            q1   (yesno :q1)
-           q2   (multiple-choice :q2 [:a :b])
+           q2   (select :q2 [:a :b])
            main (start! <*ask [doc [:test] [q1 q2]])]
     "Asks questions"
     (is (= :running (:state main)))
@@ -124,4 +124,22 @@
         (is (contains? data :q2))
         (is (contains? data :q3)))))
 
+  )
+
+(deflow _b
+  ""
+  []
+  (println "HELLO!"))
+
+(deflow _a
+  ""
+  []
+  (start! _b)
+  (println "what"))
+
+
+(deftest _experiment
+(branch [main (start! _a)]
+  "test"
+  )
   )

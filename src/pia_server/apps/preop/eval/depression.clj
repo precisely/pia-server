@@ -75,13 +75,13 @@
 (deflow _obtain-phq2
   "PHQ-2"
   [doc]
-  (module doc :phq-2
-    `(do (require-roles :patient)
-       (>* (text "Over the last 2 weeks, how often have you been bothered by any of the following problems?"))
-       (let [responses (<*ask doc [:depression :phq-2] [_phq2-q1 _phq2-q2])
-             score     (_get-score responses)]
-         {:eval  (if (< score 3) :negative :positive)
-          :score score}))
+  (module doc [:phq-2] `(do
+                          (require-roles :patient)
+                          (>* (text "Over the last 2 weeks, how often have you been bothered by any of the following problems?"))
+                          (let [responses (<*ask doc [:depression :phq-2] [_phq2-q1 _phq2-q2])
+                                score     (_get-score responses)]
+                            {:eval  (if (< score 3) :negative :positive)
+                             :score score}))
     :interval (t/weeks 2)))
 
 ;;
@@ -142,7 +142,7 @@
 (deflow _obtain-phq9
   "PHQ-9"
   [doc]
-  (module doc :phq-9
+  (module doc [:phq-9]
     `(do (require-roles :patient)
        (let [doc        ~doc
              phq2       (_obtain-phq2 doc)
@@ -200,3 +200,18 @@
                           0 (dsn 1 :score score :desc "Negative PHQ-2 screen")))}))
       :interval (t/weeks 2))))
 
+"
+obtain is a function NOT a flow
+
+check for permissions to obtain
+
+if exists & valid, return data
+if doesn't exist, create document
+set permissions to edit document
+
+start flow to retrieve data (this would require a different set of permissions to interact with)
+check for permissions to start
+set permissions for continue
+
+go through flow
+"
