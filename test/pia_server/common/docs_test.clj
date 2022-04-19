@@ -20,5 +20,4 @@
            patient-doc (retrieve-patient-doc type patient-id)]
     "Doc already exists"
     (is (= (:id doc) (:id patient-doc)))
-    (is (= data (adoc/get-data patient-doc [])))
-    ))
+    (is (= data (adoc/get-data patient-doc [])))))

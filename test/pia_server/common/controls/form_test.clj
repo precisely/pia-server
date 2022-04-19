@@ -32,8 +32,7 @@
                result (:result main)]
         "Response"
         (is (= :complete (:state main)))
-        (is (= input result)))
-      )))
+        (is (= input result))))))
 
 (deftest multiselect-test
   (binding [*ignore-permit* true]

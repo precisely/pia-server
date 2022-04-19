@@ -100,8 +100,7 @@
     "Has existing data, expired"
     (is (= :complete (:state main)))
     (is (= data (:result main)))
-    (is (= {:out 1} (dissoc (adoc/get-data doc [:test]) :timestamp))))
-  )
+    (is (= {:out 1} (dissoc (adoc/get-data doc [:test]) :timestamp)))))
 
 (deftest <*ask-test
   (branch [doc  (adoc/create!)
@@ -122,24 +121,4 @@
         (is (= :complete (:state main)))
         (is (contains? data :q1))
         (is (contains? data :q2))
-        (is (contains? data :q3)))))
-
-  )
-
-(deflow _b
-  ""
-  []
-  (println "HELLO!"))
-
-(deflow _a
-  ""
-  []
-  (start! _b)
-  (println "what"))
-
-
-(deftest _experiment
-(branch [main (start! _a)]
-  "test"
-  )
-  )
+        (is (contains? data :q3))))))

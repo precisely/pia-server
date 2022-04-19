@@ -17,28 +17,6 @@
   `(binding [*current-user* user]
      ~@body))
 
-"Condition Schema
-
-This schema defines a condition that needs to be met given some data. These conditions can either be malli schemas or
-keywords/strings that point to pre-defined functions.
-
-Schema example: [:map [:id [:= \"uuid\"]]
-This is true when the data is a map that has a key-value pair of [:id \"uuid\"]. m/validate is called with the arguments
-schema and data.
-
-Keyword example: [:clinic-of \"uuid\"]
-The keyword :clinic-of is matched to the predefined function _clinic-of. _clinic-of is called with the arguments data
-and \"uuid\" and returns true/false.
-
-String example: [\"zero?\" true]
-The string \"zero?\" is converted to a symbol and resolved as a function. zero? is called with the arguments data and
-true and returns true/false.
-"
-(def condition-schema [:or
-                       m/schema?
-                       [:cat keyword? [:* :any]]
-                       [:cat string? [:* :any]]])
-
 "Auth Schema
 
 This schema defines the conditions a user needs to meet to access a run.
@@ -52,22 +30,22 @@ Example:
 { :patient
     {:user [[:map [:id [:= \"uuid\"]]]]}
   :clinic
-    {:user [[:clinic-of \"uuid\"]]}
+    {:user [[clinic-of \"uuid\"]]}
   :admin {}}
 
 In this example, a user has three ways of gaining access to the resource.
 
 1. the user is a patient and has an id equal to \"uuid\"
 
-2. the user is a clinic and the function :clinic-of returns true when the user data and \"uuid\"
+2. the user is a clinic and the function clinic-of returns true when the user data and \"uuid\"
    are provided as arguments
 
 3. the user is an admin
 "
 
-(def role-auth-schema [:map [[:enum [:user :index :doc]] [:* condition-schema]]])
+(def role-auth-schema [:map [[:enum [:user :index :doc]] {:optional true} [:* :any]]])
 
-(def auth-schema [:map [[:enum [:patient :clinic :admin]] role-auth-schema]])
+(def auth-schema [:map [[:enum [:patient :clinic :admin]] {:optional true} role-auth-schema]])
 
 (defn is-role?
   "Checks if the current user has a specific role."
@@ -90,10 +68,8 @@ In this example, a user has three ways of gaining access to the resource.
 
   Converts [:id :a :b] := 1 to [:map [:id [:map [:a [:map [:b [:= 1]]]]]]]"
   [key condition value]
-  {:pre  [(sequential? key)
-          (contains? #{:> :>= :< :<= := :not=} condition)]
-   ;:post [(m/schema? %)]
-   }
+  {:pre [(sequential? key)
+         (contains? #{:> :>= :< :<= := :not=} condition)]}
   (loop [<key   (reverse key)
          schema [condition value]]
     (if (empty? <key)
@@ -101,74 +77,97 @@ In this example, a user has three ways of gaining access to the resource.
       (let [[k & rest] <key]
         (recur rest [:map [k schema]])))))
 
-;;
-;; Predefined Auth Functions
-;;
-;; These are referened in conditions by keyword.
-;;
+(defn set-run-auth
+  "Sets the auth requirements for a run.
 
-(defn _clinic-of
-  "Checks that the current clinic is responsible for the patient-id provided.
+  Args:
+    run
+    schema  - symbol of schema (needs to be defined)"
+  [run schema]
+  {:pre [(symbol? schema)
+         (m/validate auth-schema (eval schema))]}
+  (set-index! run :auth (str schema))
+  )
 
-  Returns: bool"
-  [user patient-id]
-  {:pre  [(m/validate *current-user*-schema user)
-          (is-role? :clinic)]
-   :post [(boolean? %)]}
-  true)
+(defn get-run-auth
+  "Retrieves the auth requirements for a run.
 
-(defn is-condition-valid
-  "Checks condition against provided data. Conditions can be schemas or keywords and strings that represent functions.
+  Returns auth schema"
+  [run]
+  {:pre [(run? run)]
+   :post [(m/validate auth-schema %)]}
+  (eval (read-string (-> run :index :auth))))
+
+(defn _is-condition-valid
+  "Checks condition against provided data. Conditions can be schemas or functions.
   This should not be called directly, as it doesn't directly check for roles.
+
+  Condition Schema
+
+  This schema defines a condition that needs to be met given some data. These conditions can either be malli schemas or
+  keywords/strings that point to pre-defined functions.
+
+  Schema example: [:map [:id [:= \"uuid\"]]
+                   This is true when the data is a map that has a key-value pair of [:id \"uuid\"]. m/validate is called with the arguments
+                   schema and data.
+
+                   Function example: [clinic-of \"uuid\"]
+                   The keyword :clinic-of is matched to the predefined function _clinic-of. _clinic-of is called with the arguments data
+                   and \"uuid\" and returns true/false.
 
   Returns: bool"
   [data condition]
-  {:pre  [(m/validate condition-schema condition)]
-   :post [(boolean? %)]}
+  {:post [(boolean? %)]}
   (cond
-    (m/schema? condition) (m/validate condition data)
-    (keyword? (first condition)) (let [[fn & args] condition]
-                                   (case fn
-                                     :clinic-of (apply _clinic-of data args)))
-    (string? (first condition)) (let [[sym & args] condition
-                                      _fn (resolve (symbol sym))]
-                                  (apply _fn data args))
-    :default false))
+    (fn? (first condition)) (let [[f & args] condition]
+                              (apply f data args))
+    :default (m/validate condition data)))
 
 (defn check-auth
   "Given an auth schema, verifies that the current user satisfies the schema for the current run.
+  Given a run, verifies that the current user satisfies the schema stored in the run.
 
   Returns: bool"
-  ([schema] (check-auth (current-run) schema))
+  ([] (check-auth (current-run)))
+  ([arg] (if (run? arg)
+           (check-auth arg (get-run-auth arg))
+           (check-auth (current-run) arg)))
   ([run schema]
-   {:pre [(m/validate auth-schema schema)]
+   {:pre  [(run? run)
+           (m/validate auth-schema schema)]
     :post [(boolean? %)]}
    (let [user       *current-user*
          index      (:index run)
          doc        (when (= (:type index) :doc) (adoc/get-data run))
-         _role_data (fn [src & conditions] (every? #(is-condition-valid (case src
-                                                                          :user user
-                                                                          :index index
-                                                                          :doc doc) %) conditions))
-         _role_auth (fn [role & data-schema] (if (is-role? role)
-                                               (every? _role_data data-schema)
-                                               false))]
-     (some _role_auth schema))))
+         _role_data (fn [args] (let [[src conditions] args]
+                                 (every? #(_is-condition-valid (case src
+                                                                 :user user
+                                                                 :index index
+                                                                 :doc doc) %) conditions)))
+         _role_auth (fn [args] (let [[role data-schema] args]
+                                 (if (is-role? role)
+                                   (every? _role_data data-schema)
+                                   false)))]
+     (if (some _role_auth schema) true false))))
 
 
 (defn ^{:arglists '[[schema] [run schema]]}
   assert-auth
   "Asserts that the current user satisfies the provided auth schema."
   [& args]
-  (let [_check-auth (check-auth args)]
+  (let [_check-auth (apply check-auth args)]
     (if _check-auth _check-auth
       (throw (ex-info "Not authorized" {:type :not-authorized})))))
 
+
+
 (defn grant-run
-  "Verifies the current user can start the current run, then sets the auth requirements for a user to continue the run."
+  "Verifies the current user can start the current run, then sets the auth requirements for a user to continue the run.
+  The requirements for a user to continue the run most be a symbol that is resolved to an auth-schema."
   ([start continue] (grant-run (current-run) start continue))
   ([run start continue]
    {:pre [(m/validate auth-schema start)
-          (m/validate auth-schema continue)]}
+          (symbol? continue)]}
    (assert-auth run start)
-   (set-index! :auth continue)))
+   (set-run-auth run continue)))
+
