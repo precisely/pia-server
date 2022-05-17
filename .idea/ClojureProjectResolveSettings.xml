@@ -1,16 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ClojureProjectResolveSettings">
-    <item key="rapids/letflow" resolves-as="clojure.core/letfn" />
-    <item key="test-lib.core/make-fn" resolves-as="clojure.core/defn" />
     <item key="rapids.objects.module/defmodule" resolves-as="cursive.intentions.resolve/resolve-none" />
-    <item key="rapids.language.flow/deflow" resolves-as="clojure.core/defn" />
     <item key="rapids/deflow" resolves-as="clojure.core/defn" />
-    <item key="pia-server.common.controls.core/defcontrol" resolves-as="clojure.core/defn" />
     <item key="rapids/deflow-" resolves-as="clojure.core/defn-" />
     <item key="test-lib.core/defn-special" resolves-as="clojure.core/defn" />
     <item key="rapids.support.defrecordfn/defrecordfn" resolves-as="clojure.core/defrecord" />
     <item key="rapids/flow" resolves-as="clojure.core/fn" />
+    <item key="rapids/letflow" resolves-as="clojure.core/letfn" />
+    <item key="test-lib.core/make-fn" resolves-as="clojure.core/defn" />
+    <item key="&lt;*form" resolves-as="clojure.core/defn" />
+    <item key="rapids.language.flow/deflow" resolves-as="clojure.core/defn" />
+    <item key="pia-server.common.controls.core/defcontrol" resolves-as="clojure.core/defn" />
     <item key="clojure.tools.macro/macrolet" resolves-as="cljs.core/letfn" />
     <item key="rapids.language.test/branch" resolves-as="clojure.core/let" />
     <currentScheme>PROJECT</currentScheme>
