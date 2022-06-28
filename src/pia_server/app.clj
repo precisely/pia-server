@@ -10,6 +10,7 @@
             [clojure.string :as str]
             [ring.logger :as logger]
             [pia-server.apps.anticoagulation.flows.main :refer [anticoagulation]]
+            [pia-server.apps.triage.flows.main :refer :all]
             [pia-server.common.notifier :as pia-notifier]
             [taoensso.timbre :as log]
             [compojure.api.exception :as ex]
@@ -58,13 +59,16 @@
 
 ;; marking flows as dynamic to enable tests
 (def ^:dynamic flows {:foo             #'foo
-                      :anticoagulation #'anticoagulation})
+                      :anticoagulation #'anticoagulation
+                      :depression      #'depression-flow
+                      :frailty         #'frailty-flow
+                      })
 
 (defn run-result [run]
   (let [raw-run (.rawData run)
-        run     (reduce-kv #(assoc %1 (keyword (str/replace (name %2) "-" "_")) %3) {}
-                           (select-keys raw-run
-                                        [:id :output :result :state :index :parent-run-id]))]
+        run (reduce-kv #(assoc %1 (keyword (str/replace (name %2) "-" "_")) %3) {}
+                       (select-keys raw-run
+                                    [:id :output :result :state :index :parent-run-id]))]
     (if (-> run :state (not= :complete))
       (dissoc run :result)
       run)))
@@ -138,32 +142,32 @@
           :summary "Retrieves multiple runs"
           :return scm/Any
           (ok
-            (let [uuid-shaped?        (fn [v] (re-find #"^[0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12}$" v))
-                  parse-val           (fn [v]
-                                        (try (if (uuid-shaped? v)
-                                               (UUID/fromString v)
-                                               (cheshire/parse-string v))
-                                             (catch Exception _ v)))
+            (let [uuid-shaped? (fn [v] (re-find #"^[0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12}$" v))
+                  parse-val (fn [v]
+                              (try (if (uuid-shaped? v)
+                                     (UUID/fromString v)
+                                     (cheshire/parse-string v))
+                                   (catch Exception _ v)))
                   process-final-field (fn [k]
                                         (let [str-keys (str/split (name k) #"\.")
                                               [butlast-keys last-key] [(butlast str-keys) (last str-keys)]
                                               [last op] (str/split last-key #"\$")
-                                              kop      (if op (keyword op) :eq)]
+                                              kop (if op (keyword op) :eq)]
                                           (if (#{:eq :not-eq :contains :in :gt :lt :lte :gte :not-in} kop)
                                             [`[~@butlast-keys ~last] kop]
                                             (throw (ex-info "Invalid operator"
                                                             {:type :input-error,
                                                              :op   op})))))
-                  process-field       (fn [[k v]]
-                                        (let [[str-keys operator] (process-final-field k)
-                                              field (mapv keyword str-keys)
-                                              field (if (= 1 (count field)) (first field) field)]
-                                          [field operator (parse-val v)]))
-                  limit               (:limit fields)
-                  field-constraints   (mapv process-field (dissoc fields :limit))]
-              (log/info "Received GET /api/runs/find" {:raw-params fields
+                  process-field (fn [[k v]]
+                                  (let [[str-keys operator] (process-final-field k)
+                                        field (mapv keyword str-keys)
+                                        field (if (= 1 (count field)) (first field) field)]
+                                    [field operator (parse-val v)]))
+                  limit (:limit fields)
+                  field-constraints (mapv process-field (dissoc fields :limit))]
+              (log/info "Received GET /api/runs/find" {:raw-params        fields
                                                        :field-constraints field-constraints
-                                                       :limit limit})
+                                                       :limit             limit})
               (map run-result (find-runs field-constraints :limit limit)))))
 
         (GET "/:id" []

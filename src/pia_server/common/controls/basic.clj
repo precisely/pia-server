@@ -25,7 +25,7 @@
   (let [norm-bdefs (if (map? button-defs)
                      (normalize-id-map button-defs #(hash-map :label %2))
                      (mapv normalize-button-def button-defs))]
-    {:buttons norm-bdefs
+    {:elements norm-bdefs
      :schema  [:and :keyword `[:enum ~@(map :id norm-bdefs)]]}))
 
 (defn text
