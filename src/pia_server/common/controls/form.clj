@@ -32,7 +32,7 @@
   [elements & {:keys [schema-fn]}]
   (let [schema `[:map ~@(remove nil? (map (fn [elt]
                                             (if-let [schema (:schema elt)]
-                                              [(:id elt) schema]))
+                                              [(:id elt) {:optional (-> elt :required)} schema]))
                                           elements))]
         schema (if schema-fn (schema-fn (rest schema)) schema)]
     {:type     :form
@@ -75,7 +75,7 @@
    :required required
    ;; regex from https://stackoverflow.com/a/26972181/305149
    ;; I decided against a fancier version: #"^(?:(?:31(\/|-|\.)(?:0?[13578]|1[02]|(?:Jan|Mar|May|Jul|Aug|Oct|Dec)))\1|(?:(?:29|30)(\/|-|\.)(?:0?[1,3-9]|1[0-2]|(?:Jan|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec))\2))(?:(?:1[6-9]|[2-9]\d)?\d{2})$|^(?:29(\/|-|\.)(?:0?2|(?:Feb))\3(?:(?:(?:1[6-9]|[2-9]\d)?(?:0[48]|[2468][048]|[13579][26])|(?:(?:16|[2468][048]|[3579][26])00))))$|^(?:0?[1-9]|1\d|2[0-8])(\/|-|\.)(?:(?:0?[1-9]|(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep))|(?:1[0-2]|(?:Oct|Nov|Dec)))\4(?:(?:1[6-9]|[2-9]\d)?\d{2})$"
-   :schema   [:string {:re #"^(0?[1-9]|[12][0-9]|3[01])[\/\-](0?[1-9]|1[012])[\/\-]\d{4}$"}]})
+   :schema   [:string {:re #"^(0?[1-9]|[12][0-9]|3[01])[\/\-](0?[1-9]|1[012])[\/\-]\d{4}$"}]  })
 
 (defn short-text [id label & {:keys [hint required min-length max-length]}]
   {:type       :short-text
@@ -104,7 +104,7 @@
   [id items & {:keys [label required randomize show-other multiselect]
                :or   {required false, randomize false, show-other false}}]
   {:pre  [(keyword id)
-          (sequential? items)
+          (or (map? items) (sequential? items))
           (not (empty? items))
           (boolean? required)
           (boolean? randomize)
