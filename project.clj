@@ -41,9 +41,9 @@
                  [envvar "1.1.2"]
 
                  ;; application support
-                 [precisely/rapids "0.9.9-SNAPSHOT"]
+                 [precisely/rapids "0.10.0"]
                  [precisely/rapids-active-doc "0.0.1"]
-                 [clojure.java-time "0.3.2"]
+                 [clojure.java-time "1.2.0"]
                  [org.clojure/core.async "1.3.610"]
                  [camel-snake-kebab "0.4.2"]
                  [potemkin "0.4.5"]

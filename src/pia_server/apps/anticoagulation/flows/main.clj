@@ -57,52 +57,52 @@
   (if (-> run :state (= :running))
     (interrupt! (:id run) :stop)))
 
-(deflow obtain-labwork
-  "Obtains results for the patient for the given tests. Reminds the patient until the labwork is complete.
-  Returns the [lab-result, genetics-result]
-  lab-result = {
-    :liver-function-tests: :high | :normal | :low
+  (deflow obtain-labwork
+    "Obtains results for the patient for the given tests. Reminds the patient until the labwork is complete.
+    Returns the [lab-result, genetics-result]
+    lab-result = {
+      :liver-function-tests: :high | :normal | :low
 
 
-  Sets :index => {
-    :lab {:initial-tests RUNID}
-    :patient {:reminder {:labwork RUNID}}
-  }"
-  [patient]
-  {:pre [(p/patient? patient)]}
-  ;; TODO: start the lab monitor from within the patient run
-  (let [labwork-reminder  (start! common-patient/send-reminders
-                                  [patient
-                                   (str "Please go get your labwork done at " (:name lab-db/default-lab))
-                                   :cancelable true]
-                                  :index {:title    "Anticoagulation bloodwork"
-                                          :subtitle "Go get your blood work done"})
-        labwork-run       (start! lab-monitor [lab-db/default-lab patient
-                                               [lab/liver-function-test lab/anemia-test]
-                                               (flow [_] (stop! labwork-reminder))]
-                                  :index {:title      "Anticoagulation bloodwork"
-                                          :patient-id (:id patient)})
-        genetics-reminder (start! common-patient/send-reminders
-                                  [patient
-                                   (str "Please remember to mail your saliva sample to the lab at " (:name lab-db/genetics-lab))
-                                   :cancelable true]
-                                  :index {:title    "Anticoagulation genetics panel"
-                                          :subtitle "Send your saliva sample"})
-        genetics-run      (start! lab-monitor [lab-db/genetics-lab patient
-                                               [lab/vkorc1-test lab/cyp2c9-test]
-                                               (flow [_] (stop! genetics-reminder))]
-                                  :index {:title      "Anticoagulation genetics tests"
-                                          :patient-id (:id patient)})]
-    (set-index!
-      [:overview :phase] "Initial labwork"
-      [:runs :lab :initial-tests] (:id labwork-run)
-      [:runs :genetics-lab :initial-tests] (:id genetics-run)
-      [:runs :patient :labwork-reminder] (:id labwork-reminder)
-      [:runs :patient :genetics-reminder] (:id genetics-reminder))
+    Sets :index => {
+      :lab {:initial-tests RUNID}
+      :patient {:reminder {:labwork RUNID}}
+    }"
+    [patient]
+    {:pre [(p/patient? patient)]}
+    ;; TODO: start the lab monitor from within the patient run
+    (let [labwork-reminder  (start! common-patient/send-reminders
+                                    [patient
+                                     (str "Please go get your labwork done at " (:name lab-db/default-lab))
+                                     :cancelable true]
+                                    :index {:title    "Anticoagulation bloodwork"
+                                            :subtitle "Go get your blood work done"})
+          labwork-run       (start! lab-monitor [lab-db/default-lab patient
+                                                 [lab/liver-function-test lab/anemia-test]
+                                                 (flow [_] (stop! labwork-reminder))]
+                                    :index {:title      "Anticoagulation bloodwork"
+                                            :patient-id (:id patient)})
+          genetics-reminder (start! common-patient/send-reminders
+                                    [patient
+                                     (str "Please remember to mail your saliva sample to the lab at " (:name lab-db/genetics-lab))
+                                     :cancelable true]
+                                    :index {:title    "Anticoagulation genetics panel"
+                                            :subtitle "Send your saliva sample"})
+          genetics-run      (start! lab-monitor [lab-db/genetics-lab patient
+                                                 [lab/vkorc1-test lab/cyp2c9-test]
+                                                 (flow [_] (stop! genetics-reminder))]
+                                    :index {:title      "Anticoagulation genetics tests"
+                                            :patient-id (:id patient)})]
+      (set-index!
+        [:overview :phase] "Initial labwork"
+        [:runs :lab :initial-tests] (:id labwork-run)
+        [:runs :genetics-lab :initial-tests] (:id genetics-run)
+        [:runs :patient :labwork-reminder] (:id labwork-reminder)
+        [:runs :patient :genetics-reminder] (:id genetics-reminder))
 
-    (wait-for
-      labwork-run
-      [genetics-run :expires (-> 2 days from-now) :default nil])))
+      (wait-for
+        labwork-run
+        [genetics-run :expires (-> 2 days from-now) :default nil])))
 
 (defn start-run! [role action flow & args]
   (let [run (start! flow args)]
