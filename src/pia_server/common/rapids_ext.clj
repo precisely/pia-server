@@ -12,7 +12,7 @@
     (loop [[blocker & blockers] blockers
            results []]
       (let [[run & {:keys [expires default]}] (if (sequential? blocker) blocker [blocker])
-            results (conj results (block! run :expires expires :default default))]
+            results (conj results (wait-for! run :expires expires :default default))]
         (if (empty? blockers)
           results
           (recur blockers results))))))

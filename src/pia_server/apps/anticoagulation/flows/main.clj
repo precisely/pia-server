@@ -126,7 +126,7 @@
     (set-index!
       [:overview :phase] "Prescription"
       [:runs :pharmacy :warfarin-prescription] (:id prescription-phase))
-    (block! prescription-phase)))
+    (wait-for! prescription-phase)))
 
 (deflow obtain-maintenance-dosage [patient target-inr]
   (let [dosage-pool (->pool)
