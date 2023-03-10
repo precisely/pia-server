@@ -1,6 +1,6 @@
 (ns pia-server.common.controls.surveyjs
   (:require [rapids :refer :all]
-            [pia-server.util :refer :all])
+            [pia-server.support.util :refer :all])
   (:import (java.util UUID)))
 
 (defn number-slider

@@ -1,8 +1,8 @@
 (ns pia-server.support.repl
-  (:require [pia-server.app :refer :all]
+  (:require [main :refer :all]
+            [pia-server.server.core :refer :all]
             [rapids :refer :all]
-            [debux.core :refer :all]
-            [main :refer :all]
             [rapids.support.debug :refer :all]
-            [clojure.pprint :refer :all]
-            [rapids.support.util :refer :all]))
+            [rapids.support.util :refer :all]
+            [debux.core :refer :all]
+            [clojure.pprint :refer :all]))

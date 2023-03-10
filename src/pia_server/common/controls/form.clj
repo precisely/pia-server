@@ -1,7 +1,7 @@
 (ns pia-server.common.controls.form
   (:require [rapids :refer :all]
             [pia-server.common.controls.core :refer [defcontrol keyword-to-label normalize-id-map]]
-            [pia-server.util :refer [assoc-if]]))
+            [pia-server.support.util :refer [assoc-if]]))
 
 (defcontrol <*form
   "E.g., (<*form [
