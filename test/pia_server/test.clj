@@ -22,14 +22,14 @@
     (connection/->pool HikariDataSource options)))
 
 ;; No connection pooling really necessary for test runs.
-(defonce ^:dynamic *cxn-hl7* (jdbc/get-connection test-db-hl7-connection-pool))
+;(defonce ^:dynamic *cxn-hl7* (jdbc/get-connection test-db-hl7-connection-pool))
 
 
-(defn fixture-test-db [f]
-  (log/with-level :warn
-    (binding [db-hl7/*connection-pool* test-db-hl7-connection-pool]
-      (db-hl7/migrate!)
-      (f))))
+;;(defn fixture-test-db [f]
+;;  (log/with-level :warn
+;;    (binding [db-hl7/*connection-pool* test-db-hl7-connection-pool]
+;;      (db-hl7/migrate!)
+;;      (f))))
 
 (defn fixture-reset [f]
   (f)
@@ -39,7 +39,7 @@
   )
 
 (defn use-test-db []
-  (test/use-fixtures :once fixture-test-db)
+  ;(test/use-fixtures :once fixture-test-db)
   (test/use-fixtures :each fixture-reset))
 
 (defmacro defdbtest [name & body]

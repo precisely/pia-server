@@ -1,6 +1,6 @@
 (ns pia-server.handler-test
   (:require [clojure.test :refer :all]
-            [pia-server.app :refer :all]
+            [pia-server.server :refer :all]
             [rapids :refer :all]))
 
 (deftest foo-test

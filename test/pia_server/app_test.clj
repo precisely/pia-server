@@ -1,5 +1,5 @@
 (ns pia-server.app-test
-  (:require [pia-server.app :refer :all]
+  (:require [pia-server.server :refer :all]
             [pia-server.test :refer :all]
             [cheshire.core :refer [generate-string parse-string]]
             [ring.mock.request :as mock]
@@ -8,7 +8,7 @@
 ;; (test/run-tests)
 
 (defn json-request [method resource & {:keys [params body] :or {params []}}]
-  (let [response (app
+  (let [response (server
                    (-> (mock/request method resource)
                        (mock/content-type "application/json")
                        (mock/body (generate-string body))))]
