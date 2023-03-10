@@ -33,7 +33,7 @@
   ([k] (env k nil))
   ([k default] (or (env-map k) default (throw (ex-info (str "Environment key not defined: " k) {:variable k})))))
 
-(defproject pia-server "0.1.3-SNAPSHOT"
+(defproject pia-server "0.2.0-SNAPSHOT"
   :description "Precisely Intelligent Agent"
   :min-lein-version "2.9.7"
   :dependencies [[org.clojure/clojure "1.10.3"]
@@ -41,7 +41,7 @@
                  [envvar "1.1.2"]
 
                  ;; application support
-                 [precisely/rapids "0.12.1"]
+                 [precisely/rapids "0.12.3"]
                  [precisely/rapids-active-doc "0.0.1"]
                  [clojure.java-time "1.2.0"]
                  [org.clojure/core.async "1.3.610"]
@@ -49,6 +49,7 @@
                  [potemkin "0.4.5"]
                  [org.clojure/data.json "1.0.0"]
                  [luposlip/json-schema "0.2.9"]
+                 [siili/humanize "0.1.1"]
                  [com.taoensso/truss "1.6.0"] ; have/have!/have?
                  [metosin/malli "0.8.0"]
 
@@ -59,6 +60,7 @@
                  [javax.servlet/javax.servlet-api "4.0.1"]
                  [ring-server "0.5.0"]
                  [ring/ring-jetty-adapter "1.8.2"]
+                 [metosin/ring-swagger "0.26.2"]
                  [ring.middleware.conditional "0.2.0"]
                  [metosin/compojure-api "2.0.0-alpha31"]
                  [metosin/jsonista "0.2.7"]
