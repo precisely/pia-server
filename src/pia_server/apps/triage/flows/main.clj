@@ -17,7 +17,6 @@
             [pia-server.common.roles :refer [require-roles]]
             [pia-server.common.flows.patient :as common-patient]
             [pia-server.db.models.exports :refer :all]
-            [pia-server.common.rapids-ext :refer [wait-for]]
             [pia-server.db.models.patient :as p]
             [pia-server.common.controls.form :as f]
             [pia-server.apps.triage.flows.depression :refer [depression]]

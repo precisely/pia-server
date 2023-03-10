@@ -13,19 +13,16 @@
             [pia-server.apps.anticoagulation.flows.patient :as patient]
             [pia-server.common.controls.form :refer :all]
             [pia-server.common.flows.pharmacy :as common-pharmacy]
-            [pia-server.common.controls.medical :refer [display-patient-labs]]
             [pia-server.common.roles :refer [require-roles]]
             [pia-server.common.flows.patient :as common-patient]
             [pia-server.db.models.exports :refer :all]
-            [pia-server.common.rapids-ext :refer [wait-for]]
-            [pia-server.db.models.patient :as p]
-            [pia-server.common.controls.form :as f]))
+            [pia-server.db.models.patient :as p]))
 
 (defn valid-bloodwork? [patient results]
   (let [{baseline-inr     :baseline-inr,
          creatinine-level :creatinine-level,
          cbc-platelets    :cbc-platelets} results
-        disease-conditions (-> patient :diseases)           ; hypertension, congestive-heart-failure
+        disease-conditions (-> patient :diseases) ; hypertension, congestive-heart-failure
         age                (-> patient :age)
         medications        (-> patient :medications)]
     ;;
@@ -57,52 +54,52 @@
   (if (-> run :state (= :running))
     (interrupt! (:id run) :stop)))
 
-  (deflow obtain-labwork
-    "Obtains results for the patient for the given tests. Reminds the patient until the labwork is complete.
-    Returns the [lab-result, genetics-result]
-    lab-result = {
-      :liver-function-tests: :high | :normal | :low
+(deflow obtain-labwork
+  "Obtains results for the patient for the given tests. Reminds the patient until the labwork is complete.
+  Returns the [lab-result, genetics-result]
+  lab-result = {
+    :liver-function-tests: :high | :normal | :low
 
 
-    Sets :index => {
-      :lab {:initial-tests RUNID}
-      :patient {:reminder {:labwork RUNID}}
-    }"
-    [patient]
-    {:pre [(p/patient? patient)]}
-    ;; TODO: start the lab monitor from within the patient run
-    (let [labwork-reminder  (start! common-patient/send-reminders
-                                    [patient
-                                     (str "Please go get your labwork done at " (:name lab-db/default-lab))
-                                     :cancelable true]
-                                    :index {:title    "Anticoagulation bloodwork"
-                                            :subtitle "Go get your blood work done"})
-          labwork-run       (start! lab-monitor [lab-db/default-lab patient
-                                                 [lab/liver-function-test lab/anemia-test]
-                                                 (flow [_] (stop! labwork-reminder))]
-                                    :index {:title      "Anticoagulation bloodwork"
-                                            :patient-id (:id patient)})
-          genetics-reminder (start! common-patient/send-reminders
-                                    [patient
-                                     (str "Please remember to mail your saliva sample to the lab at " (:name lab-db/genetics-lab))
-                                     :cancelable true]
-                                    :index {:title    "Anticoagulation genetics panel"
-                                            :subtitle "Send your saliva sample"})
-          genetics-run      (start! lab-monitor [lab-db/genetics-lab patient
-                                                 [lab/vkorc1-test lab/cyp2c9-test]
-                                                 (flow [_] (stop! genetics-reminder))]
-                                    :index {:title      "Anticoagulation genetics tests"
-                                            :patient-id (:id patient)})]
-      (set-index!
-        [:overview :phase] "Initial labwork"
-        [:runs :lab :initial-tests] (:id labwork-run)
-        [:runs :genetics-lab :initial-tests] (:id genetics-run)
-        [:runs :patient :labwork-reminder] (:id labwork-reminder)
-        [:runs :patient :genetics-reminder] (:id genetics-reminder))
+  Sets :index => {
+    :lab {:initial-tests RUNID}
+    :patient {:reminder {:labwork RUNID}}
+  }"
+  [patient]
+  {:pre [(p/patient? patient)]}
+  ;; TODO: start the lab monitor from within the patient run
+  (let [labwork-reminder  (start! common-patient/send-reminders
+                            [patient
+                             (str "Please go get your labwork done at " (:name lab-db/default-lab))
+                             :cancelable true]
+                            :index {:title    "Anticoagulation bloodwork"
+                                    :subtitle "Go get your blood work done"})
+        labwork-run       (start! lab-monitor [lab-db/default-lab patient
+                                               [lab/liver-function-test lab/anemia-test]
+                                               (flow [_] (stop! labwork-reminder))]
+                            :index {:title      "Anticoagulation bloodwork"
+                                    :patient-id (:id patient)})
+        genetics-reminder (start! common-patient/send-reminders
+                            [patient
+                             (str "Please remember to mail your saliva sample to the lab at " (:name lab-db/genetics-lab))
+                             :cancelable true]
+                            :index {:title    "Anticoagulation genetics panel"
+                                    :subtitle "Send your saliva sample"})
+        genetics-run      (start! lab-monitor [lab-db/genetics-lab patient
+                                               [lab/vkorc1-test lab/cyp2c9-test]
+                                               (flow [_] (stop! genetics-reminder))]
+                            :index {:title      "Anticoagulation genetics tests"
+                                    :patient-id (:id patient)})]
+    (set-index!
+      [:overview :phase] "Initial labwork"
+      [:runs :lab :initial-tests] (:id labwork-run)
+      [:runs :genetics-lab :initial-tests] (:id genetics-run)
+      [:runs :patient :labwork-reminder] (:id labwork-reminder)
+      [:runs :patient :genetics-reminder] (:id genetics-reminder))
 
-      (wait-for
-        labwork-run
-        [genetics-run :expires (-> 2 days from-now) :default nil])))
+    (wait-cases! [value :expires (-> 2 days from-now) :default nil]
+      labwork-run nil
+      genetics-run nil)))
 
 (defn start-run! [role action flow & args]
   (let [run (start! flow args)]
@@ -113,16 +110,16 @@
   "Start a prescription for warfarin to the patient. Returns a run."
   [patient strength]
   (let [prescription-phase (start! common-pharmacy/order-prescription
-                                   [patient
-                                    :drug "warfarin",
-                                    :strength strength,
-                                    :unit :pills,
-                                    :frequency :as-directed,
-                                    :dispense 100,
-                                    :route :po,
-                                    :dosage :as-directed]
-                                   :index {:title      "Anticoagulation prescription"
-                                           :patient-id (:id patient)})]
+                             [patient
+                              :drug "warfarin",
+                              :strength strength,
+                              :unit :pills,
+                              :frequency :as-directed,
+                              :dispense 100,
+                              :route :po,
+                              :dosage :as-directed]
+                             :index {:title      "Anticoagulation prescription"
+                                     :patient-id (:id patient)})]
     (set-index!
       [:overview :phase] "Prescription"
       [:runs :pharmacy :warfarin-prescription] (:id prescription-phase))
@@ -131,9 +128,9 @@
 (deflow obtain-maintenance-dosage [patient target-inr]
   (let [dosage-pool (->pool)
         run         (start! patient/initiation-phase
-                            [patient dosage-pool target-inr]
-                            :index {:title      "Anticoagulation initiation phase"
-                                    :patient-id (:id patient)})]
+                      [patient dosage-pool target-inr]
+                      :index {:title      "Anticoagulation initiation phase"
+                              :patient-id (:id patient)})]
     (set-index!
       [:overview :phase] "Initiation"
       [:runs :patient :initiation-phase] (:id run))
@@ -146,21 +143,21 @@
 
 (defn start-maintenance-phase [patient maintenance-dosage]
   (let [run (start! patient/maintenance-phase
-                    [patient maintenance-dosage]
-                    :index {:title      "Anticoagulation maintenance phase"
-                            :patient-id (:id patient)})]
+              [patient maintenance-dosage]
+              :index {:title      "Anticoagulation maintenance phase"
+                      :patient-id (:id patient)})]
     (set-index! [:runs :patient :maintenance-phase] (:id run))))
 
 (defn check-for-existing-anticoagulation-run [patient-id]
   (let [[run] (find-runs [[:state :eq :running]
                           [[:index :patient-id] :eq patient-id]
                           [:id :not-eq (current-run :id)]
-                          [[:index :roles] :? "doctor"]] :limit 2)]
+                          [[:index :roles] :contains "doctor"]] :limit 2)]
     (if run
       (throw (ex-info "Anticoagulation therapy already in progress for patient"
-                      {:type       :input-error
-                       :patient-id patient-id
-                       :run-id     (:id run)})))))
+               {:type       :input-error
+                :patient-id patient-id
+                :run-id     (:id run)})))))
 
 (deflow anticoagulation [patient-id]
   (require-roles :doctor)
