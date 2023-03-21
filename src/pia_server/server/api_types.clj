@@ -32,10 +32,10 @@
   (scm/maybe {(scm/optional-key :permit) JSONK
               (scm/optional-key :input)  JSONK}))
 
-(scm/defschema InterruptArgs
-  (scm/maybe {(scm/optional-key :message) scm/Str
-              (scm/optional-key :data)    JSONK}))
-
 (scm/defschema Interrupt
-  {:name                           scm/Str
-   (scm/optional-key :description) scm/Str})
+  {:name                    scm/Keyword
+   (scm/optional-key :args) scm/Any})
+
+(scm/defschema InterruptHandler
+  {:name                        scm/Keyword
+   (scm/optional-key :metadata) JSONK})

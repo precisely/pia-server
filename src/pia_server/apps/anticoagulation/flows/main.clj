@@ -160,21 +160,26 @@
                 :run-id     (:id run)})))))
 
 (deflow anticoagulation [patient-id]
-  (require-roles :doctor)
-  (set-index! :patient-id patient-id, :title "Anticoagulation therapy")
-  (check-for-existing-anticoagulation-run patient-id)
-  (let [patient (get-patient patient-id)
-        _       (if (not (p/patient? patient)) (throw (ex-info "Patient not found" {:type :input-error :id patient-id})))
-        labwork (obtain-labwork patient)]
-    (if-let [target-inr (determine-target-inr patient labwork)]
-      (let [
-            ;; get the initiation phase prescription - 1mg size
-            _                  (obtain-warfarin-prescription patient 1)
-            ;; start the initiation phase
-            maintenance-dosage (obtain-maintenance-dosage patient target-inr)
-            ;; get the maintenance prescription
-            _                  (obtain-warfarin-prescription patient maintenance-dosage)]
-        (start-maintenance-phase patient maintenance-dosage)))))
+  (attempt
+    (require-roles :doctor)
+    (set-index! :patient-id patient-id, :title "Anticoagulation therapy")
+    (check-for-existing-anticoagulation-run patient-id)
+    (let [patient (get-patient patient-id)
+          _       (if (not (p/patient? patient)) (throw (ex-info "Patient not found" {:type :input-error :id patient-id})))
+          labwork (obtain-labwork patient)]
+      (if-let [target-inr (restartable (determine-target-inr patient labwork)
+                            (:redo-target-inr [] ))]
+        (let [
+              ;; get the initiation phase prescription - 1mg size
+              _                  (obtain-warfarin-prescription patient 1)
+              ;; start the initiation phase
+              maintenance-dosage (obtain-maintenance-dosage patient target-inr)
+              ;; get the maintenance prescription
+              _                  (obtain-warfarin-prescription patient maintenance-dosage)]
+          (start-maintenance-phase patient maintenance-dosage))))
+
+    (handle :adverse-event [dose]
+      (restart :reset-target-inr dose))))
 
 ;; onboarding
 ;; (+) get blood work done

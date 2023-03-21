@@ -7,7 +7,7 @@
 
 # environment handling: ignore all .env files except .env.sample
 .env*
-!.env.sample
+!.envrc.sample
 
 # Java and Clojure things
 /target

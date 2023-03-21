@@ -1,11 +1,19 @@
-MAVEN_REPO_AWS_ACCESS_KEY_ID=...
-MAVEN_REPO_AWS_ACCESS_KEY_SECRET=...
+export MAVEN_REPO_AWS_ACCESS_KEY_ID=...
+export MAVEN_REPO_AWS_ACCESS_KEY_SECRET=...
 
-PORT=8080
-CORS_ALLOW=http://localhost:1234
+# replace this in prod:
+export JWT_SECRET=8e71dbe30b8dd667259f43b70a45be1d7f7317a1d4dccd4a2e809824165b9f01d76ff4f0e311608cbbd8a72c626ad71229c5cc9c0103ece9881980788649f0b2
 
-JWT_SECRET=... # copy from Rails by looking at its value in `rails credentials:edit --environment development`
-# DISABLE_JWT_AUTH=1 # uncomment this line to ignore missing AUTHORIZATION header (useful for swagger)
+export PORT=8080
+export DISABLE_JWT_AUTH=1
+export LOG_LEVEL=debug
+#CORS_ALLOW=http://localhost:1234
+export CORS_ALLOW='*'
+
+# turn off -Xverify:none which is set in Leiningen's bin/.lein-wrapped script
+# because it causes warnings in JVM 13
+export LEIN_JVM_OPTS="${LEIN_JVM_OPTS-"-XX:+TieredCompilation -XX:TieredStopAtLevel=1"}"
+export AWS_REGION=us-east-1
 
 
 ### Database configuration:

@@ -54,7 +54,7 @@
                                           :expires (-> interval from-now)))]
             (when-not (= delay-result :cancel)
               (recur (inc count))))))
-      (handle :stop i))))
+      (handle :stop [i]))))
 
 (deflow pick-lab
   "In future, this might launch an interaction with the patient to determine the right lab. This might just request
