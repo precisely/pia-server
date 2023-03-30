@@ -23,7 +23,8 @@
               join?          false,
               expiry-seconds 60,
               level          :info}}]
-   (log/set-level! level)
+   (log/set-level! [[#{"org.eclipse.jetty", "com.zaxxer.hikari"} :warn]
+                    [#{"*"} level]])
    (log/info (str "Starting pia-server at http://localhost:" port))
    (rapids-pg/postgres-storage-migrate!)
    (log/info (str "Starting expiry monitor with timeout of " expiry-seconds " seconds"))
