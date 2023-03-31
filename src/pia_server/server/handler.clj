@@ -204,8 +204,11 @@
       (not-found))))
 
 (def wrapped-handler
-  (let [cors-pattern (@env :cors-allow)
-        cors-pattern (if (= "*") #".*" (re-pattern cors-pattern))]
+  (let [cors-pattern (or (@env :cors-allow) "null")
+        cors-pattern (case cors-pattern
+                       nil "null"
+                       "*" #".*"
+                       (re-pattern cors-pattern))]
     (-> #'base-handler
       #_logger/wrap-with-logger
       (wrap-cors :access-control-allow-origin [cors-pattern]
