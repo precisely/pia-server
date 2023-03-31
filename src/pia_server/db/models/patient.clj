@@ -1,6 +1,5 @@
 (ns pia-server.db.models.patient
-  (:require [namejen.names :as nj]
-            [clojure.string :as str]))
+  (:require [namejen.names :as nj]))
 
 (def +patients+ (atom {}))
 
