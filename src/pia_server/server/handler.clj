@@ -19,7 +19,8 @@
     [ring.util.http-response :as response]
 
     [clojure.core.async :as async]
-    [envvar.core :refer [env]])
+    [envvar.core :refer [env]]
+    [clojure.string :as str])
   (:import (java.sql SQLException)
            (compojure.api.coercion.core CoercionError)))
 
@@ -107,17 +108,10 @@
 
         (POST "/" []
           :summary "Create Run"
-          :description "Starts a new run of the specified flow. The flow must be specified as a
-          string in the flow field. Flows can be discovered at the /api/flows endpoint. \nThe flow's arguments must be specified in the args field as a
-          list of values. Keyword arguments can be specified in the kwargs field as a map of
-          keyword to value. For example, to start a run of the foo flow with the arguments 'a' and
-          'b' and the keyword argument c with the value 'd', use:
-
-    {
-      \"flow\": \"foo\",
-      \"args\": [\"a\", \"b\"],
-      \"kwargs\": {\"c\": \"d\"}
-    }"
+          :description
+          (str/join "\n"
+            ["Starts a new run of the specified flow. The flow must be specified as a string in the flow field. Flows can be discovered at the /api/flows endpoint. The flow's arguments must be specified in the args field as a list of values. Keyword arguments can be specified in the kwargs field as a map of keyword to value. For example, to start a run of the foo flow with the arguments 'a' and 'b' and the keyword argument c with the value 'd', use:"
+             "```json" "{" "  \"flow\": \"foo\"," "  \"args\": [\"a\", \"b\"],Í" "  \"kwargs\": {\"c\": \"d\"}" "}" "```"])
           :path-params []
           :return {:run types/Run}
           :body [start types/RunStartArgs]
@@ -127,19 +121,18 @@
 
         (GET "/" [& fields]
           :summary "Find Runs"
-          :description "Finds runs matching the field constraints. Constrains are provided as
-          field$op=value pairs. For example, to find runs with a status of 'running' and where the
-          index foo is a number greater than three, use:
-          \n    ?status$eq=running&index.foo$gt=3
-          \nThe following operators are supported:
-          eq, ne, gt, gte, lt, lte, in, not-in, contains,exists, exclude.
-          The number of returned records can be limited by providing a limit parameter. For example,
-          to return only the first 10 runs, use: `?limit=10`
-          \n\nThis endpoint operates on the status, index, id and created_at fields."
+          :description
+          (str/join "\n"
+            ["Finds runs matching the field constraints. Constraints are provided as `field$op=value pairs`. For example, to find runs with a status of 'running' and where the index foo is a number greater than three, use:"
+             "```" "?status$eq=running\\&index.foo$gt=3" "```"
+             "The following operators are supported:"
+             "```" "eq, ne, gt, gte, lt, lte, in, not-in, contains,exists, exclude" "```"
+             "The number of returned records can be limited by providing a limit parameter. For example, to return only the first 10 runs use: `?limit=10`"
+             "This endpoint operates on the status, index, id and created_at fields."])
           :return {:runs [types/Run]}
           (let [[field-constraints limit] (h/extract-find-run-fields fields)]
-            (h/prepare-result :runs (map h/run-result (find-runs field-constraints :limit limit)))))
-
+            (h/prepare-result :runs
+              (map h/run-result (find-runs field-constraints :limit limit)))))
 
         (context "/:id" []
           :summary "Run by id"
@@ -155,12 +148,10 @@
 
           (POST "/" []
             :summary "Continue Run"
-            :description "Continue a run with the given input. If the run is not in running state, an error will be returned.
-            \nThe permit is a string which may be required. This value may be visible in the Run object
-            which can be obtained by the corresponding GET endpoint. This value is typically a string
-            representing a UUID.
-            \nThe interrupt is the interrupt UUID, which is returned by the interrupts POST endpoint. It
-            is required when continuing an interrupted Run."
+            :description
+            (str/join "\n"
+              ["Continue a run with the given input. If the run is not in running state, an error will be returned. The permit is a string which may be required. This value may be visible in the Run object which can be obtained by the corresponding GET endpoint. This value is typically a string representing a UUID."
+               "The interrupt is the interrupt UUID, which is returned by the interrupts POST endpoint. It is required when continuing an interrupted Run."])
             :body [args types/ContinueArgs]
             :return {:run types/Run}
             (let [{input     :input
@@ -180,15 +171,12 @@
 
             (POST "/" []
               :summary "Interrupt Run"
-              :description "Interrupts the specified run using the specified interrupt handler with optional data. The interrupt handler must be
-               specified as a string as the \"name\" key. The interrupt handler may be provided optional
-               data as the \"data\" key. For example, to interrupt the current run with the \"foo\" interrupt
-                handler with the data \"bar\", use:
-
-    {
-      \"name\": \"foo\",
-      \"data\": \"bar\"
-    }"
+              :description
+              (str/join "\n"
+                ["Interrupts the specified run using the specified interrupt handler with optional data. The interrupt handler must be specified as a string as the \"name\" key. The interrupt handler may be provided optional data as the \"data\" key. For example, to interrupt the current run with the \"foo\" interrupt handler with the data \"bar\", use:"
+                 "```json"
+                 "  {\"name\": \"foo\","
+                 "   \"data\": \"bar\"}```"])
               :path-params []
               :return {:run types/Run}
               :body [interrupt types/Interrupt]

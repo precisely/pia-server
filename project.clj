@@ -27,14 +27,14 @@
                  [metosin/ring-swagger "0.26.2"]
                  [ring.middleware.conditional "0.2.0"]
                  [compojure "1.7.0"]
+                 [metosin/jsonista "0.3.7"]
                  [metosin/compojure-api "2.0.0-alpha31"]
-                 [metosin/jsonista "0.2.7"]
-                 [buddy/buddy-auth "2.2.0"]
+                 [buddy/buddy-auth "3.0.323"]
                  [ring-cors "0.1.13"]
 
                  ;; logger
                  [com.taoensso/timbre "6.1.0"]
-                 [com.fzakaria/slf4j-timbre "0.3.20"]
+                 [com.fzakaria/slf4j-timbre "0.3.21"]
                  [ring-logger "1.1.1"]
 
                  ]
