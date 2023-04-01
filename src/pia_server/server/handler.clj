@@ -111,7 +111,7 @@
           :description
           (str/join "\n"
             ["Starts a new run of the specified flow. The flow must be specified as a string in the flow field. Flows can be discovered at the /api/flows endpoint. The flow's arguments must be specified in the args field as a list of values. Keyword arguments can be specified in the kwargs field as a map of keyword to value. For example, to start a run of the foo flow with the arguments 'a' and 'b' and the keyword argument c with the value 'd', use:"
-             "```json" "{" "  \"flow\": \"foo\"," "  \"args\": [\"a\", \"b\"],Í" "  \"kwargs\": {\"c\": \"d\"}" "}" "```"])
+             "```json" "{" "  \"flow\": \"foo\"," "  \"args\": [\"a\", \"b\"]," "  \"kwargs\": {\"c\": \"d\"}" "}" "```"])
           :path-params []
           :return {:run types/Run}
           :body [start types/RunStartArgs]
@@ -121,10 +121,12 @@
 
         (GET "/" [& fields]
           :summary "Find Runs"
+          :query-params [{query :- [scm/Str] []}] ;; enables a UI in Swagger 2.0
           :description
           (str/join "\n"
             ["Finds runs matching the field constraints. Constraints are provided as `field$op=value pairs`. For example, to find runs with a status of 'running' and where the index foo is a number greater than three, use:"
-             "```" "?status$eq=running\\&index.foo$gt=3" "```"
+             "```" "status$eq=running" "index.foo$gt=3" "```"
+             "As inputs to the query input of this form, or provide these as URL query  parameters, for example: ?status$eq=running&index.foo$gt=3"
              "The following operators are supported:"
              "```" "eq, ne, gt, gte, lt, lte, in, not-in, contains,exists, exclude" "```"
              "The number of returned records can be limited by providing a limit parameter. For example, to return only the first 10 runs use: `?limit=10`"

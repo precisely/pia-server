@@ -19,8 +19,16 @@
       (dissoc run :result)
       run)))
 
+(defn process-find-run-query
+  "Process the query array into a map of key-value pairs.
+  The input query array is of the form [\"key1=value1\" \"key2=value2\" ...]."
+  [query]
+  (into {} (map #(let [[lhs rhs] (str/split % #"=")] [(keyword lhs) rhs]) query)))
+
 (defn extract-find-run-fields [fields]
-  (let [uuid-shaped?        (fn [v] (re-find #"^[0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12}$" v))
+  (let [query               (:query fields)
+        fields              (merge (dissoc fields :query) (process-find-run-query query))
+        uuid-shaped?        (fn [v] (re-find #" ^[0-9a-fA-F] {8} \b- [0-9a-fA-F] {4} \b- [0-9a-fA-F] {4} \b- [0-9a-fA-F] {4} \b- [0-9a-fA-F] {12} $ " v))
         parse-val           (fn [v]
                               (try (if (uuid-shaped? v)
                                      (UUID/fromString v)
@@ -33,7 +41,7 @@
                                     kop      (if op (keyword op) :eq)]
                                 (if (#{:eq :not-eq :contains :in :gt :lt :lte :gte :not-in} kop)
                                   [`[~@butlast-keys ~last] kop]
-                                  (throw (ex-info "Invalid operator"
+                                  (throw (ex-info " Invalid operator "
                                            {:type :input-error,
                                             :op   op})))))
         process-field       (fn [[k v]]
@@ -47,7 +55,7 @@
 
 (defn schema-error-handler [^Exception e data request]
   (let [{{error :error value :value} :out} e]
-    (response/bad-request {:message (.getMessage e) , :value value :type :validation})))
+    (response/bad-request {:message (.getMessage e), :value value :type :validation})))
 
 (defn custom-handler [f type show-data]
   (fn [^Exception e data request]
@@ -63,8 +71,8 @@
     ([request]
      (wrap-jwt-fn request nil nil))
     ([request response-fn raise-fn]
-     (if-let [auth-hdr (get-in request [:headers "authorization"])]
-       (let [bearer (subs auth-hdr (.length "Bearer "))]
+     (if-let [auth-hdr (get-in request [:headers " authorization "])]
+       (let [bearer (subs auth-hdr (.length " Bearer "))]
          (try
            (let [request+identity (assoc request
                                     :identity
@@ -98,8 +106,8 @@
   `(log/info (str
                (str/upper-case (name (:request-method ~'+compojure-api-request+))) " "
                (:uri ~'+compojure-api-request+) " "
-               (if-not (empty? (:query-params ~'+compojure-api-request+)) (:query-params ~'+compojure-api-request+) "") " "
-               (if-not (empty? (:form-params ~'+compojure-api-request+)) (:form-params ~'+compojure-api-request+) "")
+               (if-not (empty? (:query-params ~'+compojure-api-request+)) (:query-params ~'+compojure-api-request+) " ") " "
+               (if-not (empty? (:form-params ~'+compojure-api-request+)) (:form-params ~'+compojure-api-request+) " ")
                " => ") ~result))
 
 (defmacro prepare-result [field result]
