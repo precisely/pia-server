@@ -1,4 +1,3 @@
-
 (defproject pia-server "0.2.0-SNAPSHOT"
   :description "Precisely Intelligent Agent"
   :min-lein-version "2.9.7"
@@ -7,12 +6,12 @@
                  [envvar "1.1.2"]
 
                  ;; application support
-                 [precisely/rapids "0.12.5-SNAPSHOT"]
+                 [precisely/rapids "0.12.5-SNAPSHOT" ]
                  [precisely/rapids-active-doc "LATEST"]
                  [clojure.java-time "1.2.0"]
                  [org.clojure/core.async "1.6.673"]
                  [camel-snake-kebab "0.4.3"]
-                 [potemkin "0.4.6"]
+                 [potemkin "0.4.6" :exclusions [riddley]]
                  [org.clojure/data.json "2.4.0"]
                  [siili/humanize "0.1.1"]
                  [metosin/malli "0.10.1"]
@@ -24,16 +23,16 @@
                  [javax.servlet/javax.servlet-api "4.0.1"]
                  [ring-server "0.5.0"]
                  [ring/ring-jetty-adapter "1.9.6"]
-                 [metosin/ring-swagger "0.26.2"]
+                 [metosin/ring-swagger "0.26.2" :exclusions [prismatic/schema]]
                  [ring.middleware.conditional "0.2.0"]
                  [compojure "1.7.0"]
                  [metosin/jsonista "0.3.7"]
-                 [metosin/compojure-api "2.0.0-alpha31"]
-                 [buddy/buddy-auth "3.0.323"]
+                 [metosin/compojure-api "2.0.0-alpha31" :exclusions [prismatic/schema clj-time]]
+                 [buddy/buddy-auth "3.0.323"  :exclusions [cheshire]]
                  [ring-cors "0.1.13"]
 
                  ;; logger
-                 [com.taoensso/timbre "6.1.0"]
+                 [com.taoensso/timbre "6.1.0" :exclusions [org.clojure/tools.logging]]
                  [com.fzakaria/slf4j-timbre "0.3.21"]
                  [ring-logger "1.1.1"]
 

@@ -126,9 +126,11 @@
           (str/join "\n"
             ["Finds runs matching the field constraints. Constraints are provided as `field$op=value pairs`. For example, to find runs with a status of 'running' and where the index foo is a number greater than three, use:"
              "```" "status$eq=running" "index.foo$gt=3" "```"
-             "As inputs to the query input of this form, or provide these as URL query  parameters, for example: ?status$eq=running&index.foo$gt=3"
+             "As inputs to the query input of this form, or provide these as URL query  parameters, for example:"
+             "```" "?status$eq=running&index.foo$gt=3" "```"
              "The following operators are supported:"
-             "```" "eq, ne, gt, gte, lt, lte, in, not-in, contains,exists, exclude" "```"
+             "```" "eq, ne, gt, gte, lt, lte, in, not-in, contains, exists, exclude" "```"
+             "Note: The `$op` portion may be omitted, in which case, eq is assumed. E.g., `status=running` is equivalent to `status$eq=running`."
              "The number of returned records can be limited by providing a limit parameter. For example, to return only the first 10 runs use: `?limit=10`"
              "This endpoint operates on the status, index, id and created_at fields."])
           :return {:runs [types/Run]}
