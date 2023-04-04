@@ -32,8 +32,6 @@
             (async/close! channel)
             (.close output-stream)))))))
 
-(rapids/set-storage! (rapids-pg/->postgres-storage {:jdbcUrl (jdbc-url :pia-storage)}))
-
 (defn env-read
   ([key default reader]
    (-> (get @env key default) reader)))

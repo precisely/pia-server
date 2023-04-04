@@ -15,6 +15,7 @@
                  [org.clojure/data.json "2.4.0"]
                  [siili/humanize "0.1.1"]
                  [metosin/malli "0.10.1"]
+                 [com.stuartsierra/component "1.1.0"]
 
                  ;; fake
                  [eigenhombre/namejen "0.1.23"]

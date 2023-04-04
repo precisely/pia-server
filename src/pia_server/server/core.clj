@@ -4,6 +4,7 @@
             [rapids.implementations.postgres-storage :as rapids-pg]
             rapids
 
+            [com.stuartsierra.component :as component]
             [ring.adapter.jetty :as jetty]
             [taoensso.timbre :as log]))
 
@@ -14,26 +15,45 @@
 ;;; - database connection pool
 ;;; - expiry monitor
 
-(defonce ^:dynamic *server* (atom nil))
+(defrecord Server [port join? expiry-seconds level handler]
+  component/Lifecycle
+  (start [this]
+    (log/set-level! [[#{"com.zaxxer.hikari.pool"} ::error]
+                     [#{"org.eclipse.jetty", "com.zaxxer.hikari"} :warn]
+                     [#{"*"} (:level this)]])
+    (log/info (str "Starting pia-server at http://localhost:" (:port this)))
+    (log/info (str "Starting expiry monitor with timeout of " (:expiry-seconds this) " seconds"))
+    (rapids/start-expiry-monitor! :delay (:expiry-seconds this))
+    (assoc this :server (jetty/run-jetty (:handler this) {:port (:port this), :join? (:join? this), :async? true})))
+  (stop [this]
+    (when-not (nil? (:server this))
+      (.interrupt (:server this)))
+    (rapids/stop-expiry-monitor!)))
 
-(defn start
-  ([& {:keys [port join? expiry-seconds level server]
-       :or   {server         #'pia/wrapped-handler,
-              port           8080,
-              join?          false,
-              expiry-seconds 60,
-              level          :info}}]
-   (log/set-level! [[#{"com.zaxxer.hikari.pool"} ::error]
-                    [#{"org.eclipse.jetty", "com.zaxxer.hikari"} :warn]
-                    [#{"*"} level]])
-   (log/info (str "Starting pia-server at http://localhost:" port))
-   (rapids-pg/postgres-storage-migrate!)
-   (log/info (str "Starting expiry monitor with timeout of " expiry-seconds " seconds"))
-   (rapids/start-expiry-monitor! :delay expiry-seconds)
-   (reset! *server* (jetty/run-jetty server {:port port, :join? join?, :async? true}))))
+(defn ->server [port join? expiry-seconds level handler]
+  (component/using
+    (->Server port join? expiry-seconds level handler)
+    [:db :expiry-monitor]))
 
-(defn stop []
-  (when-not (nil? @*server*)
-    (.interrupt @*server*)
-    (reset! *server* nil))
-  (rapids/stop-expiry-monitor!))
+;;
+;;(defn start
+;;  ([& {:keys [port join? expiry-seconds level handler]
+;;       :or   {handler        #'pia/wrapped-handler,
+;;              port           8080,
+;;              join?          false,
+;;              expiry-seconds 60,
+;;              level          :info}}]
+;;   (log/set-level! [[#{"com.zaxxer.hikari.pool"} ::error]
+;;                    [#{"org.eclipse.jetty", "com.zaxxer.hikari"} :warn]
+;;                    [#{"*"} level]])
+;;   (log/info (str "Starting pia-server at http://localhost:" port))
+;;   (rapids-pg/postgres-storage-migrate!)
+;;   (log/info (str "Starting expiry monitor with timeout of " expiry-seconds " seconds"))
+;;   (rapids/start-expiry-monitor! :delay expiry-seconds)
+;;   (reset! *server* (jetty/run-jetty handler {:port port, :join? join?, :async? true}))))
+;;
+;;(defn stop []
+;;  (when-not (nil? @*server*)
+;;    (.interrupt @*server*)
+;;    (reset! *server* nil))
+;;  (rapids/stop-expiry-monitor!))
