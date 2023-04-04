@@ -23,7 +23,8 @@
               join?          false,
               expiry-seconds 60,
               level          :info}}]
-   (log/set-level! [[#{"org.eclipse.jetty", "com.zaxxer.hikari"} :warn]
+   (log/set-level! [[#{"com.zaxxer.hikari.pool"} ::error]
+                    [#{"org.eclipse.jetty", "com.zaxxer.hikari"} :warn]
                     [#{"*"} level]])
    (log/info (str "Starting pia-server at http://localhost:" port))
    (rapids-pg/postgres-storage-migrate!)

@@ -124,9 +124,9 @@
           :query-params [{query :- [scm/Str] []}] ;; enables a UI in Swagger 2.0
           :description
           (str/join "\n"
-            ["Finds runs matching the field constraints. Constraints are provided as `field$op=value pairs`. For example, to find runs with a status of 'running' and where the index foo is a number greater than three, use:"
+            ["Finds runs matching the field constraints. Constraints are provided as `field$op=value pairs`. For example, to find runs with a status of 'running' and where the index foo is a number greater than three, use the following as inputs to the query parameter multiline input below:"
              "```" "status$eq=running" "index.foo$gt=3" "```"
-             "As inputs to the query input of this form, or provide these as URL query  parameters, for example:"
+             "or provide these as URL query parameters, as follows:"
              "```" "?status$eq=running&index.foo$gt=3" "```"
              "The following operators are supported:"
              "```" "eq, ne, gt, gte, lt, lte, in, not-in, contains, exists, exclude" "```"
