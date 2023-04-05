@@ -23,6 +23,7 @@
               join?          false,
               expiry-seconds 60,
               level          :info}}]
+   (alter-var-root #'rapids.storage.globals/*strict-proxy* (constantly true))
    (log/set-level! [[#{"com.zaxxer.hikari.pool"} ::error]
                     [#{"org.eclipse.jetty", "com.zaxxer.hikari"} :warn]
                     [#{"*"} level]])
